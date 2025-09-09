@@ -1,0 +1,201 @@
+# FP8 Model Configuration for NVIDIA Llama-3.3-70B-Instruct-FP8
+# Optimized settings for TensorRT-LLM with FP8 precision
+
+# Model identification
+model_name: "nvidia/Llama-3.3-70B-Instruct-FP8"
+model_type: "llama"
+model_version: "3.3"
+
+# FP8 Quantization Settings
+quantization:
+  # Primary FP8 settings
+  enabled: true
+  precision: "fp8"
+  data_type: "float8_e4m3fn"  # FP8 E4M3 format
+  
+  # Weights and activations
+  quantize_weights: true
+  quantize_activations: true
+  quantize_kv_cache: true
+  
+  # Calibration settings (from model card)
+  calibration_dataset: "cnn_dailymail"
+  calibration_method: "max"
+  
+  # Advanced FP8 settings
+  fp8_qdq: false  # Quantize-Dequantize
+  smooth_quant: false
+  int8_kv_cache: false  # Use FP8 instead
+  
+# TensorRT-LLM Engine Settings
+engine:
+  # Engine configuration
+  max_batch_size: 8
+  max_input_len: 4096
+  max_output_len: 2048
+  max_beam_width: 1
+  
+  # Context and sequence settings
+  max_seq_len: 8192  # Effective context for planning
+  max_context_length: 128000  # Full 128K context capability
+  
+  # Memory optimization
+  enable_context_fmha: true
+  enable_chunked_context: true
+  chunk_size: 8192
+  
+  # Attention optimization
+  multi_block_mode: true
+  use_custom_all_reduce: true
+  
+# Performance Optimization
+performance:
+  # GPU utilization
+  gpu_memory_utilization: 0.85
+  tensor_parallel_size: 2  # For 70B model on multi-GPU
+  pipeline_parallel_size: 1
+  
+  # CUDA settings
+  use_tensor_cores: true
+  enable_cuda_graph: true
+  cuda_graph_cache_size: 1024
+  
+  # Batching optimization
+  enable_chunked_prefill: true
+  max_num_batched_tokens: 8192
+  max_num_seqs: 256
+  
+  # KV cache optimization
+  block_size: 16
+  swap_space: 4  # GB
+  
+# Sampling Parameters for Planning
+sampling:
+  # Temperature settings
+  temperature: 0.1  # Low for deterministic planning
+  temperature_range: [0.05, 0.3]
+  
+  # Top-p/Top-k settings
+  top_p: 0.95
+  top_k: 50
+  
+  # Repetition control
+  repetition_penalty: 1.1
+  presence_penalty: 0.0
+  frequency_penalty: 0.0
+  
+  # Length control
+  max_tokens: 512
+  min_tokens: 10
+  
+  # Stop sequences
+  stop_sequences: ["\n\n", "Human:", "Assistant:"]
+
+# API Configuration
+api:
+  # Server settings
+  host: "localhost"
+  port: 9999
+  timeout: 120  # Increased for FP8 model
+  
+  # Request settings
+  max_retries: 3
+  retry_delay: 2.0
+  
+  # Response format
+  stream: false
+  return_full_text: false
+  
+# Hardware Requirements
+hardware:
+  # Minimum requirements for FP8 model
+  min_gpu_memory: 40  # GB (reduced from ~80GB due to FP8)
+  recommended_gpu_memory: 80  # GB
+  
+  # Supported architectures (from model card)
+  supported_architectures:
+    - "NVIDIA Blackwell"
+    - "NVIDIA Hopper"  # H100, H200
+    - "NVIDIA Lovelace"  # RTX 4090, etc.
+  
+  # CUDA compute capability
+  min_compute_capability: 8.9  # H100/H200
+  
+# Monitoring and Logging
+monitoring:
+  # Performance metrics
+  log_performance: true
+  log_memory_usage: true
+  log_throughput: true
+  
+  # FP8-specific metrics
+  log_fp8_stats: true
+  log_quantization_errors: false
+  
+  # Timing metrics
+  log_latency: true
+  log_ttft: true  # Time to first token
+  
+# Optimization Profiles
+profiles:
+  # Planning profile (optimized for reasoning)
+  planning:
+    temperature: 0.1
+    max_tokens: 512
+    top_p: 0.95
+    repetition_penalty: 1.1
+    
+  # Creative profile (for creative tasks)
+  creative:
+    temperature: 0.7
+    max_tokens: 1024
+    top_p: 0.9
+    repetition_penalty: 1.05
+    
+  # Fast profile (for quick responses)
+  fast:
+    temperature: 0.2
+    max_tokens: 256
+    top_p: 0.8
+    repetition_penalty: 1.15
+
+# Error Handling
+error_handling:
+  # Fallback settings
+  enable_fallback: true
+  fallback_model: "meta-llama/Llama-3.2-8B-Instruct"
+  fallback_precision: "bf16"
+  
+  # Retry logic
+  max_retries: 3
+  exponential_backoff: true
+  base_delay: 1.0
+  max_delay: 30.0
+  
+  # Error logging
+  log_errors: true
+  detailed_error_logs: true
+
+# Validation Settings
+validation:
+  # Model validation
+  validate_on_startup: true
+  run_benchmark: false
+  
+  # Output validation
+  validate_outputs: true
+  check_for_repetition: true
+  max_repetition_ratio: 0.3
+  
+  # Performance validation
+  min_throughput: 10.0  # tokens/second
+  max_latency: 5000  # milliseconds
+
+# Environment Variables Mapping
+env_mapping:
+  LLM_API_BASE: "api.host:api.port"
+  LLM_MODEL: "model_name"
+  USE_FP8: "quantization.enabled"
+  FP8_PRECISION: "quantization.precision"
+  TENSOR_PARALLEL_SIZE: "performance.tensor_parallel_size"
+  GPU_MEMORY_UTILIZATION: "performance.gpu_memory_utilization"
