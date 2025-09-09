@@ -6,6 +6,7 @@ defaults:
   - goal_model: horizon
   - model: simple
   - mineclip: attn
+  - _self_
 
 # Simulator settings
 simulator:
@@ -52,3 +53,26 @@ llm:
   api_base: "http://localhost:8000/v1"
   model: "local-llama3"
   api_key: "DUMMY"
+
+# WandB settings
+wandb:
+  enabled: true
+  project: "diffu-moe-vlm-minecraft"
+  experiment_name: null
+  tags:
+    - "minecraft"
+    - "vlm"
+    - "planning"
+    - "moe"
+    - "diffusion"
+  notes: "MC-Planner with Diffusion MoE VLM integration"
+  log_images: true
+  log_videos: false
+  log_frequency: 10
+  track_inventory: true
+  track_planning: true
+  track_exploration: true
+  track_efficiency: true
+  save_code: true
+  anonymous: null
+  mode: "online"

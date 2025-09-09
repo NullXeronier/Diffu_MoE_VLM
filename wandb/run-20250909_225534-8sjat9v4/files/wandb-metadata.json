@@ -1,0 +1,39 @@
+{
+  "os": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "CPython 3.12.9",
+  "startedAt": "2025-09-09T13:55:34.045815Z",
+  "program": "/home/epikskool/workspace/workdir/Diffu_MoE_VLM/test_benchmarking.py",
+  "codePath": "test_benchmarking.py",
+  "codePathLocal": "test_benchmarking.py",
+  "git": {
+    "remote": "https://github.com/NullXeronier/Diffu_MoE_VLM.git",
+    "commit": "dd150247f677aca56d1404f567f1fe1f0350a2ae"
+  },
+  "email": "next.forr@gmail.com",
+  "root": "/home/epikskool/workspace/workdir/Diffu_MoE_VLM",
+  "host": "nuskool90011",
+  "executable": "/home/epikskool/miniconda3/envs/gloon-ts/bin/python",
+  "cpu_count": 16,
+  "cpu_count_logical": 32,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "269427478528",
+      "used": "225078697984"
+    }
+  },
+  "memory": {
+    "total": "33487433728"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4090",
+      "memoryTotal": "25757220864",
+      "architecture": "Ada",
+      "uuid": "GPU-80133c0b-3bb6-3eaa-e6a3-02c2f7aaa7d9"
+    }
+  ],
+  "cudaVersion": "13.0",
+  "writerId": "ld8jew2mda182g58yldxm5th4sn7v3p3"
+}

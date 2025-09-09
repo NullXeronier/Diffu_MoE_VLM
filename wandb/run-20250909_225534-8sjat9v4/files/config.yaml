@@ -1,0 +1,85 @@
+_wandb:
+    value:
+        cli_version: 0.21.3
+        e:
+            ld8jew2mda182g58yldxm5th4sn7v3p3:
+                codePath: test_benchmarking.py
+                codePathLocal: test_benchmarking.py
+                cpu_count: 16
+                cpu_count_logical: 32
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "269427478528"
+                        used: "225078697984"
+                email: next.forr@gmail.com
+                executable: /home/epikskool/miniconda3/envs/gloon-ts/bin/python
+                git:
+                    commit: dd150247f677aca56d1404f567f1fe1f0350a2ae
+                    remote: https://github.com/NullXeronier/Diffu_MoE_VLM.git
+                gpu: NVIDIA GeForce RTX 4090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      memoryTotal: "25757220864"
+                      name: NVIDIA GeForce RTX 4090
+                      uuid: GPU-80133c0b-3bb6-3eaa-e6a3-02c2f7aaa7d9
+                host: nuskool90011
+                memory:
+                    total: "33487433728"
+                os: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35
+                program: /home/epikskool/workspace/workdir/Diffu_MoE_VLM/test_benchmarking.py
+                python: CPython 3.12.9
+                root: /home/epikskool/workspace/workdir/Diffu_MoE_VLM
+                startedAt: "2025-09-09T13:55:34.045815Z"
+                writerId: ld8jew2mda182g58yldxm5th4sn7v3p3
+        m:
+            - "1": episode/step
+              "6":
+                - 3
+              "7": []
+            - "1": task/index
+              "6":
+                - 3
+              "7": []
+            - "1": benchmark/task_count
+              "6":
+                - 3
+              "7": []
+            - "2": task/*
+              "5": 2
+              "6":
+                - 1
+              "7": []
+            - "2": benchmark/*
+              "5": 3
+              "6":
+                - 1
+              "7": []
+            - "2": episode/*
+              "5": 1
+              "6":
+                - 1
+              "7": []
+        python_version: 3.12.9
+        t:
+            "1":
+                - 105
+            "2":
+                - 105
+            "3":
+                - 2
+                - 7
+                - 13
+                - 15
+                - 16
+            "4": 3.12.9
+            "5": 0.21.3
+            "8":
+                - 2
+            "12": 0.21.3
+            "13": linux-x86_64
+max_steps:
+    value: 100
+test:
+    value: true

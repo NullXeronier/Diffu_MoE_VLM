@@ -1,0 +1,123 @@
+data:
+  tasks:
+    enabled:
+    - obtain_wooden_slab
+    - obtain_stone_stairs
+    - obtain_painting
+    - mine_cobblestone
+    - mine_iron_ore
+    - mine_diamond
+  data_dir: ./data
+  goal_lib_file: goal_lib.json
+  task_info_file: task_info.json
+  goal_mapping_file: goal_mapping.json
+  prompts:
+    task_prompt: task_prompt.txt
+    replan_prompt: deps_prompt.txt
+    parse_prompt: parse_prompt.txt
+  embeddings:
+    cache_dir: ./embeddings
+    dimension: 512
+eval:
+  env_name: Plains
+  max_steps: 5
+  timeout: 300
+  run_all_tasks: true
+  specific_tasks:
+  - obtain_wooden_slab
+  - obtain_stone_stairs
+  - obtain_painting
+  metrics:
+    success_rate: true
+    completion_time: true
+    action_efficiency: true
+  save_trajectories: true
+  save_videos: false
+  log_level: INFO
+  single_task: false
+  task_name: obtain_wooden_slab
+  output_dir: ./results
+goal_model:
+  strategy: priority
+  horizon: 3
+  use_horizon_planning: true
+  priorities:
+    mine_wood: 1.0
+    mine_stone: 0.9
+    mine_cobblestone: 0.9
+    obtain_wooden_pickaxe: 0.8
+    obtain_stone_pickaxe: 0.7
+    obtain_iron_pickaxe: 0.6
+    mine_iron_ore: 0.5
+    obtain_iron_ingot: 0.5
+    mine_coal: 0.4
+    obtain_wooden_slab: 0.3
+    obtain_stone_stairs: 0.3
+    obtain_painting: 0.2
+    mine_diamond: 0.1
+  freq: 10
+  queue_size: 5
+  use_ranking_goal: true
+  max_candidates: 5
+model:
+  backbone_name: simple
+  hidden_dim: 256
+  output_dim: 128
+  learning_rate: 0.001
+  batch_size: 32
+  epochs: 100
+  use_horizon: true
+  load_ckpt_path: ''
+  device: auto
+mineclip:
+  arch: vit_base_p16_fz.v2.t2
+  hidden_dim: 512
+  image_feature_dim: 512
+  mlp_adapter_spec: v0-2.t0
+  pool_type: attn.d2.nh8.glusw
+  resolution:
+  - 160
+  - 256
+  num_heads: 8
+  attention_dropout: 0.1
+  layer_dropout: 0.1
+simulator:
+  resolution:
+  - 640
+  - 480
+  rgb_only: false
+  max_steps: 5
+record:
+  frames: false
+  video_dir: ./videos
+pretrains:
+  clip_path: ''
+  model_path: ''
+output_dir: ./outputs
+experiment_name: mc_planner_migration
+llm:
+  api_base: http://localhost:8000/v1
+  model: local-llama3
+  api_key: DUMMY
+wandb:
+  enabled: false
+  project: diffu-moe-vlm-minecraft
+  experiment_name: null
+  tags:
+  - minecraft
+  - vlm
+  - planning
+  - moe
+  - diffusion
+  notes: MC-Planner with Diffusion MoE VLM integration
+  log_images: true
+  log_videos: false
+  log_frequency: 10
+  track_inventory: true
+  track_planning: true
+  track_exploration: true
+  track_efficiency: true
+  save_code: true
+  anonymous: null
+  mode: online
+single_task: true
