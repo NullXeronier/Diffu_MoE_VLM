@@ -1,6 +1,6 @@
-# MC-Planner Migration to Minecraft MDK Environment
+# MC-Planner DEPS Simulator
 
-This project migrates MC-Planner to work with Minecraft MDK environment using gymnasium library, removing Java dependencies and optimizing for experimental configuration.
+This project Simulates DEPS
 
 ## Project Structure
 
