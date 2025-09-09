@@ -1,0 +1,54 @@
+# Default configuration for MC-Planner Migration
+
+defaults:
+  - data: planning
+  - eval: planning 
+  - goal_model: horizon
+  - model: simple
+  - mineclip: attn
+
+# Simulator settings
+simulator:
+  resolution: [640, 480]
+  rgb_only: false
+  max_steps: 1000
+
+# Evaluation settings  
+eval:
+  env_name: "Plains"
+  max_steps: 1000
+  single_task: false
+  task_name: "obtain_wooden_slab"
+  output_dir: "./results"
+
+# Goal model settings
+goal_model:
+  freq: 10
+  queue_size: 5
+  use_ranking_goal: true
+
+# Model settings
+model:
+  backbone_name: "simple"
+  use_horizon: true
+  load_ckpt_path: ""
+
+# Recording settings
+record:
+  frames: false
+  video_dir: "./videos"
+
+# Pre-trained models
+pretrains:
+  clip_path: ""
+  model_path: ""
+
+# Output settings
+output_dir: "./outputs"
+experiment_name: "mc_planner_migration"
+
+# Local LLM settings
+llm:
+  api_base: "http://localhost:8000/v1"
+  model: "local-llama3"
+  api_key: "DUMMY"

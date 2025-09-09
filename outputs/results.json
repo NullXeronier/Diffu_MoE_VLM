@@ -1,0 +1,62 @@
+[
+  {
+    "task": "obtain_wooden_slab",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  },
+  {
+    "task": "obtain_stone_stairs",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  },
+  {
+    "task": "obtain_painting",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  },
+  {
+    "task": "mine_cobblestone",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  },
+  {
+    "task": "mine_iron_ore",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  },
+  {
+    "task": "mine_diamond",
+    "success": false,
+    "steps": 999,
+    "final_inventory": {
+      "wood": 0,
+      "stone": 0,
+      "iron": 0
+    }
+  }
+]

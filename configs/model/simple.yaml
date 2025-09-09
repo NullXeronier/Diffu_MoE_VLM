@@ -1,0 +1,18 @@
+# Simple model configuration
+
+# Model architecture
+backbone_name: "simple"
+hidden_dim: 256
+output_dim: 128
+
+# Training settings
+learning_rate: 0.001
+batch_size: 32
+epochs: 100
+
+# Model loading
+use_horizon: true
+load_ckpt_path: ""
+
+# Device settings
+device: "auto"  # auto, cuda, cpu

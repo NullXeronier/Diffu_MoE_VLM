@@ -1,0 +1,30 @@
+# Horizon-based goal model configuration
+
+# Goal selection strategy
+strategy: "priority"  # priority, random, round_robin, dependency
+
+# Horizon planning
+horizon: 3
+use_horizon_planning: true
+
+# Goal prioritization
+priorities:
+  mine_wood: 1.0
+  mine_stone: 0.9
+  mine_cobblestone: 0.9
+  obtain_wooden_pickaxe: 0.8
+  obtain_stone_pickaxe: 0.7
+  obtain_iron_pickaxe: 0.6
+  mine_iron_ore: 0.5
+  obtain_iron_ingot: 0.5
+  mine_coal: 0.4
+  obtain_wooden_slab: 0.3
+  obtain_stone_stairs: 0.3
+  obtain_painting: 0.2
+  mine_diamond: 0.1
+
+# Selection settings
+freq: 10
+queue_size: 5
+use_ranking_goal: true
+max_candidates: 5

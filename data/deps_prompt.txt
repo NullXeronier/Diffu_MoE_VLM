@@ -1,0 +1,48 @@
+You are replanning a Minecraft task based on the current situation and inventory state.
+
+## Replanning Context
+
+When replanning, consider:
+
+1. **Current inventory** - What resources are already available?
+2. **Progress made** - What steps have already been completed?
+3. **Remaining requirements** - What is still needed to achieve the goal?
+4. **Efficiency** - How can the remaining steps be optimized?
+
+## Replanning Strategies
+
+- **Skip completed steps** - Don't repeat actions for items already in inventory
+- **Optimize resource usage** - Use available resources efficiently
+- **Adjust tool requirements** - Use better tools if available
+- **Consider alternative approaches** - Find more efficient paths
+
+## Example Replanning
+
+**Original Task**: "How to obtain wooden slab?"
+**Current Inventory**: wood: 2, wooden_planks: 5
+**Situation**: Already have sufficient wooden planks
+
+**Revised Plan**:
+1. Access crafting interface (2x2 grid sufficient)
+2. Place 3 wooden planks in crafting grid
+3. Craft wooden slab (6 slabs produced)
+
+**Original Task**: "How to obtain stone stairs?"
+**Current Inventory**: wooden_pickaxe: 1, cobblestone: 3, crafting_table: 1
+**Situation**: Need more cobblestone, have tools and crafting table
+
+**Revised Plan**:
+1. Find stone blocks to mine
+2. Mine additional stone to get 3 more cobblestone (total 6 needed)
+3. Use existing crafting table
+4. Craft stone stairs from 6 cobblestone
+
+## Dependencies and Prerequisites
+
+Always check if prerequisites are met:
+- **Tools**: Ensure proper tools are available for mining/crafting
+- **Crafting Tables**: Some recipes require 3x3 crafting grid
+- **Resource Quantities**: Verify sufficient materials are available
+- **Intermediate Steps**: Consider if intermediate crafting is needed
+
+Provide a revised plan that takes into account the current state and focuses only on the remaining necessary steps.

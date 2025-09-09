@@ -1,0 +1,33 @@
+# MC-Planner Migration Dependencies
+# Core dependencies for gymnasium-based MC-Planner
+
+# Core ML/AI libraries
+torch>=2.0.0
+numpy>=1.21.0
+transformers>=4.20.0
+gymnasium>=0.29.0
+opencv-python>=4.5.0
+pillow>=9.0.0
+
+# Configuration and utilities
+omegaconf>=2.2.0
+hydra-core>=1.2.0
+pyyaml>=6.0
+rich>=12.0.0
+tqdm>=4.64.0
+
+# HTTP and API support
+requests>=2.28.0
+aiohttp>=3.8.0
+
+# Optional: For local LLM support
+# openai>=1.0.0  # For OpenAI API compatibility
+
+# Development dependencies
+pytest>=7.0.0
+black>=22.0.0
+flake8>=5.0.0
+
+# MineCLIP related (if needed)
+# clip-by-openai>=1.0
+# sentence-transformers>=2.2.0

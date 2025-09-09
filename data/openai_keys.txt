@@ -1,0 +1,13 @@
+# OpenAI API Keys (Placeholder)
+# Add your local LLM endpoint or OpenAI API keys here
+# One key per line
+# Example:
+# sk-1234567890abcdef1234567890abcdef
+# sk-abcdef1234567890abcdef1234567890
+
+# For local LLM usage, use environment variables:
+# export LLM_API_BASE="http://localhost:8000/v1"
+# export LLM_MODEL="local-llama3"
+# export LLM_API_KEY="DUMMY"
+
+DUMMY_KEY_FOR_LOCAL_LLM

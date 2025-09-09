@@ -1,0 +1,2 @@
+- eval.single_task=True
+- eval.task_name=obtain_wooden_slab
