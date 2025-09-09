@@ -1,0 +1,13 @@
+{
+  "task": "obtain_wooden_slab",
+  "success": false,
+  "steps": 4,
+  "total_reward": 0.0,
+  "completion_time": 11.369262933731079,
+  "final_inventory": {
+    "wood": 0,
+    "stone": 0,
+    "iron": 0
+  },
+  "efficiency_score": 0.0
+}

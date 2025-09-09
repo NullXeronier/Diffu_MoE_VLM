@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import warnings
+import time
 import torch
 import numpy as np
 from pathlib import Path
@@ -23,6 +24,8 @@ from src.minedojo_core import mc, task_registry, data_manager
 from planner import Planner
 from selector import Selector
 from controller import MineAgent, MineAgentWrapper
+from wandb_integration import WandBLogger, WandBIntegratedBenchmark
+from benchmark_metrics import BenchmarkMetrics
 
 warnings.filterwarnings('ignore')
 
@@ -33,6 +36,25 @@ class Evaluator:
     def __init__(self, cfg: OmegaConf):
         self.cfg = cfg
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Initialize WandB logging
+        self.wandb_logger = WandBLogger(
+            project_name=cfg.get('wandb', {}).get('project', 'diffu-moe-vlm-minecraft'),
+            experiment_name=cfg.get('wandb', {}).get('experiment_name', None),
+            config=OmegaConf.to_container(cfg, resolve=True),
+            tags=cfg.get('wandb', {}).get('tags', ['minecraft', 'vlm', 'planning']),
+            notes=cfg.get('wandb', {}).get('notes', None),
+            enabled=cfg.get('wandb', {}).get('enabled', True)
+        )
+        
+        # Initialize benchmark metrics
+        self.benchmark_metrics = BenchmarkMetrics()
+        
+        # Initialize integrated benchmark
+        self.integrated_benchmark = WandBIntegratedBenchmark(
+            self.benchmark_metrics,
+            self.wandb_logger
+        )
         
         # Initialize environment
         self.env = MineDojoEnv(
@@ -59,6 +81,7 @@ class Evaluator:
         
         print(f"[Progress] Initialized evaluator on {self.device}")
         print(f"[Progress] Available tasks: {len(self.task_list)}")
+        print(f"[Progress] WandB logging enabled: {self.wandb_logger.enabled}")
         
     def reset(self, task: str):
         """Reset environment for new task"""
@@ -139,18 +162,35 @@ class Evaluator:
         print(f"[Evaluation] Starting task: {task}")
         print(f"[Evaluation] Target object: {task_obj}")
         
+        # Start episode tracking
+        episode_id = f"{task}_{int(time.time())}"
+        self.integrated_benchmark.start_episode(episode_id, task)
+        
         # Initial planning
+        planning_start = time.time()
         plan = self.planner.initial_planning(
             group=task_info.get("group", "crafting"),
             task_question=f"How to {task.replace('_', ' ')}?"
         )
+        planning_time = time.time() - planning_start
         
         goal_list = self.planner.generate_goal_list(plan)
         print(f"[Planning] Initial plan: {plan}")
         print(f"[Planning] Goal list: {goal_list}")
         
+        # Log initial planning
+        self.integrated_benchmark.log_planning(
+            plan=plan,
+            goal_list=goal_list,
+            planning_time=planning_time,
+            is_replanning=False
+        )
+        
         # Main evaluation loop
         success = False
+        total_reward = 0.0
+        episode_start_time = time.time()
+        
         for step in range(self.max_steps):
             self.current_step = step
             
@@ -172,23 +212,87 @@ class Evaluator:
                 selected_goal = self.selector.horizon_select(goal_list)
                 print(f"[Step {step}] Selected goal: {selected_goal}")
                 
+                # Log goal selection
+                self.wandb_logger.log_planning_metrics(
+                    plan=plan,
+                    goal_list=goal_list,
+                    selected_goal=selected_goal,
+                    planning_time=0.0,
+                    is_replanning=False
+                )
+                
                 # Execute action (simplified)
                 action = self.generate_action(selected_goal, current_inventory)
                 obs, reward, terminated, truncated, info = self.env.step(action)
+                total_reward += reward
+                
+                # Log step metrics
+                self.integrated_benchmark.log_step(
+                    obs=obs,
+                    action=action,
+                    reward=reward,
+                    info=info,
+                    planning_time=0.0
+                )
+                
+                # Log media (if enabled in config)
+                if self.cfg.get('wandb', {}).get('log_images', False) and step % 10 == 0:
+                    if "rgb" in obs:
+                        self.wandb_logger.log_media(
+                            step=step,
+                            rgb_obs=obs["rgb"],
+                            caption=f"Step {step} - Goal: {selected_goal}"
+                        )
                 
                 if terminated or truncated:
                     break
             else:
                 # Replan if no goals available
+                planning_start = time.time()
                 plan = self.replan_task(current_inventory, f"How to {task.replace('_', ' ')}?")
+                planning_time = time.time() - planning_start
+                
                 goal_list = self.planner.generate_goal_list(plan)
                 print(f"[Replan] New plan: {plan}")
+                
+                # Log replanning
+                self.integrated_benchmark.log_planning(
+                    plan=plan,
+                    goal_list=goal_list,
+                    planning_time=planning_time,
+                    is_replanning=True
+                )
+        
+        # Calculate completion time
+        completion_time = time.time() - episode_start_time
+        
+        # End episode tracking
+        episode_metrics = self.integrated_benchmark.end_episode(
+            success=success,
+            final_inventory=current_inventory,
+            task_id=task
+        )
+        
+        # Complete task evaluation
+        task_result = self.integrated_benchmark.complete_task(
+            task_id=task,
+            success=success,
+            completion_time=completion_time,
+            total_steps=self.current_step,
+            total_reward=total_reward,
+            final_inventory=current_inventory,
+            planning_iterations=episode_metrics.replanning_count,
+            goal_changes=0  # Could be tracked separately
+        )
         
         result = {
             'task': task,
             'success': success,
             'steps': self.current_step,
-            'final_inventory': info.get('inventory', {})
+            'total_reward': total_reward,
+            'completion_time': completion_time,
+            'final_inventory': current_inventory,
+            'efficiency_score': task_result.efficiency_score
         }
         
         print(f"[Result] {result}")
@@ -217,21 +321,58 @@ class Evaluator:
         """Run evaluation on all tasks"""
         results = []
         
-        for task in self.task_list:
+        print(f"[Benchmark] Starting evaluation of {len(self.task_list)} tasks")
+        
+        for i, task in enumerate(self.task_list):
             try:
+                print(f"[Benchmark] Evaluating task {i+1}/{len(self.task_list)}: {task}")
                 result = self.single_task_evaluate(task)
                 results.append(result)
+                
+                # Log task completion rate
+                successful_tasks = sum(1 for r in results if r.get('success', False))
+                self.wandb_logger.wandb.log({
+                    "benchmark/current_task_index": i + 1,
+                    "benchmark/current_success_rate": (successful_tasks / len(results)) * 100,
+                    "benchmark/tasks_completed": len(results),
+                    "benchmark/tasks_remaining": len(self.task_list) - len(results)
+                })
+                
             except Exception as e:
                 print(f"[Error] Failed to evaluate task {task}: {e}")
                 results.append({
                     'task': task,
                     'success': False,
-                    'error': str(e)
+                    'error': str(e),
+                    'steps': 0,
+                    'total_reward': 0.0,
+                    'completion_time': 0.0,
+                    'final_inventory': {}
                 })
+                
+                # Log error to WandB
+                self.wandb_logger.wandb.log({
+                    "errors/task_failures": self.wandb_logger.wandb.run.summary.get("errors/task_failures", 0) + 1,
+                    "errors/latest_error": str(e)
+                })
+        
+        # Finish benchmark and log final results
+        benchmark_suite = self.integrated_benchmark.finish_benchmark()
         
         # Print summary
         successful_tasks = sum(1 for r in results if r.get('success', False))
-        print(f"\n[Summary] Completed {successful_tasks}/{len(results)} tasks successfully")
+        total_steps = sum(r.get('steps', 0) for r in results)
+        total_reward = sum(r.get('total_reward', 0.0) for r in results)
+        total_time = sum(r.get('completion_time', 0.0) for r in results)
+        
+        print(f"\n[Summary] Benchmark completed!")
+        print(f"[Summary] Tasks completed: {successful_tasks}/{len(results)}")
+        print(f"[Summary] Overall success rate: {(successful_tasks/len(results)*100):.2f}%")
+        print(f"[Summary] Total steps: {total_steps}")
+        print(f"[Summary] Total reward: {total_reward:.2f}")
+        print(f"[Summary] Total time: {total_time:.2f}s")
+        print(f"[Summary] Average steps per task: {total_steps/len(results):.2f}")
+        print(f"[Summary] Average reward per task: {total_reward/len(results):.2f}")
         
         return results
 
@@ -239,28 +380,63 @@ class Evaluator:
 @hydra.main(config_path="configs", config_name="defaults", version_base=None)
 def main(cfg: OmegaConf) -> None:
     """Main entry point"""
-    print("Starting MC-Planner Migration...")
+    print("Starting MC-Planner Migration with WandB Integration...")
     print(f"Configuration: {OmegaConf.to_yaml(cfg)}")
     
     # Initialize evaluator
     evaluator = Evaluator(cfg)
     
-    # Run evaluation
-    if cfg.get('single_task'):
-        # Run single task
-        task = cfg.get('task_name', evaluator.task_list[0])
-        result = evaluator.single_task_evaluate(task)
-    else:
-        # Run all tasks
-        results = evaluator.run_all_tasks()
+    try:
+        # Run evaluation
+        if cfg.get('single_task'):
+            # Run single task
+            task = cfg.get('task_name', evaluator.task_list[0])
+            result = evaluator.single_task_evaluate(task)
+            
+            # Save single task result
+            output_file = Path(cfg.get('output_dir', '.')) / f'result_{task}.json'
+            output_file.parent.mkdir(exist_ok=True)
+            with open(output_file, 'w') as f:
+                json.dump(result, f, indent=2)
+            
+            print(f"Single task result saved to {output_file}")
+            
+        else:
+            # Run all tasks
+            results = evaluator.run_all_tasks()
+            
+            # Save results
+            output_file = Path(cfg.get('output_dir', '.')) / 'results.json'
+            output_file.parent.mkdir(exist_ok=True)
+            with open(output_file, 'w') as f:
+                json.dump(results, f, indent=2)
+            
+            print(f"Results saved to {output_file}")
+            
+            # Log results file as WandB artifact
+            evaluator.wandb_logger.log_artifact(
+                str(output_file),
+                "final_results",
+                "results"
+            )
+    
+    except Exception as e:
+        print(f"[Error] Evaluation failed: {e}")
         
-        # Save results
-        output_file = Path(cfg.get('output_dir', '.')) / 'results.json'
-        output_file.parent.mkdir(exist_ok=True)
-        with open(output_file, 'w') as f:
-            json.dump(results, f, indent=2)
+        # Log error to WandB
+        if hasattr(evaluator, 'wandb_logger') and evaluator.wandb_logger.enabled:
+            evaluator.wandb_logger.wandb.log({
+                "errors/fatal_error": str(e),
+                "errors/evaluation_failed": True
+            })
         
-        print(f"Results saved to {output_file}")
+        raise e
+    
+    finally:
+        # Ensure WandB is properly closed
+        if hasattr(evaluator, 'wandb_logger') and evaluator.wandb_logger.enabled:
+            evaluator.wandb_logger.finish()
+            print("[WandB] Logging session finished")
 
 
 if __name__ == '__main__':
