@@ -29,10 +29,34 @@ class Planner:
         self.llm_model = os.getenv("LLM_MODEL", "meta-llama/Llama-3.2-1B")
         self.llm_api_key = os.getenv("LLM_API_KEY", "DUMMY")
         
+        # FP8 configuration attributes
+        self.use_fp8 = os.getenv("USE_FP8", "").lower() in ["true", "1"]
+        self.precision = "fp8" if self.use_fp8 else "fp16"
+        
+        # Initialize FP8 manager if available and enabled
+        self.fp8_manager = None
+        if self.use_fp8:
+            self.init_fp8_manager()
+        
     def reset(self):
         """Reset planner state"""
         self.dialogue = ''
         self.logging_dialogue = ''
+
+    def init_fp8_manager(self):
+        """Initialize FP8 manager if available"""
+        try:
+            from fp8_utils import create_fp8_manager
+            self.fp8_manager = create_fp8_manager()
+            print(f"[Planner] FP8 manager initialized for model: {self.llm_model}")
+        except ImportError:
+            print("[Planner] FP8 utilities not available")
+            self.use_fp8 = False
+            self.precision = "fp16"
+        except Exception as e:
+            print(f"[Planner] Failed to initialize FP8 manager: {e}")
+            self.use_fp8 = False
+            self.precision = "fp16"
 
     def check_llm_server_status(self) -> bool:
         """Check if LLM server is running"""
