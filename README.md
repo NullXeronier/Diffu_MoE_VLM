@@ -1,6 +1,7 @@
 # MC-Planner DEPS Simulator
 
-This project Simulates DEPS
+This project Simulates Open Ended Env
+## Updated: Exceed consume metric(EAT_PLANT) in PPO Actor with IMU data 
 
 ## Project Structure
 
