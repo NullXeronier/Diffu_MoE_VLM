@@ -2,6 +2,7 @@
 
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT) in PPO Actor with IMU data 
+https://wandb.ai/catted/Craftax_Baselines?nw=nwusercatted
 
 ## Project Structure
 
