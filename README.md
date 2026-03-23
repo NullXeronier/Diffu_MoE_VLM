@@ -3,8 +3,12 @@
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT) in PPO Actor with IMU data 
 https://wandb.ai/catted/Craftax_Baselines?nw=nwusercatted
-this
+this - with 3d trajectory time embedding
 <img width="906" height="397" alt="그림2" src="https://github.com/user-attachments/assets/2902ae83-2304-4ed9-914f-4ebd78411d2e" />
+
+trajectory
+<img width="743" height="786" alt="image" src="https://github.com/user-attachments/assets/b5e58bed-da63-49ea-bbd7-7b585fd69fac" />
+
 
 original paper
 <img width="1565" height="534" alt="image" src="https://github.com/user-attachments/assets/5954c521-06ba-44ef-b0ed-739e4570f083" />
