@@ -10,7 +10,9 @@ trajectory
 <img width="743" height="786" alt="image" src="https://github.com/user-attachments/assets/b5e58bed-da63-49ea-bbd7-7b585fd69fac" />
 
 
-original paper
+original paper: AN EFFICIENT OPEN WORLD ENVIRONMENT FOR MULTI-AGENT
+SOCIAL LEARNING
+
 <img width="1565" height="534" alt="image" src="https://github.com/user-attachments/assets/5954c521-06ba-44ef-b0ed-739e4570f083" />
 
 
