@@ -1,0 +1,43 @@
+Parse the following text and extract actionable goals for Minecraft gameplay.
+
+## Parsing Instructions
+
+Look for text that describes:
+1. **Action verbs**: obtain, mine, craft, get, collect, build, make
+2. **Target items**: specific Minecraft items or blocks
+3. **Sequential steps**: numbered or ordered instructions
+
+## Goal Format
+
+Extract goals in this format:
+- Each goal should be a single, actionable objective
+- Use standard Minecraft item names
+- Focus on concrete, achievable actions
+- Maintain logical sequence when present
+
+## Examples
+
+**Input Text**: "First mine some wood, then craft wooden planks, and finally make wooden slabs"
+
+**Extracted Goals**:
+- mine wood
+- obtain wooden planks  
+- obtain wooden slab
+
+**Input Text**: "To get stone stairs, you need to mine cobblestone with a pickaxe and then craft the stairs"
+
+**Extracted Goals**:
+- mine cobblestone
+- obtain stone stairs
+
+**Input Text**: "1. Find trees 2. Mine wood logs 3. Craft planks 4. Make sticks 5. Create wooden pickaxe"
+
+**Extracted Goals**:
+- mine wood
+- obtain wooden planks
+- obtain stick
+- obtain wooden pickaxe
+
+## Output Format
+
+List each extracted goal on a separate line, using simple action phrases that start with verbs like "obtain", "mine", "craft", or "get".

@@ -1,0 +1,21 @@
+# Secrets
+.env
+data/openai_keys.txt
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Experiment outputs
+outputs/
+results/
+benchmark_results/
+evaluation_results/
+videos/
+wandb/
+multirun/

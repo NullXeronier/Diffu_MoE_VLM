@@ -1,0 +1,197 @@
+# Benchmarking Configuration for Diffu_MoE_VLM
+# MineDojo-style evaluation settings
+
+defaults:
+  - data: planning
+  - eval: planning 
+  - goal_model: horizon
+  - model: simple
+  - mineclip: attn
+
+# Core simulator settings
+simulator:
+  resolution: [640, 480]
+  rgb_only: false
+  max_steps: 2000  # Increased for comprehensive evaluation
+
+# Evaluation settings with benchmarking
+eval:
+  env_name: "Plains"
+  max_steps: 2000
+  single_task: false  # Run full benchmark suite
+  task_name: "obtain_wooden_slab"  # Used only if single_task: true
+  output_dir: "./evaluation_results"
+
+# Comprehensive benchmarking settings
+benchmark:
+  enabled: true
+  output_dir: "./benchmark_results"
+  save_frequency: 10  # Save intermediate results every 10 tasks
+  max_history_files: 20  # Keep last 20 benchmark files
+  include_media: true  # Save screenshots and videos
+  media_frequency: 50  # Log media every 50 steps
+  
+  # Task selection for focused evaluation
+  task_categories:
+    - "survival"
+    - "harvest" 
+    - "mining"
+    - "tech_tree"
+    - "combat"
+    - "creative"
+  
+  # Difficulty levels to include
+  difficulties:
+    - "easy"
+    - "medium"
+    - "hard"
+  
+  # Specific tasks to prioritize (empty means all tasks)
+  priority_tasks: []
+
+# WandB logging configuration
+wandb:
+  enabled: true
+  project: "diffu-moe-vlm-minecraft-benchmark"
+  entity: null  # Set to your WandB entity if needed
+  tags:
+    - "minecraft"
+    - "planning"
+    - "vlm"
+    - "benchmark"
+    - "minedojo"
+  notes: "Comprehensive MineDojo-style benchmarking for Diffu_MoE_VLM"
+  
+  # Logging settings
+  log_frequency: 10  # Log metrics every 10 steps
+  save_code: true
+  monitor_gpu: true
+  log_gradients: false
+  log_parameters: false
+  
+  # Media logging
+  log_images: true
+  image_frequency: 100  # Log images every 100 steps
+  log_videos: false  # Disable video logging by default (large files)
+  
+  # Artifact settings
+  save_artifacts: true
+  artifact_types:
+    - "benchmark_results"
+    - "task_configs"
+    - "model_checkpoints"
+
+# Goal model settings for planning
+goal_model:
+  freq: 20  # Update goals every 20 steps
+  queue_size: 8  # Maintain up to 8 goals
+  use_ranking_goal: true
+  horizon_length: 100  # Planning horizon
+
+# Model settings
+model:
+  backbone_name: "simple"
+  use_horizon: true
+  load_ckpt_path: ""
+  
+  # Model evaluation settings
+  temperature: 0.1  # Low temperature for more deterministic behavior
+  top_k: 5
+  max_tokens: 512
+
+# Recording settings
+record:
+  frames: true
+  video_dir: "./benchmark_videos"
+  frame_frequency: 20  # Record every 20 frames
+  compress_videos: true
+
+# Resource management
+resources:
+  gpu_memory_limit: 0.8  # Use max 80% of GPU memory
+  cpu_workers: 4
+  max_parallel_tasks: 1  # Sequential task execution for consistent benchmarking
+  
+  # Timeout settings
+  task_timeout: 300  # 5 minutes per task maximum
+  episode_timeout: 120  # 2 minutes per episode maximum
+  planning_timeout: 30  # 30 seconds per planning cycle
+
+# Output and storage
+output:
+  base_dir: "./outputs"
+  experiment_name: "benchmark_suite"
+  timestamp_format: "%Y%m%d_%H%M%S"
+  
+  # Result formats
+  save_json: true
+  save_csv: true
+  save_plots: true
+  
+  # Cleanup settings
+  auto_cleanup: true
+  keep_last_n_experiments: 10
+
+# Debugging and development
+debug:
+  verbose: true
+  log_level: "INFO"
+  save_intermediate: false
+  debug_planning: false
+  profile_performance: false
+
+# Task-specific overrides
+task_overrides:
+  # Override settings for specific tasks
+  "defeat_ender_dragon":
+    max_steps: 50000  # Much longer for ultimate challenge
+    task_timeout: 3600  # 1 hour timeout
+  
+  "survive_3_days":
+    max_steps: 72000  # 3 full Minecraft days
+    task_timeout: 1800  # 30 minutes
+  
+  # Creative tasks get more steps
+  "build_castle":
+    max_steps: 10000
+    task_timeout: 600  # 10 minutes
+  
+  "build_house":
+    max_steps: 5000
+    task_timeout: 300  # 5 minutes
+
+# Advanced benchmarking features
+advanced:
+  # Statistical analysis
+  statistical_tests: true
+  confidence_interval: 0.95
+  min_samples_per_task: 3  # Run each task at least 3 times
+  
+  # Comparative analysis
+  baseline_comparison: false
+  baseline_results_path: ""
+  
+  # Performance profiling
+  profile_memory: false
+  profile_time: true
+  
+  # Error analysis
+  detailed_error_logging: true
+  save_failed_episodes: true
+  
+  # Reproducibility
+  random_seed: 42
+  deterministic_mode: true
+
+# LLM settings for planning
+llm:
+  api_base: "http://localhost:9999/v1"
+  model: "meta-llama/Llama-3.2-1B"
+  api_key: "DUMMY"
+  timeout: 30
+  max_retries: 3
+  
+  # Planning-specific settings
+  planning_temperature: 0.1
+  planning_max_tokens: 256
+  use_system_prompt: true

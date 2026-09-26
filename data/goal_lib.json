@@ -1,0 +1,130 @@
+{
+  "obtain_wooden_slab": {
+    "type": "craft",
+    "requirements": ["wooden_planks"],
+    "description": "Craft wooden slab from wooden planks using 2x2 crafting grid",
+    "recipe": {
+      "wooden_planks": 3
+    },
+    "output_quantity": 6,
+    "crafting_table_required": false
+  },
+  "obtain_stone_stairs": {
+    "type": "craft", 
+    "requirements": ["cobblestone"],
+    "description": "Craft stone stairs from cobblestone using 3x3 crafting grid",
+    "recipe": {
+      "cobblestone": 6
+    },
+    "output_quantity": 4,
+    "crafting_table_required": true
+  },
+  "obtain_painting": {
+    "type": "craft",
+    "requirements": ["stick", "wool"],
+    "description": "Craft painting from sticks and wool using 3x3 crafting grid",
+    "recipe": {
+      "stick": 8,
+      "wool": 1
+    },
+    "output_quantity": 1,
+    "crafting_table_required": true
+  },
+  "mine_cobblestone": {
+    "type": "mine",
+    "requirements": ["wooden_pickaxe"],
+    "description": "Mine cobblestone from stone blocks using wooden pickaxe or better",
+    "tool": "wooden_pickaxe",
+    "source_block": "stone",
+    "average_yield": 3
+  },
+  "mine_iron_ore": {
+    "type": "mine",
+    "requirements": ["stone_pickaxe"],
+    "description": "Mine iron ore using stone pickaxe or better",
+    "tool": "stone_pickaxe", 
+    "source_block": "iron_ore",
+    "average_yield": 2
+  },
+  "mine_diamond": {
+    "type": "mine",
+    "requirements": ["iron_pickaxe"],
+    "description": "Mine diamond using iron pickaxe or better",
+    "tool": "iron_pickaxe",
+    "source_block": "diamond_ore", 
+    "average_yield": 1
+  },
+  "obtain_wooden_planks": {
+    "type": "craft",
+    "requirements": ["wood"],
+    "description": "Craft wooden planks from wood logs",
+    "recipe": {
+      "wood": 1
+    },
+    "output_quantity": 4,
+    "crafting_table_required": false
+  },
+  "obtain_stick": {
+    "type": "craft",
+    "requirements": ["wooden_planks"],
+    "description": "Craft sticks from wooden planks",
+    "recipe": {
+      "wooden_planks": 2
+    },
+    "output_quantity": 4,
+    "crafting_table_required": false
+  },
+  "obtain_wooden_pickaxe": {
+    "type": "craft",
+    "requirements": ["wooden_planks", "stick"],
+    "description": "Craft wooden pickaxe from wooden planks and sticks",
+    "recipe": {
+      "wooden_planks": 3,
+      "stick": 2
+    },
+    "output_quantity": 1,
+    "crafting_table_required": true
+  },
+  "obtain_stone_pickaxe": {
+    "type": "craft",
+    "requirements": ["cobblestone", "stick"],
+    "description": "Craft stone pickaxe from cobblestone and sticks",
+    "recipe": {
+      "cobblestone": 3,
+      "stick": 2
+    },
+    "output_quantity": 1,
+    "crafting_table_required": true
+  },
+  "obtain_iron_pickaxe": {
+    "type": "craft",
+    "requirements": ["iron_ingot", "stick"],
+    "description": "Craft iron pickaxe from iron ingots and sticks",
+    "recipe": {
+      "iron_ingot": 3,
+      "stick": 2
+    },
+    "output_quantity": 1,
+    "crafting_table_required": true
+  },
+  "obtain_furnace": {
+    "type": "craft",
+    "requirements": ["cobblestone"],
+    "description": "Craft furnace from cobblestone",
+    "recipe": {
+      "cobblestone": 8
+    },
+    "output_quantity": 1,
+    "crafting_table_required": true
+  },
+  "obtain_crafting_table": {
+    "type": "craft",
+    "requirements": ["wooden_planks"],
+    "description": "Craft crafting table from wooden planks",
+    "recipe": {
+      "wooden_planks": 4
+    },
+    "output_quantity": 1,
+    "crafting_table_required": false
+  }
+}

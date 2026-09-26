@@ -1,0 +1,93 @@
+{
+  "obtain_wooden_slab": {
+    "group": "crafting",
+    "difficulty": "easy",
+    "estimated_steps": 50,
+    "preconditions": {
+      "wooden_planks": 3
+    },
+    "description": "Obtain a wooden slab by crafting from wooden planks",
+    "success_condition": "inventory contains wooden_slab"
+  },
+  "obtain_stone_stairs": {
+    "group": "crafting",
+    "difficulty": "medium", 
+    "estimated_steps": 100,
+    "preconditions": {
+      "cobblestone": 6,
+      "crafting_table": 1
+    },
+    "description": "Obtain stone stairs by crafting from cobblestone",
+    "success_condition": "inventory contains stone_stairs"
+  },
+  "obtain_painting": {
+    "group": "crafting",
+    "difficulty": "hard",
+    "estimated_steps": 200,
+    "preconditions": {
+      "stick": 8,
+      "wool": 1,
+      "crafting_table": 1
+    },
+    "description": "Obtain a painting by crafting from sticks and wool",
+    "success_condition": "inventory contains painting"
+  },
+  "mine_cobblestone": {
+    "group": "mining",
+    "difficulty": "easy",
+    "estimated_steps": 30,
+    "preconditions": {
+      "wooden_pickaxe": 1
+    },
+    "description": "Mine cobblestone from stone blocks",
+    "success_condition": "inventory contains cobblestone"
+  },
+  "mine_iron_ore": {
+    "group": "mining", 
+    "difficulty": "medium",
+    "estimated_steps": 80,
+    "preconditions": {
+      "stone_pickaxe": 1
+    },
+    "description": "Mine iron ore from underground",
+    "success_condition": "inventory contains iron_ore"
+  },
+  "mine_diamond": {
+    "group": "mining",
+    "difficulty": "hard", 
+    "estimated_steps": 150,
+    "preconditions": {
+      "iron_pickaxe": 1
+    },
+    "description": "Mine diamond from deep underground",
+    "success_condition": "inventory contains diamond"
+  },
+  "mine_wood": {
+    "group": "gathering",
+    "difficulty": "trivial",
+    "estimated_steps": 10,
+    "preconditions": {},
+    "description": "Mine wood from trees",
+    "success_condition": "inventory contains wood"
+  },
+  "obtain_wooden_planks": {
+    "group": "crafting",
+    "difficulty": "trivial", 
+    "estimated_steps": 5,
+    "preconditions": {
+      "wood": 1
+    },
+    "description": "Craft wooden planks from wood",
+    "success_condition": "inventory contains wooden_planks"
+  },
+  "obtain_stick": {
+    "group": "crafting",
+    "difficulty": "trivial",
+    "estimated_steps": 5,
+    "preconditions": {
+      "wooden_planks": 2
+    },
+    "description": "Craft sticks from wooden planks", 
+    "success_condition": "inventory contains stick"
+  }
+}

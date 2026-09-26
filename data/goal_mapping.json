@@ -1,0 +1,35 @@
+{
+  "mineclip": {
+    "obtain_wooden_slab": "a wooden slab block",
+    "obtain_stone_stairs": "stone stairs block",
+    "obtain_painting": "a painting artwork",
+    "mine_cobblestone": "cobblestone block",
+    "mine_iron_ore": "iron ore block",
+    "mine_diamond": "a diamond gem",
+    "mine_wood": "wood log block",
+    "obtain_wooden_planks": "wooden planks block",
+    "obtain_stick": "wooden stick item"
+  },
+  "clip": {
+    "obtain_wooden_slab": "wooden slab",
+    "obtain_stone_stairs": "stone stairs", 
+    "obtain_painting": "painting",
+    "mine_cobblestone": "cobblestone",
+    "mine_iron_ore": "iron ore",
+    "mine_diamond": "diamond",
+    "mine_wood": "wood",
+    "obtain_wooden_planks": "wooden planks",
+    "obtain_stick": "stick"
+  },
+  "horizon": {
+    "obtain_wooden_slab": "wooden_slab",
+    "obtain_stone_stairs": "stone_stairs",
+    "obtain_painting": "painting", 
+    "mine_cobblestone": "cobblestone",
+    "mine_iron_ore": "iron_ore",
+    "mine_diamond": "diamond",
+    "mine_wood": "wood",
+    "obtain_wooden_planks": "wooden_planks",
+    "obtain_stick": "stick"
+  }
+}

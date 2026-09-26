@@ -1,0 +1,28 @@
+# Planning-specific data configuration
+
+# Task configuration
+tasks:
+  enabled:
+    - "obtain_wooden_slab"
+    - "obtain_stone_stairs" 
+    - "obtain_painting"
+    - "mine_cobblestone"
+    - "mine_iron_ore"
+    - "mine_diamond"
+
+# Data paths
+data_dir: "./data"
+goal_lib_file: "goal_lib.json"
+task_info_file: "task_info.json"
+goal_mapping_file: "goal_mapping.json"
+
+# Prompt files
+prompts:
+  task_prompt: "task_prompt.txt"
+  replan_prompt: "deps_prompt.txt"
+  parse_prompt: "parse_prompt.txt"
+
+# Embedding settings
+embeddings:
+  cache_dir: "./embeddings"
+  dimension: 512

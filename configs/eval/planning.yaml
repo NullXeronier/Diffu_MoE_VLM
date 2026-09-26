@@ -1,0 +1,24 @@
+# Evaluation configuration for planning tasks
+
+# Environment settings
+env_name: "Plains"
+max_steps: 1000
+timeout: 300  # seconds
+
+# Task selection
+run_all_tasks: true
+specific_tasks:
+  - "obtain_wooden_slab"
+  - "obtain_stone_stairs"
+  - "obtain_painting"
+
+# Evaluation metrics
+metrics:
+  success_rate: true
+  completion_time: true
+  action_efficiency: true
+  
+# Output settings
+save_trajectories: true
+save_videos: false
+log_level: "INFO"
