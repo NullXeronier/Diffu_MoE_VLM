@@ -57,8 +57,8 @@ def test_wandb_integration():
             cfg = OmegaConf.create(test_config)
             
             # Test imports
-            from wandb_integration import WandBLogger, WandBIntegratedBenchmark
-            from benchmark_metrics import BenchmarkMetrics
+            from diffu_moe_vlm.wandb_integration import WandBLogger, WandBIntegratedBenchmark
+            from diffu_moe_vlm.benchmark_metrics import BenchmarkMetrics
             
             print("✓ Successfully imported WandB integration modules")
             

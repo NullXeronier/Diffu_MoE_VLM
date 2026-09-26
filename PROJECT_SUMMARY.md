@@ -12,12 +12,12 @@ Successfully migrated MC-Planner from MineDojo to Minecraft MDK environment with
 - ✅ Removed Java dependencies outside Minecraft MDK
 - ✅ Implemented modular design for better maintainability
 
-#### 2. **Environment Wrapper** (`src/gymnasium_env/`)
+#### 2. **Environment Wrapper** (`diffu_moe_vlm/env.py`)
 - ✅ `MinecraftGymnasiumEnv`: Gymnasium-compatible Minecraft environment
 - ✅ Action/observation space definitions
 - ✅ Compatibility layer for existing MineDojo API
 
-#### 3. **Core Components Reconstruction** (`src/minedojo_core/`)
+#### 3. **Core Components Reconstruction** (`diffu_moe_vlm/core.py`)
 - ✅ MinecraftConstants: Game constants and metadata
 - ✅ TaskRegistry: Task definitions without Java dependencies
 - ✅ DataManager: Data management without external dependencies
@@ -47,13 +47,13 @@ Successfully migrated MC-Planner from MineDojo to Minecraft MDK environment with
 - ✅ Separate configs for data, evaluation, goal models, etc.
 - ✅ Easy experiment customization
 
-#### 8. **Data Management** (`data/`)
+#### 8. **Data Management** (`diffu_moe_vlm/data/`)
 - ✅ Goal library with task definitions
 - ✅ Task information and metadata
 - ✅ Goal mappings for different models
 - ✅ Prompt templates for LLM interactions
 
-#### 9. **Utility Functions** (`src/utils/`, `src/models/`)
+#### 9. **Utility Functions** (`diffu_moe_vlm/utils.py`, `diffu_moe_vlm/models.py`)
 - ✅ Image processing utilities
 - ✅ Action normalization functions
 - ✅ Simple model implementations without heavy dependencies
@@ -94,7 +94,7 @@ python main.py
 
 **Test installation:**
 ```bash
-python -c "from src.gymnasium_env import MineDojoEnv; print('✓ Working')"
+python -c "from diffu_moe_vlm.env import MineDojoEnv; print('✓ Working')"
 ```
 
 ### 🔧 Local LLM Integration
@@ -106,18 +106,12 @@ python -c "from src.gymnasium_env import MineDojoEnv; print('✓ Working')"
 ### 📁 Project Structure
 ```
 .
-├── src/
-│   ├── minedojo_core/       # Core components
-│   ├── gymnasium_env/       # Environment wrapper  
-│   ├── models/             # Model implementations
-│   └── utils/              # Utility functions
+├── diffu_moe_vlm/          # Python package (core, env, planner, selector, controller, evaluator)
+│   └── data/               # Task data and prompts
 ├── configs/                # YAML configurations
-├── data/                   # Task data and prompts
+├── tests/                  # pytest suite
 ├── main.py                 # Main entry point
-├── planner.py             # Planning module
-├── selector.py            # Goal selection
-├── controller.py          # Action control
-└── requirements.txt       # Dependencies
+└── pyproject.toml          # Package metadata and dependencies
 ```
 
 ### 🎉 Key Achievements

@@ -5,7 +5,8 @@ Goal selection and horizon planning without Java dependencies
 
 import random
 from typing import List, Dict, Any, Optional
-import numpy as np
+
+from .core import action_requirements, apply_action, goal_item, obtain_method
 
 
 class Selector:
@@ -14,9 +15,15 @@ class Selector:
     Implements various selection strategies for goal prioritization
     """
     
-    def __init__(self, strategy: str = "priority"):
+    STRATEGIES = ["plan_order", "priority", "random", "round_robin", "dependency"]
+
+    def __init__(self, strategy: str = "plan_order", priorities: Optional[Dict[str, float]] = None):
+        if strategy not in self.STRATEGIES:
+            raise ValueError(f"Invalid strategy {strategy!r}. Must be one of: {self.STRATEGIES}")
         self.strategy = strategy
         self.goal_priorities = self._initialize_priorities()
+        if priorities:
+            self.goal_priorities.update(priorities)
         self.selection_history = []
         
     def _initialize_priorities(self) -> Dict[str, float]:
@@ -53,23 +60,15 @@ class Selector:
         if inventory is None:
             return True  # No inventory check
         
-        # Define preconditions for common goals
-        preconditions = {
-            "mine_cobblestone": {"wooden_pickaxe": 1},
-            "mine_iron_ore": {"stone_pickaxe": 1},
-            "mine_diamond": {"iron_pickaxe": 1},
-            "obtain_wooden_slab": {"wooden_planks": 3},
-            "obtain_stone_stairs": {"cobblestone": 6},
-            "obtain_painting": {"stick": 8, "wool": 1},
-            "obtain_wooden_pickaxe": {"wooden_planks": 3, "stick": 2},
-            "obtain_stone_pickaxe": {"cobblestone": 3, "stick": 2},
-            "obtain_iron_pickaxe": {"iron_ingot": 3, "stick": 2},
-        }
+        item = goal_item(goal)
+        verb = obtain_method(item)
+        if verb is None:
+            return False
         
-        goal_preconditions = preconditions.get(goal, {})
-        
-        for item, required_amount in goal_preconditions.items():
-            if inventory.get(item, 0) < required_amount:
+        # Direct requirements of one action from the tech tree
+        tools, consumed = action_requirements(verb, item)
+        for req, required_amount in {**tools, **consumed}.items():
+            if inventory.get(req, 0) < required_amount:
                 return False
         
         return True
@@ -90,10 +89,10 @@ class Selector:
             if self.check_precondition(goal, inventory):
                 candidates.append(goal)
         
-        # If no goals meet preconditions, include some basic goals
+        # If no goal is directly executable, keep the earliest one; the controller
+        # gathers its prerequisites
         if not candidates:
-            basic_goals = ["mine_wood", "mine_stone", "obtain_wooden_pickaxe"]
-            candidates = [goal for goal in basic_goals if goal in goal_list]
+            candidates = goal_list[:1]
         
         # Limit candidates
         return candidates[:max_candidates]
@@ -110,7 +109,9 @@ class Selector:
         if len(candidate_goal_list) == 1:
             selected = candidate_goal_list[0]
         else:
-            if self.strategy == "priority":
+            if self.strategy == "plan_order":
+                selected = candidate_goal_list[0]
+            elif self.strategy == "priority":
                 selected = self._priority_select(candidate_goal_list)
             elif self.strategy == "random":
                 selected = self._random_select(candidate_goal_list)
@@ -194,11 +195,10 @@ class Selector:
     
     def set_strategy(self, strategy: str):
         """Change selection strategy"""
-        valid_strategies = ["priority", "random", "round_robin", "dependency"]
-        if strategy in valid_strategies:
+        if strategy in self.STRATEGIES:
             self.strategy = strategy
         else:
-            raise ValueError(f"Invalid strategy. Must be one of: {valid_strategies}")
+            raise ValueError(f"Invalid strategy. Must be one of: {self.STRATEGIES}")
     
     def update_priorities(self, new_priorities: Dict[str, float]):
         """Update goal priorities"""
@@ -229,8 +229,9 @@ class HorizonSelector(Selector):
     Advanced selector with horizon planning capabilities
     """
     
-    def __init__(self, horizon: int = 3, strategy: str = "priority"):
-        super().__init__(strategy)
+    def __init__(self, horizon: int = 3, strategy: str = "plan_order",
+                 priorities: Optional[Dict[str, float]] = None):
+        super().__init__(strategy, priorities)
         self.horizon = horizon
         self.planned_sequence = []
         
@@ -297,23 +298,23 @@ class HorizonSelector(Selector):
     def _select_best_for_state(self, candidates: List[str], 
                               inventory: Dict[str, int]) -> str:
         """Select best goal for current inventory state"""
-        # Use dependency-based selection
-        return self._dependency_select(candidates, inventory)
+        # Prefer goals that are directly executable in the simulated state
+        executable = [g for g in candidates if self.check_precondition(g, inventory)] or candidates
+        if self.strategy == "plan_order":
+            return executable[0]
+        return self._dependency_select(executable, inventory)
     
     def _simulate_goal_completion(self, goal: str, 
                                  inventory: Dict[str, int]) -> Dict[str, int]:
         """Simulate inventory changes after goal completion"""
-        new_inventory = inventory.copy()
-        
-        # Simple simulation of goal outcomes
-        if goal == "mine_wood":
-            new_inventory["wood"] = new_inventory.get("wood", 0) + 4
-        elif goal == "mine_cobblestone":
-            new_inventory["cobblestone"] = new_inventory.get("cobblestone", 0) + 3
-        elif goal == "obtain_wooden_pickaxe":
-            new_inventory["wooden_pickaxe"] = new_inventory.get("wooden_pickaxe", 0) + 1
-            # Consume materials
-            new_inventory["wooden_planks"] = max(0, new_inventory.get("wooden_planks", 0) - 3)
-            new_inventory["stick"] = max(0, new_inventory.get("stick", 0) - 2)
-        
+        item = goal_item(goal)
+        verb = obtain_method(item)
+        if verb is None:
+            return inventory.copy()
+        new_inventory, _, _ = apply_action(inventory, verb, item)
         return new_inventory
+    
+    def reset(self):
+        """Reset selector state, including the planned horizon sequence"""
+        super().reset()
+        self.planned_sequence = []

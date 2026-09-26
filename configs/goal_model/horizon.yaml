@@ -1,7 +1,7 @@
 # Horizon-based goal model configuration
 
 # Goal selection strategy
-strategy: "priority"  # priority, random, round_robin, dependency
+strategy: "plan_order"  # plan_order, priority, random, round_robin, dependency
 
 # Horizon planning
 horizon: 3

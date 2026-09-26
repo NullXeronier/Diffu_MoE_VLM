@@ -83,7 +83,7 @@ llm:
 ### Basic Usage
 
 ```python
-from planner import Planner
+from diffu_moe_vlm.planner import Planner
 
 # Initialize planner with FP8 support
 planner = Planner()
@@ -99,7 +99,7 @@ response = planner.query_llm(
 ### Advanced Usage with FP8Manager
 
 ```python
-from fp8_utils import create_fp8_manager, validate_fp8_environment
+from diffu_moe_vlm.fp8_utils import create_fp8_manager, validate_fp8_environment
 
 # Validate environment
 env_status = validate_fp8_environment()

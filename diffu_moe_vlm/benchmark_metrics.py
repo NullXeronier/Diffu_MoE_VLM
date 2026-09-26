@@ -140,7 +140,7 @@ class BenchmarkMetrics:
     
     def __init__(self, output_dir: str = "./benchmark_results"):
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize metric tracking
         self.current_episode_metrics = None
@@ -208,10 +208,13 @@ class BenchmarkMetrics:
         self.current_episode_metrics.inventory_diversity = len(inventory)
         
         # Track crafting and mining events
-        if action.get('craft', 0) > 0:
+        # Symbolic macro actions ({'type': 'craft', ...}) only count when they succeeded
+        action_type = action.get('type')
+        action_ok = info.get('action_success', True)
+        if action.get('craft', 0) > 0 or (action_type in ('craft', 'smelt') and action_ok):
             self.current_episode_metrics.crafting_events += 1
             
-        if action.get('attack', 0) > 0:
+        if action.get('attack', 0) > 0 or (action_type == 'mine' and action_ok):
             self.current_episode_metrics.mining_events += 1
         
         # Update tech tree progression

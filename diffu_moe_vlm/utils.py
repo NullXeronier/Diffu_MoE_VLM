@@ -2,7 +2,6 @@
 Utility functions for MC-Planner migration
 """
 
-import torch
 import numpy as np
 from typing import Dict, List, Any, Optional, Tuple
 import cv2

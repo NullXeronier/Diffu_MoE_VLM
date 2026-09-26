@@ -19,118 +19,93 @@ SOCIAL LEARNING
 
 ```text
 .
-├── src/
-│   ├── minedojo_core/          # Core minedojo components (data, sim, tasks)
-│   ├── gymnasium_env/          # Gymnasium environment wrapper
-│   ├── models/                 # Model implementations
-│   ├── utils/                  # Utility functions
-│   └── __init__.py
-├── configs/                    # Configuration files
-├── data/                       # Data files and prompts
-├── main.py                     # Main execution script
-├── planner.py                  # Planning module
-├── selector.py                 # Selection module
-├── controller.py               # Controller module
-├── requirements.txt            # Python dependencies
-└── README.md
+├── diffu_moe_vlm/
+│   ├── core.py               # Tech tree (recipes, tools), tasks, plan parsing, data loading
+│   ├── env.py                # Symbolic Minecraft environment (Gymnasium API)
+│   ├── planner.py            # LLM planner with rule-based fallback (DEPS: describe/explain/plan)
+│   ├── selector.py           # Sub-goal selection (plan_order, priority, dependency, horizon)
+│   ├── controller.py         # Goal-conditioned controller producing macro actions
+│   ├── evaluator.py          # DEPS evaluation loop and benchmark bookkeeping
+│   ├── benchmark_metrics.py  # MineDojo-style metrics
+│   ├── wandb_integration.py  # Weights & Biases logging
+│   ├── fp8_utils.py          # Optional FP8 / TensorRT-LLM support
+│   └── data/                 # Goal library, task info, prompts
+├── configs/                  # Hydra configuration
+├── tests/                    # pytest suite
+├── main.py                   # Entry point
+└── pyproject.toml
 ```
 
-## Features
+## How the baseline works
 
-- **Java Dependency Removal**: Minimized Java dependencies outside Minecraft MDK
-- **Gymnasium Integration**: Migrated from MineDojo to gymnasium environment
-- **Modular Design**: Separated core components for better maintainability
-- **Configuration-based**: Experiment configuration through YAML files
-- **Optimized Execution**: Streamlined for research and experimentation
+1. **Environment** (`env.py`): a symbolic tech-tree world. Actions are macros such as
+   `{'type': 'mine', 'item': 'wood'}` or `{'type': 'craft', 'item': 'stick'}`; they succeed only when
+   the required tools and ingredients are in the inventory (e.g. cobblestone needs a wooden pickaxe,
+   an iron ingot needs a furnace and coal). There is no 3D world yet: RGB/depth observations are blank
+   frames kept for interface compatibility.
+2. **Planner** (`planner.py`): asks an OpenAI-compatible LLM for a plan. If the LLM is disabled or
+   unreachable, a rule-based planner derives the plan from the tech tree (quantity aware, e.g.
+   `Mine cobblestone x6`). Plans are parsed into sub-goals such as `mine_wood`, `obtain_stick`.
+3. **Selector** (`selector.py`): picks the next sub-goal among pending ones.
+4. **Controller** (`controller.py`): turns the sub-goal into actions. With
+   `controller.auto_prerequisites=true` it gathers missing tools/ingredients itself; with `false` it
+   only attempts the sub-goal, so success depends on plan quality.
+5. **Replanning** (`evaluator.py`): repeated action failures or a stuck sub-goal trigger a replan
+   with the current inventory and the failure message.
+
+Baseline (rule-based planner, default config): 6/6 default tasks succeed, e.g. `obtain_wooden_slab`
+in 3 steps and `mine_diamond` in 34 steps.
 
 ## Installation
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Install in development mode
-pip install -e .
+pip install -e .            # core (CPU only, no torch needed)
+pip install -e ".[dev]"     # + pytest
+pip install -e ".[ml]"      # + torch / transformers for model and FP8 code
 ```
 
 ## Usage
 
 ```bash
-# Run with default configuration
+# All default tasks
 python main.py
 
-# Run single task
-python main.py eval.single_task=true eval.task_name=obtain_wooden_slab
+# Single task
+python main.py eval.single_task=true eval.task_name=obtain_stone_pickaxe
 
-# Run with custom configuration
-python main.py --config-path configs --config-name custom
+# Offline, without an LLM server or WandB
+python main.py llm.enabled=false wandb.enabled=false
 
-# Test core functionality
-python -c "
-import sys; sys.path.append('src')
-from src.gymnasium_env import MineDojoEnv
-from planner import Planner
-from selector import Selector
-print('All modules working correctly')
-"
+# Ablations
+python main.py controller.auto_prerequisites=false   # plan quality must carry the task
+python main.py env.action_failure_prob=0.3           # noisy low-level control, exercises replanning
+python main.py goal_model.strategy=priority          # plan_order | priority | random | round_robin | dependency
+
+# Tests
+pytest
 ```
 
-## Quick Start
-
-1. **Clone and install**:
-
-   ```bash
-   git clone <repository>
-   cd Simulator-master
-   pip install -r requirements.txt
-   ```
-
-2. **Test the installation**:
-
-   ```bash
-   python -c "from src.gymnasium_env import MineDojoEnv; print('✓ Installation successful')"
-   ```
-
-3. **Run a simple task**:
-
-   ```bash
-   python main.py eval.single_task=true eval.task_name=obtain_wooden_slab
-   ```
+Results are written to `output_dir` (default `./outputs`): `results.json` or `result_<task>.json`.
 
 ## Local LLM Setup
 
-For planning functionality, you can use a local LLM:
+The planner talks to an OpenAI-compatible `/chat/completions` endpoint. Configure it in
+`configs/defaults.yaml` (`llm:` section) or with environment variables, which take precedence:
 
 ```bash
-# Set environment variables
 export LLM_API_BASE="http://localhost:8000/v1"
 export LLM_MODEL="local-llama3"
 export LLM_API_KEY="DUMMY"
-
 # Or copy .env.example to .env (never commit API keys)
 ```
 
-## Components
+## Data
 
-### Core Modules
-
-- **main.py**: Main entry point and experiment orchestration
-- **planner.py**: LLM-based planning with local model support
-- **selector.py**: Goal selection and horizon planning
-- **controller.py**: Action execution and environment interaction
-
-### Configuration
-
-All experiments can be configured through YAML files in the `configs/` directory.
-
-### Data
-
-The `data/` directory contains:
-
-- Task definitions and prompts
-- Goal mappings and libraries
-- Pre-computed embeddings
+`diffu_moe_vlm/data/` contains the goal library, goal mappings, task info and the prompt templates
+used by the planner.
 
 ## Development
 
-This project is designed for research in multi-task agents using large language models in Minecraft environments.
+This project is designed for research in multi-task agents using large language models in Minecraft
+environments. Next steps: a real (pixel-based) Minecraft backend, and VLM / MoE / diffusion policy
+modules in place of the scripted controller.

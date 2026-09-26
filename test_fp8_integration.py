@@ -12,8 +12,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent))
 
-from fp8_utils import validate_fp8_environment, create_fp8_manager
-from planner import Planner
+from diffu_moe_vlm.fp8_utils import validate_fp8_environment, create_fp8_manager
+from diffu_moe_vlm.planner import Planner
 
 
 def test_fp8_environment():

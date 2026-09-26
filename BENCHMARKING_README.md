@@ -59,9 +59,9 @@ MineDojo-compatible task system:
 ### Basic Integration
 
 ```python
-from benchmark_metrics import BenchmarkMetrics
-from wandb_integration import WandBLogger, WandBIntegratedBenchmark
-from minedojo_tasks import create_task_adapter
+from diffu_moe_vlm.benchmark_metrics import BenchmarkMetrics
+from diffu_moe_vlm.wandb_integration import WandBLogger, WandBIntegratedBenchmark
+from diffu_moe_vlm.minedojo_tasks import create_task_adapter
 
 # Initialize benchmarking
 benchmark_metrics = BenchmarkMetrics("./benchmark_results")
