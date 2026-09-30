@@ -3,16 +3,18 @@
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT, MAKE...) in PPO Actor with IMU data 
 this - with 3d trajectory time embedding
-<img width="906" height="397" alt="그림2" src="https://github.com/user-attachments/assets/2902ae83-2304-4ed9-914f-4ebd78411d2e" />
+
+<img width="906" alt="Achievements: make_iron_sword / make_iron_pickaxe / make_iron_armour" src="docs/images/achievements_make_iron.png" />
+<img width="450" alt="Achievements: collect_diamond" src="docs/images/achievements_collect_diamond.png" />
 
 trajectory
-<img width="743" height="786" alt="image" src="https://github.com/user-attachments/assets/b5e58bed-da63-49ea-bbd7-7b585fd69fac" />
 
+<img width="600" alt="3D movement trajectory (left hand, right hand, head)" src="docs/images/trajectory_3d.png" />
 
 original paper: AN EFFICIENT OPEN WORLD ENVIRONMENT FOR MULTI-AGENT
 SOCIAL LEARNING
 
-<img width="1565" height="534" alt="image" src="https://github.com/user-attachments/assets/5954c521-06ba-44ef-b0ed-739e4570f083" />
+<img width="1000" alt="Achievement success rates from the original paper" src="docs/images/paper_achievements_heatmap.png" />
 
 
 ## Project Structure
