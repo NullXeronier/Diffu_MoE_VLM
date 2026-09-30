@@ -13,9 +13,9 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent))
 
-from benchmark_metrics import BenchmarkMetrics, TaskResult, EpisodeMetrics
-from wandb_integration import WandBLogger, WandBIntegratedBenchmark
-from minedojo_tasks import TaskRegistry, create_task_adapter
+from diffu_moe_vlm.benchmark_metrics import BenchmarkMetrics, TaskResult, EpisodeMetrics
+from diffu_moe_vlm.wandb_integration import WandBLogger, WandBIntegratedBenchmark
+from diffu_moe_vlm.minedojo_tasks import TaskRegistry, create_task_adapter
 
 
 def test_benchmark_metrics():

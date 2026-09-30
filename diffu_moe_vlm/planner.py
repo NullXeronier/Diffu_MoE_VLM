@@ -7,7 +7,8 @@ import os
 import json
 import requests
 from typing import Dict, List, Any, Optional
-from pathlib import Path
+
+from .core import DATA_DIR, parse_plan_to_goals, plan_steps
 
 
 class Planner:
@@ -18,12 +19,20 @@ class Planner:
     def __init__(self,
                  api_base: Optional[str] = None,
                  model: Optional[str] = None,
-                 api_key: Optional[str] = None):
+                 api_key: Optional[str] = None,
+                 enabled: bool = True,
+                 timeout: float = 30.0):
         self.dialogue = ''
         self.logging_dialogue = ''
+        self.target: Optional[str] = None
+        
+        # When the LLM is disabled or unreachable, the rule-based fallback planner is used
+        self.llm_enabled = enabled
+        self.llm_available = enabled
+        self.timeout = timeout
         
         # Load configuration
-        self.data_dir = Path(__file__).parent / "data"
+        self.data_dir = DATA_DIR
         self.goal_lib = self.load_goal_lib()
         self.supported_objects = self.get_supported_objects(self.goal_lib)
         
@@ -46,11 +55,12 @@ class Planner:
         """Reset planner state"""
         self.dialogue = ''
         self.logging_dialogue = ''
+        self.target = None
 
     def init_fp8_manager(self):
         """Initialize FP8 manager if available"""
         try:
-            from fp8_utils import create_fp8_manager
+            from .fp8_utils import create_fp8_manager
             self.fp8_manager = create_fp8_manager()
             print(f"[Planner] FP8 manager initialized for model: {self.llm_model}")
         except ImportError:
@@ -177,96 +187,11 @@ Focus on the most efficient path to achieve the goal given current resources.
         else:
             return "Parse the following text and extract actionable goals:"
     
-    # def _post_completion(self, prompt_text: str, temperature: float = 0.0, 
-    #                     max_tokens: int = 512, stop: Optional[List[str]] = None) -> str:
-    #     """Post completion request to local LLM"""
-    #     try:
-    #         response = requests.post(
-    #             f"{self.llm_api_base}/completions",
-    #             headers={
-    #                 "Authorization": f"Bearer {self.llm_api_key}",
-    #                 "Content-Type": "application/json"
-    #             },
-    #             json={
-    #                 "model": self.llm_model,
-    #                 "prompt": prompt_text,
-    #                 "temperature": temperature,
-    #                 "max_tokens": max_tokens,
-    #                 "stop": stop
-    #             },
-    #             timeout=30
-    #         )
-            
-    #         if response.status_code == 200:
-    #             result = response.json()
-    #             return result.get("choices", [{}])[0].get("text", "").strip()
-    #         else:
-    #             print(f"[Warning] LLM API error: {response.status_code}")
-    #             return self._fallback_response(prompt_text)
-                
-    #     except Exception as e:
-    #         print(f"[Warning] LLM API connection failed: {e}")
-    #         return self._fallback_response(prompt_text)
-
-    """
-    def _post_completion(self, prompt_text: str, temperature: float = 0.0, 
-                        max_tokens: int = 512, stop: Optional[List[str]] = None) -> str:
-        #Post completion request to local LLM with improved error handling
-        
-        # 재시도 로직 추가
-        max_retries = 3
-        base_timeout = 60  # 타임아웃 증가
-        
-        for attempt in range(max_retries):
-            try:
-                timeout = base_timeout * (attempt + 1)  # 점진적 타임아웃 증가
-                
-                response = requests.post(
-                    f"{self.llm_api_base}/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.llm_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": self.llm_model,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": prompt_text
-                            }
-                        ],
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
-                        "stop": stop,
-                        "do_sample": True if temperature > 0 else False,
-                        "stream": False
-                    },
-                    timeout=timeout
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    return result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                else:
-                    print(f"[Warning] LLM API error: {response.status_code} - {response.text}")
-                    if attempt == max_retries - 1:
-                        return self._fallback_response(prompt_text)
-                    
-            except requests.exceptions.Timeout:
-                print(f"[Warning] LLM API timeout on attempt {attempt + 1}/{max_retries}")
-                if attempt == max_retries - 1:
-                    return self._fallback_response(prompt_text)
-                    
-            except Exception as e:
-                print(f"[Warning] LLM API connection failed on attempt {attempt + 1}: {e}")
-                if attempt == max_retries - 1:
-                    return self._fallback_response(prompt_text)
-        
-        return self._fallback_response(prompt_text)
-    """
     def _post_completion(self, prompt_text: str, temperature: float = 0.0, 
                     max_tokens: int = 512, stop: Optional[List[str]] = None) -> str:
         """Post completion request to local LLM"""
+        if not self.llm_available:
+            return self._fallback_response(prompt_text)
         try:
             response = requests.post(
                 f"{self.llm_api_base}/chat/completions",  # Changed from /completions
@@ -288,7 +213,7 @@ Focus on the most efficient path to achieve the goal given current resources.
                     "do_sample": True if temperature > 0 else False,
                     "stream": False
                 },
-                timeout=30
+                timeout=self.timeout
             )
             
             if response.status_code == 200:
@@ -299,22 +224,36 @@ Focus on the most efficient path to achieve the goal given current resources.
                 print(f"[Warning] LLM API error: {response.status_code} - {response.text}")
                 return self._fallback_response(prompt_text)
                 
+        except requests.exceptions.ConnectionError as e:
+            # Endpoint is down: stop retrying for the rest of the run
+            print(f"[Warning] LLM API unreachable ({self.llm_api_base}); using rule-based planner: {e}")
+            self.llm_available = False
+            return self._fallback_response(prompt_text)
         except Exception as e:
-            print(f"[Warning] LLM API connection failed: {e}")
+            print(f"[Warning] LLM API request failed: {e}")
             return self._fallback_response(prompt_text)
 
     
-    def _fallback_response(self, prompt_text: str) -> str:
-        """Fallback response when LLM is unavailable"""
-        # Simple rule-based fallback
-        if "wooden_slab" in prompt_text.lower():
-            return "1. Find trees\n2. Mine wood\n3. Craft wooden planks\n4. Craft wooden slab"
-        elif "stone_stairs" in prompt_text.lower():
-            return "1. Find stone\n2. Mine cobblestone\n3. Craft stone stairs"
-        elif "painting" in prompt_text.lower():
-            return "1. Find trees\n2. Mine wood\n3. Craft wooden planks\n4. Craft sticks\n5. Find sheep\n6. Get wool\n7. Craft painting"
-        else:
+    def _fallback_response(self, prompt_text: str, inventory: Optional[Dict[str, int]] = None) -> str:
+        """Rule-based plan from the tech tree when the LLM is unavailable"""
+        if self.target is None:
             return "1. Assess current situation\n2. Gather required materials\n3. Craft or mine target item"
+        return self.format_plan(plan_steps(self.target, inventory))
+    
+    @staticmethod
+    def format_plan(steps) -> str:
+        """Format (verb, item) steps as a numbered plan, grouping repeats as xN"""
+        grouped = []
+        for step in steps:
+            if grouped and grouped[-1][0] == step:
+                grouped[-1][1] += 1
+            else:
+                grouped.append([step, 1])
+        lines = []
+        for i, ((verb, item), count) in enumerate(grouped, start=1):
+            suffix = f" x{count}" if count > 1 else ""
+            lines.append(f"{i}. {verb.capitalize()} {item.replace('_', ' ')}{suffix}")
+        return "\n".join(lines)
     
     def query_llm(self, prompt_text: str) -> str:
         """Query local LLM"""
@@ -345,37 +284,17 @@ Focus on the most efficient path to achieve the goal given current resources.
         return obj in self.supported_objects
     
     def generate_goal_list(self, plan: str) -> List[str]:
-        """Generate goal list from plan"""
-        goals = self.online_parser(plan)
-        
-        # Filter and normalize goals
-        filtered_goals = []
-        for goal in goals:
-            # Normalize goal format
-            goal_lower = goal.lower()
-            
-            # Map common patterns to standard format
-            if "wood" in goal_lower and "slab" in goal_lower:
-                filtered_goals.append("obtain_wooden_slab")
-            elif "stone" in goal_lower and "stairs" in goal_lower:
-                filtered_goals.append("obtain_stone_stairs")
-            elif "painting" in goal_lower:
-                filtered_goals.append("obtain_painting")
-            elif "cobblestone" in goal_lower:
-                filtered_goals.append("mine_cobblestone")
-            elif "iron" in goal_lower and "ore" in goal_lower:
-                filtered_goals.append("mine_iron_ore")
-            elif "diamond" in goal_lower:
-                filtered_goals.append("mine_diamond")
-            else:
-                # Keep original goal if it looks valid
-                if any(keyword in goal_lower for keyword in ['obtain', 'mine', 'craft']):
-                    filtered_goals.append(goal)
-        
-        return filtered_goals
+        """Generate canonical goal list (e.g. mine_wood, obtain_stick) from a plan"""
+        goals = parse_plan_to_goals(plan)
+        if not goals and self.llm_available:
+            # Plan text had no recognizable items; ask the LLM to restate it as goals
+            goals = parse_plan_to_goals("\n".join(self.online_parser(plan)))
+        return goals
     
-    def initial_planning(self, group: str, task_question: str) -> str:
+    def initial_planning(self, group: str, task_question: str, target: Optional[str] = None) -> str:
         """Generate initial plan for task"""
+        if target is not None:
+            self.target = target
         prompt = self.load_initial_planning_prompt(group)
         full_prompt = f"{prompt}\n\nTask: {task_question}\nPlan:"
         
@@ -417,9 +336,12 @@ Focus on the most efficient path to achieve the goal given current resources.
         explanation_prompt = f"Explain the following plan:\n\n{self.dialogue}\n\nExplanation:"
         return self.query_llm(explanation_prompt)
     
-    def replan(self, task_question: str, inventory_desc: str = "") -> str:
-        """Replan based on current state"""
+    def replan(self, task_question: str, inventory_desc: str = "",
+               inventory: Optional[Dict[str, int]] = None, failure_desc: str = "") -> str:
+        """Replan based on current state (DEPS describe/explain/plan step)"""
         context = f"Previous dialogue:\n{self.dialogue}\n"
+        if failure_desc:
+            context += f"Failure: {failure_desc}\n"
         if inventory_desc:
             context += f"Current situation: {inventory_desc}\n"
         
@@ -429,7 +351,10 @@ Focus on the most efficient path to achieve the goal given current resources.
 
 New plan:"""
         
-        new_plan = self.query_llm(replan_prompt)
+        if self.llm_available:
+            new_plan = self.query_llm(replan_prompt)
+        else:
+            new_plan = self._fallback_response(replan_prompt, inventory)
         
         # Update dialogue
         self.dialogue += f"Replan for: {task_question}\nNew plan: {new_plan}\n\n"

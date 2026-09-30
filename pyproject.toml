@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diffu-moe-vlm"
+version = "0.2.0"
+description = "DEPS-style LLM planning agent on a symbolic Minecraft tech tree"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.21.0",
+    "gymnasium>=0.29.0",
+    "opencv-python>=4.5.0",
+    "omegaconf>=2.2.0",
+    "hydra-core>=1.2.0",
+    "pyyaml>=6.0",
+    "requests>=2.28.0",
+    "wandb>=0.15.0",
+]
+
+[project.optional-dependencies]
+ml = ["torch>=2.0.0", "transformers>=4.20.0", "pillow>=9.0.0"]
+dev = ["pytest>=7.0.0", "black>=22.0.0", "flake8>=5.0.0"]
+
+[tool.setuptools.packages.find]
+include = ["diffu_moe_vlm*"]
+
+[tool.setuptools.package-data]
+diffu_moe_vlm = ["data/*.json", "data/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -262,7 +262,7 @@ class FP8ModelManager:
 def create_fp8_manager(config_path: Optional[str] = None) -> FP8ModelManager:
     """Create FP8 model manager from configuration"""
     if config_path is None:
-        config_path = Path(__file__).parent / "configs" / "fp8_model.yaml"
+        config_path = Path(__file__).resolve().parent.parent / "configs" / "fp8_model.yaml"
     
     import yaml
     

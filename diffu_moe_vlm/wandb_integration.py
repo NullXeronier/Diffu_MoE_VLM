@@ -9,7 +9,7 @@ import wandb
 import numpy as np
 from typing import Dict, List, Any, Optional, Union
 from pathlib import Path
-from benchmark_metrics import BenchmarkMetrics, TaskResult, EpisodeMetrics, BenchmarkSuite
+from .benchmark_metrics import BenchmarkMetrics, TaskResult, EpisodeMetrics, BenchmarkSuite
 
 
 class WandBLogger:
@@ -354,7 +354,7 @@ class WandBLogger:
     
     def _get_task_category(self, task_id: str) -> str:
         """Get task category for logging"""
-        from benchmark_metrics import MinecraftTaskCategories
+        from .benchmark_metrics import MinecraftTaskCategories
         return MinecraftTaskCategories.get_task_category(task_id)
     
     def _calculate_category_success_rate(self, task_type: str) -> float:

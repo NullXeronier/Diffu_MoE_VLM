@@ -21,6 +21,18 @@ eval:
   single_task: false
   task_name: "obtain_wooden_slab"
   output_dir: "./results"
+  max_replans: 5             # replanning budget per episode
+  replan_after_failures: 3   # consecutive failed actions before replanning
+  max_goal_steps: 50         # steps allowed on one sub-goal before replanning
+
+# Symbolic tech-tree environment
+env:
+  seed: 0
+  action_failure_prob: 0.0   # >0 makes valid actions fail randomly (imperfect control)
+
+# Goal-conditioned controller
+controller:
+  auto_prerequisites: true   # false: only execute the selected goal (tests plan quality)
 
 # Goal model settings
 goal_model:
@@ -48,11 +60,13 @@ pretrains:
 output_dir: "./outputs"
 experiment_name: "mc_planner_migration"
 
-# Local LLM settings
+# Local LLM settings (falls back to the rule-based planner when disabled or unreachable)
 llm:
+  enabled: true
   api_base: "http://localhost:8000/v1"
   model: "local-llama3"
   api_key: "DUMMY"
+  timeout: 30
 
 # WandB settings
 wandb:

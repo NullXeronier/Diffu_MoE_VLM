@@ -10,8 +10,8 @@ tasks:
     - "mine_iron_ore"
     - "mine_diamond"
 
-# Data paths
-data_dir: "./data"
+# Data paths (packaged under diffu_moe_vlm/data)
+data_dir: "diffu_moe_vlm/data"
 goal_lib_file: "goal_lib.json"
 task_info_file: "task_info.json"
 goal_mapping_file: "goal_mapping.json"
