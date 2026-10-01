@@ -1,0 +1,49 @@
+# PPO with an MoE actor-critic on Crafter (python train_ppo.py)
+seed: 0
+device: auto              # auto | cpu | cuda
+torch_threads: null       # e.g. 2 on small CPUs to leave cores for env workers
+output_dir: ./runs/ppo
+
+env:
+  size: 64
+  length: 10000
+  num_workers: null       # null: one process per env; 0: run envs in-process
+
+model:
+  encoder:
+    name: cnn             # cnn | vit | pretrained
+    feature_dim: 256
+    # pretrained_model: openai/clip-vit-base-patch32   # for name=pretrained (or a SigLIP model)
+    # freeze: true
+  trunk: moe              # moe | mlp (dense ablation)
+  hidden_dim: 512
+  num_layers: 2
+  num_experts: 4
+  top_k: 2
+  trajectory: null        # e.g. {num_joints: 3, out_dim: 128} to condition on 3D trajectory / IMU input
+
+ppo:
+  total_steps: 1000000
+  num_envs: 8
+  rollout_length: 128
+  epochs: 4
+  minibatches: 8
+  lr: 3.0e-4
+  gamma: 0.95
+  gae_lambda: 0.65
+  clip: 0.2
+  value_coef: 0.5
+  entropy_coef: 0.01
+  moe_aux_coef: 0.01
+  max_grad_norm: 0.5
+  anneal_lr: true
+  log_window: 100
+
+checkpoint_every: 50      # updates
+eval_episodes: 20
+eval_num_envs: 4
+
+wandb:
+  enabled: false
+  project: diffu-moe-vlm-crafter
+  tags: [crafter, ppo, moe]

@@ -1,0 +1,16 @@
+# Policy evaluation on Crafter (python evaluate_policy.py policy=<checkpoint|random>)
+seed: 100
+device: auto              # auto | cpu | cuda
+torch_threads: null       # e.g. 2 on small CPUs to leave cores for env workers
+policy: random
+episodes: 20
+num_envs: 4
+deterministic: false
+execute_steps: 4
+sample_steps: 10
+output_dir: ./runs/eval
+
+env:
+  size: 64
+  length: 10000
+  num_workers: null

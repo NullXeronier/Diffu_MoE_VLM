@@ -1,0 +1,41 @@
+# Diffusion policy behavior cloning on Crafter (python train_diffusion.py)
+seed: 0
+device: auto              # auto | cpu | cuda
+torch_threads: null       # e.g. 2 on small CPUs to leave cores for env workers
+output_dir: ./runs/diffusion
+
+env:
+  size: 64
+  length: 10000
+  num_workers: null
+
+demos:
+  path: null                # existing demos.npz (obs, actions, episode); skips collection
+  policy_checkpoint: null   # PPO checkpoint used as the teacher; random policy if null
+  num_steps: 50000
+  num_envs: 8
+
+model:
+  encoder:
+    name: cnn
+    feature_dim: 256
+  horizon: 8                # actions per diffusion sample
+  num_diffusion_steps: 50
+  hidden_dim: 512
+  depth: 4
+
+train:
+  steps: 10000
+  batch_size: 128
+  lr: 3.0e-4
+
+eval:
+  episodes: 20
+  num_envs: 4
+  execute_steps: 4          # receding horizon: execute this many sampled actions, then resample
+  sample_steps: 10          # strided DDIM steps (null = full DDPM)
+
+wandb:
+  enabled: false
+  project: diffu-moe-vlm-crafter
+  tags: [crafter, diffusion, bc]

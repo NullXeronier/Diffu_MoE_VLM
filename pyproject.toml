@@ -21,6 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ml = ["torch>=2.0.0", "transformers>=4.20.0", "pillow>=9.0.0"]
+rl = ["torch>=2.0.0", "crafter>=1.8.0"]
 dev = ["pytest>=7.0.0", "black>=22.0.0", "flake8>=5.0.0"]
 
 [tool.setuptools.packages.find]

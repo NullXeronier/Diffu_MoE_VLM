@@ -28,13 +28,20 @@ SOCIAL LEARNING
 │   ├── selector.py           # Sub-goal selection (plan_order, priority, dependency, horizon)
 │   ├── controller.py         # Goal-conditioned controller producing macro actions
 │   ├── evaluator.py          # DEPS evaluation loop and benchmark bookkeeping
+│   ├── crafter_env.py        # Crafter (Gymnasium) wrapper, achievement success rates and score
+│   ├── imu.py                # 3D trajectory / IMU data format and synthetic generator
+│   ├── nn/                   # encoders (CNN/ViT/CLIP/SigLIP), MoE, time embedding, policy, diffusion
+│   ├── rl/                   # PPO, diffusion BC, vectorized envs, rollouts, checkpoints
 │   ├── benchmark_metrics.py  # MineDojo-style metrics
 │   ├── wandb_integration.py  # Weights & Biases logging
 │   ├── fp8_utils.py          # Optional FP8 / TensorRT-LLM support
 │   └── data/                 # Goal library, task info, prompts
 ├── configs/                  # Hydra configuration
 ├── tests/                    # pytest suite
-├── main.py                   # Entry point
+├── main.py                   # Planner (DEPS) evaluation entry point
+├── train_ppo.py              # PPO + MoE training on Crafter
+├── train_diffusion.py        # Diffusion policy behavior cloning on Crafter
+├── evaluate_policy.py        # Policy evaluation (achievements, Crafter score)
 └── pyproject.toml
 ```
 
@@ -64,6 +71,7 @@ in 3 steps and `mine_diamond` in 34 steps.
 pip install -e .            # core (CPU only, no torch needed)
 pip install -e ".[dev]"     # + pytest
 pip install -e ".[ml]"      # + torch / transformers for model and FP8 code
+pip install -e ".[rl]"      # + torch / crafter for learned policies
 ```
 
 ## Usage
@@ -89,6 +97,55 @@ pytest
 
 Results are written to `output_dir` (default `./outputs`): `results.json` or `result_<task>.json`.
 
+## Learned policies on Crafter
+
+[Crafter](https://github.com/danijar/crafter) gives 64x64 pixel observations, 17 actions and the
+22 achievements used in the figures above (EAT_PLANT, MAKE_IRON_PICKAXE, COLLECT_DIAMOND, ...).
+
+```
+image (64x64x3) -> visual encoder ------------------+
+                   cnn | vit | pretrained CLIP/SigLIP|
+3D trajectory / IMU (B,T,J,3) + timestamps          +-> MoE trunk (top-k experts) -> policy / value heads (PPO)
+                   -> TrajectoryEncoder (optional) -+
+
+image -> encoder -> diffusion denoiser (FiLM) -> action chunk (H x 17 one-hot) -> receding-horizon execution
+```
+
+- **Encoders** (`nn/encoders.py`): small CNN and ViT trained from scratch; `pretrained` wraps a
+  HuggingFace CLIP/SigLIP vision tower (frozen by default).
+- **MoE** (`nn/moe.py`): top-k noisy gating with a Switch-style load-balancing loss
+  (`ppo.moe_aux_coef`); expert load is logged per layer. `model.trunk=mlp` is the dense ablation.
+- **PPO** (`rl/ppo.py`): clipped PPO with GAE; logs return, achievement success rates and the
+  Crafter score (geometric mean of success rates).
+- **Diffusion policy** (`nn/diffusion.py`, `rl/diffusion_bc.py`): DDPM over one-hot action chunks
+  with clean-sample prediction, trained by behavior cloning on demonstrations from a PPO teacher;
+  sampling supports full DDPM or strided DDIM steps.
+- **3D trajectory / IMU** (`nn/time_embedding.py`, `imu.py`): multi-joint positions plus velocities
+  with a continuous-time embedding of (irregular) timestamps and a transformer encoder. Data is
+  `.npz` with `positions (N,T,J,3)`, `timestamps (N,T)`, optional `mask`/`labels`;
+  `make_synthetic_trajectories` generates hand/head motions in this format. Set `model.trajectory`
+  to condition the policy on it (Crafter itself has no IMU stream).
+
+```bash
+python train_ppo.py ppo.total_steps=1000000                       # runs/ppo/checkpoint.pt, eval.json
+python train_ppo.py model.encoder.name=vit model.trunk=mlp        # ablations
+python train_diffusion.py demos.policy_checkpoint=runs/ppo/checkpoint.pt
+python evaluate_policy.py policy=runs/diffusion/checkpoint.pt episodes=50
+python evaluate_policy.py policy=random                           # baseline
+```
+
+Smoke-scale results (4-core CPU, single seed, 20 evaluation episodes on the same worlds; far from
+converged, Crafter runs usually use 1M+ steps):
+
+| Policy | Training | Return | Crafter score |
+|---|---|---|---|
+| Random | - | 1.25 | 1.56 |
+| PPO, CNN + MoE (4 experts, top-2) | 100k env steps | 3.60 | 4.63 |
+| Diffusion BC (horizon 8, 10 DDIM steps) | 20k PPO demo steps, 3k updates | 3.55 | 3.56 |
+
+Each run writes `metrics.jsonl`, `checkpoint.pt` (weights + model config, reloadable with
+`diffu_moe_vlm.rl.checkpoint.load_policy`) and `eval.json`. Set `wandb.enabled=true` to log to W&B.
+
 ## Local LLM Setup
 
 The planner talks to an OpenAI-compatible `/chat/completions` endpoint. Configure it in
@@ -109,5 +166,5 @@ used by the planner.
 ## Development
 
 This project is designed for research in multi-task agents using large language models in Minecraft
-environments. Next steps: a real (pixel-based) Minecraft backend, and VLM / MoE / diffusion policy
-modules in place of the scripted controller.
+environments. Open items: connecting the learned Crafter policies to the DEPS planner as low-level
+skills, real IMU recordings in the trajectory format above, and longer GPU training runs.
