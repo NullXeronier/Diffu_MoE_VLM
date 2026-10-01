@@ -1,0 +1,602 @@
+{
+ "source": "W&B report 'Craftax_Baselines' (Craftax-wandb.zip), values read off the chart images at the end of training (~15.2k updates = 1e9 env steps). Ranges cover the finished/plotted runs and chart reading error; they are approximate.",
+ "env_name": "Craftax-Symbolic-v1",
+ "total_timesteps": 1000000000,
+ "runs": {
+  "ppo": {
+   "description": "Craftax-Symbolic-v1-1000M (3 plotted feed-forward PPO runs)",
+   "metrics": {
+    "episode_return": [
+     24,
+     30
+    ],
+    "episode_length": [
+     450,
+     620
+    ],
+    "achievements": [
+     20,
+     23.5
+    ],
+    "Achievements/collect_wood": [
+     97,
+     100
+    ],
+    "Achievements/place_table": [
+     97,
+     100
+    ],
+    "Achievements/make_wood_pickaxe": [
+     95,
+     100
+    ],
+    "Achievements/make_wood_sword": [
+     80,
+     97
+    ],
+    "Achievements/collect_sapling": [
+     85,
+     100
+    ],
+    "Achievements/place_plant": [
+     85,
+     100
+    ],
+    "Achievements/collect_drink": [
+     80,
+     95
+    ],
+    "Achievements/eat_cow": [
+     70,
+     92
+    ],
+    "Achievements/collect_stone": [
+     93,
+     100
+    ],
+    "Achievements/place_stone": [
+     88,
+     99
+    ],
+    "Achievements/collect_coal": [
+     80,
+     95
+    ],
+    "Achievements/make_stone_pickaxe": [
+     70,
+     92
+    ],
+    "Achievements/make_stone_sword": [
+     80,
+     97
+    ],
+    "Achievements/place_furnace": [
+     85,
+     97
+    ],
+    "Achievements/place_torch": [
+     80,
+     95
+    ],
+    "Achievements/make_torch": [
+     85,
+     97
+    ],
+    "Achievements/make_arrow": [
+     65,
+     88
+    ],
+    "Achievements/collect_iron": [
+     55,
+     80
+    ],
+    "Achievements/make_iron_pickaxe": [
+     2,
+     35
+    ],
+    "Achievements/make_iron_sword": [
+     2,
+     55
+    ],
+    "Achievements/collect_diamond": [
+     2,
+     15
+    ],
+    "Achievements/collect_ruby": [
+     1,
+     12
+    ],
+    "Achievements/collect_sapphire": [
+     1,
+     10
+    ],
+    "Achievements/eat_plant": [
+     1,
+     12
+    ],
+    "Achievements/defeat_zombie": [
+     50,
+     78
+    ],
+    "Achievements/defeat_skeleton": [
+     50,
+     78
+    ],
+    "Achievements/wake_up": [
+     45,
+     85
+    ],
+    "Achievements/enter_dungeon": [
+     35,
+     62
+    ],
+    "Achievements/open_chest": [
+     35,
+     62
+    ],
+    "Achievements/find_bow": [
+     35,
+     62
+    ],
+    "Achievements/fire_bow": [
+     15,
+     45
+    ],
+    "Achievements/defeat_orc_solider": [
+     25,
+     50
+    ],
+    "Achievements/defeat_orc_mage": [
+     15,
+     40
+    ],
+    "Achievements/eat_snail": [
+     30,
+     55
+    ],
+    "Achievements/drink_potion": [
+     20,
+     45
+    ],
+    "Achievements/learn_fireball": [
+     0,
+     1
+    ],
+    "Achievements/learn_iceball": [
+     0,
+     1
+    ],
+    "Achievements/cast_fireball": [
+     0,
+     1
+    ],
+    "Achievements/cast_iceball": [
+     0,
+     1
+    ],
+    "Achievements/enter_vault": [
+     0,
+     1
+    ],
+    "Achievements/enter_troll_mines": [
+     0,
+     1
+    ],
+    "Achievements/enter_sewers": [
+     0,
+     1
+    ],
+    "Achievements/enter_ice_realm": [
+     0,
+     1
+    ],
+    "Achievements/enter_graveyard": [
+     0,
+     1
+    ],
+    "Achievements/enter_fire_realm": [
+     0,
+     1
+    ],
+    "Achievements/enchant_sword": [
+     0,
+     1
+    ],
+    "Achievements/enchant_armour": [
+     0,
+     1
+    ],
+    "Achievements/defeat_pigman": [
+     0,
+     1
+    ],
+    "Achievements/defeat_necromancer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_lizard": [
+     0,
+     1
+    ],
+    "Achievements/defeat_kobold": [
+     0,
+     1
+    ],
+    "Achievements/defeat_knight": [
+     0,
+     1
+    ],
+    "Achievements/defeat_ice_elemental": [
+     0,
+     1
+    ],
+    "Achievements/defeat_gnome_archer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_gnome_warrior": [
+     0,
+     1
+    ],
+    "Achievements/defeat_frost_troll": [
+     0,
+     1
+    ],
+    "Achievements/defeat_fire_elemental": [
+     0,
+     1
+    ],
+    "Achievements/defeat_deep_thing": [
+     0,
+     1
+    ],
+    "Achievements/defeat_archer": [
+     0,
+     1
+    ],
+    "Achievements/damage_necromancer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_troll": [
+     0,
+     1
+    ],
+    "Achievements/make_diamond_armour": [
+     0,
+     1
+    ],
+    "Achievements/eat_bat": [
+     0,
+     1
+    ],
+    "Achievements/enter_gnomish_mines": [
+     0,
+     2
+    ],
+    "Achievements/make_iron_armour": [
+     0,
+     3
+    ],
+    "Achievements/make_diamond_sword": [
+     0,
+     5
+    ],
+    "Achievements/make_diamond_pickaxe": [
+     0,
+     6
+    ]
+   }
+  },
+  "ppo_rnn": {
+   "description": "Craftax-Symbolic-v1-PPO_RNN-1000M (1 run)",
+   "metrics": {
+    "episode_return": [
+     34,
+     40
+    ],
+    "episode_length": [
+     320,
+     430
+    ],
+    "achievements": [
+     23.5,
+     26.5
+    ],
+    "Achievements/collect_wood": [
+     97,
+     100
+    ],
+    "Achievements/place_table": [
+     97,
+     100
+    ],
+    "Achievements/make_wood_pickaxe": [
+     95,
+     100
+    ],
+    "Achievements/make_wood_sword": [
+     80,
+     97
+    ],
+    "Achievements/collect_sapling": [
+     85,
+     100
+    ],
+    "Achievements/place_plant": [
+     85,
+     100
+    ],
+    "Achievements/collect_drink": [
+     80,
+     95
+    ],
+    "Achievements/eat_cow": [
+     60,
+     85
+    ],
+    "Achievements/collect_stone": [
+     93,
+     100
+    ],
+    "Achievements/place_stone": [
+     88,
+     99
+    ],
+    "Achievements/collect_coal": [
+     80,
+     95
+    ],
+    "Achievements/make_stone_pickaxe": [
+     70,
+     92
+    ],
+    "Achievements/make_stone_sword": [
+     80,
+     97
+    ],
+    "Achievements/place_furnace": [
+     85,
+     97
+    ],
+    "Achievements/place_torch": [
+     80,
+     95
+    ],
+    "Achievements/make_torch": [
+     85,
+     97
+    ],
+    "Achievements/make_arrow": [
+     65,
+     88
+    ],
+    "Achievements/collect_iron": [
+     55,
+     80
+    ],
+    "Achievements/make_iron_pickaxe": [
+     8,
+     30
+    ],
+    "Achievements/make_iron_sword": [
+     25,
+     50
+    ],
+    "Achievements/collect_diamond": [
+     8,
+     22
+    ],
+    "Achievements/collect_ruby": [
+     5,
+     18
+    ],
+    "Achievements/collect_sapphire": [
+     5,
+     20
+    ],
+    "Achievements/eat_plant": [
+     1,
+     12
+    ],
+    "Achievements/defeat_zombie": [
+     25,
+     50
+    ],
+    "Achievements/defeat_skeleton": [
+     25,
+     50
+    ],
+    "Achievements/wake_up": [
+     45,
+     85
+    ],
+    "Achievements/enter_dungeon": [
+     80,
+     96
+    ],
+    "Achievements/open_chest": [
+     80,
+     96
+    ],
+    "Achievements/find_bow": [
+     80,
+     96
+    ],
+    "Achievements/fire_bow": [
+     65,
+     85
+    ],
+    "Achievements/defeat_orc_solider": [
+     60,
+     80
+    ],
+    "Achievements/defeat_orc_mage": [
+     45,
+     68
+    ],
+    "Achievements/eat_snail": [
+     65,
+     85
+    ],
+    "Achievements/drink_potion": [
+     55,
+     75
+    ],
+    "Achievements/learn_fireball": [
+     0,
+     1
+    ],
+    "Achievements/learn_iceball": [
+     0,
+     1
+    ],
+    "Achievements/cast_fireball": [
+     0,
+     1
+    ],
+    "Achievements/cast_iceball": [
+     0,
+     1
+    ],
+    "Achievements/enter_vault": [
+     0,
+     1
+    ],
+    "Achievements/enter_troll_mines": [
+     0,
+     1
+    ],
+    "Achievements/enter_sewers": [
+     0,
+     1
+    ],
+    "Achievements/enter_ice_realm": [
+     0,
+     1
+    ],
+    "Achievements/enter_graveyard": [
+     0,
+     1
+    ],
+    "Achievements/enter_fire_realm": [
+     0,
+     1
+    ],
+    "Achievements/enchant_sword": [
+     0,
+     1
+    ],
+    "Achievements/enchant_armour": [
+     0,
+     1
+    ],
+    "Achievements/defeat_pigman": [
+     0,
+     1
+    ],
+    "Achievements/defeat_necromancer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_lizard": [
+     0,
+     1
+    ],
+    "Achievements/defeat_kobold": [
+     0,
+     1
+    ],
+    "Achievements/defeat_knight": [
+     0,
+     1
+    ],
+    "Achievements/defeat_ice_elemental": [
+     0,
+     1
+    ],
+    "Achievements/defeat_gnome_archer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_gnome_warrior": [
+     0,
+     1
+    ],
+    "Achievements/defeat_frost_troll": [
+     0,
+     1
+    ],
+    "Achievements/defeat_fire_elemental": [
+     0,
+     1
+    ],
+    "Achievements/defeat_deep_thing": [
+     0,
+     1
+    ],
+    "Achievements/defeat_archer": [
+     0,
+     1
+    ],
+    "Achievements/damage_necromancer": [
+     0,
+     1
+    ],
+    "Achievements/defeat_troll": [
+     0,
+     1
+    ],
+    "Achievements/make_diamond_armour": [
+     0,
+     1
+    ],
+    "Achievements/eat_bat": [
+     0,
+     1
+    ],
+    "Achievements/enter_gnomish_mines": [
+     0,
+     2
+    ],
+    "Achievements/make_iron_armour": [
+     0,
+     3
+    ],
+    "Achievements/make_diamond_sword": [
+     0,
+     5
+    ],
+    "Achievements/make_diamond_pickaxe": [
+     0,
+     6
+    ]
+   }
+  },
+  "ppo_icm_reference_failure": {
+   "description": "Craftax-Symbolic-v1-1000M with ICM (purple): collapsed, kept to recognise the failure mode",
+   "metrics": {
+    "episode_return": [
+     -1,
+     1
+    ],
+    "episode_length": [
+     300,
+     380
+    ],
+    "achievements": [
+     0,
+     2
+    ],
+    "Achievements/collect_wood": [
+     25,
+     50
+    ],
+    "Achievements/place_table": [
+     0,
+     2
+    ]
+   }
+  }
+ }
+}
