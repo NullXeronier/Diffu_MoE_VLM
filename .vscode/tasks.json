@@ -4,7 +4,7 @@
         {
             "label": "Run MC-Planner Demo",
             "type": "shell",
-            "command": "conda run -p /home/epikskool/miniconda3 --no-capture-output python main.py eval.single_task=true eval.task_name=obtain_wooden_slab",
+            "command": "conda run -p ${env:HOME}/miniconda3 --no-capture-output python main.py eval.single_task=true eval.task_name=obtain_wooden_slab",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -22,7 +22,7 @@
         {
             "label": "Run All Tasks",
             "type": "shell", 
-            "command": "conda run -p /home/epikskool/miniconda3 --no-capture-output python main.py",
+            "command": "conda run -p ${env:HOME}/miniconda3 --no-capture-output python main.py",
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -37,7 +37,7 @@
         {
             "label": "Install Development Dependencies",
             "type": "shell",
-            "command": "conda run -p /home/epikskool/miniconda3 --no-capture-output python -m pip install -e .",
+            "command": "conda run -p ${env:HOME}/miniconda3 --no-capture-output python -m pip install -e .",
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -50,7 +50,7 @@
         {
             "label": "Test Environment Setup",
             "type": "shell",
-            "command": "conda run -p /home/epikskool/miniconda3 --no-capture-output python -c \"from src.gymnasium_env import MineDojoEnv; from planner import Planner; from selector import Selector; print('All modules imported successfully')\"",
+            "command": "conda run -p ${env:HOME}/miniconda3 --no-capture-output python -c \"from src.gymnasium_env import MineDojoEnv; from planner import Planner; from selector import Selector; print('All modules imported successfully')\"",
             "group": "test",
             "presentation": {
                 "echo": true,
