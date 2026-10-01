@@ -1,0 +1,4 @@
+- +single_task=true
+- eval.max_steps=5
+- simulator.max_steps=5
+- wandb.enabled=false

@@ -1,0 +1,2 @@
+- wandb.enabled=true
+- wandb.project=DEPS-sample
