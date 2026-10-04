@@ -1,4 +1,4 @@
-# MC-Planner DEPS Simulator
+# MC-Planner Describe, Explain, Plan and Select Simulator
 
 Project page and research note (English / 한국어): [`docs/index.html`](docs/index.html), [`docs/ko/index.html`](docs/ko/index.html) (GitHub Pages, served from `docs/`).
 
@@ -30,10 +30,10 @@ SOCIAL LEARNING
 ├── diffu_moe_vlm/
 │   ├── core.py               # Tech tree (recipes, tools), tasks, plan parsing, data loading
 │   ├── env.py                # Symbolic Minecraft environment (Gymnasium API)
-│   ├── planner.py            # LLM planner with rule-based fallback (DEPS: describe/explain/plan)
+│   ├── planner.py            # LLM planner with rule-based fallback (Describe, Explain, Plan and Select)
 │   ├── selector.py           # Sub-goal selection (plan_order, priority, dependency, horizon)
 │   ├── controller.py         # Goal-conditioned controller producing macro actions
-│   ├── evaluator.py          # DEPS evaluation loop and benchmark bookkeeping
+│   ├── evaluator.py          # Describe, Explain, Plan and Select evaluation loop and benchmark bookkeeping
 │   ├── crafter_env.py        # Crafter (Gymnasium) wrapper, achievement success rates and score
 │   ├── imu.py                # 3D trajectory / IMU data format and synthetic generator
 │   ├── nn/                   # encoders (CNN/ViT/CLIP/SigLIP), MoE, time embedding, policy, diffusion
@@ -44,7 +44,7 @@ SOCIAL LEARNING
 │   └── data/                 # Goal library, task info, prompts
 ├── configs/                  # Hydra configuration
 ├── tests/                    # pytest suite
-├── main.py                   # Planner (DEPS) evaluation entry point
+├── main.py                   # Planner (Describe, Explain, Plan and Select) evaluation entry point
 ├── train_ppo.py              # PPO + MoE training on Crafter
 ├── train_diffusion.py        # Diffusion policy behavior cloning on Crafter
 ├── evaluate_policy.py        # Policy evaluation (achievements, Crafter score)
@@ -203,5 +203,5 @@ used by the planner.
 ## Development
 
 This project is designed for research in multi-task agents using large language models in Minecraft
-environments. Open items: connecting the learned Crafter policies to the DEPS planner as low-level
+environments. Open items: connecting the learned Crafter policies to the Describe, Explain, Plan and Select planner as low-level
 skills, real IMU recordings in the trajectory format above, and longer GPU training runs.

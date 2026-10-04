@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "diffu-moe-vlm"
 version = "0.2.0"
-description = "DEPS-style LLM planning agent on a symbolic Minecraft tech tree"
+description = "LLM planning agent in the Describe, Explain, Plan and Select style on a symbolic Minecraft tech tree"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

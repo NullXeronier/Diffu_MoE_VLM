@@ -338,7 +338,7 @@ Focus on the most efficient path to achieve the goal given current resources.
     
     def replan(self, task_question: str, inventory_desc: str = "",
                inventory: Optional[Dict[str, int]] = None, failure_desc: str = "") -> str:
-        """Replan based on current state (DEPS describe/explain/plan step)"""
+        """Replan based on current state (Describe, Explain, Plan and Select: describe, explain and plan step)"""
         context = f"Previous dialogue:\n{self.dialogue}\n"
         if failure_desc:
             context += f"Failure: {failure_desc}\n"

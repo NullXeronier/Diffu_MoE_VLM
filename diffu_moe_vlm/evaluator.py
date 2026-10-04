@@ -1,5 +1,5 @@
 """
-DEPS-style evaluation loop: Describe, Explain, Plan and Select.
+Evaluation loop in the Describe, Explain, Plan and Select style.
 
 For each task the planner proposes a plan, which is parsed into sub-goals.
 The selector picks the next sub-goal, the controller acts on it until it is
@@ -127,7 +127,7 @@ class Evaluator:
         return plan, goal_list
 
     def single_task_evaluate(self, task: Optional[str] = None) -> Dict[str, Any]:
-        """Run one episode of the DEPS loop on a task"""
+        """Run one episode of the Describe, Explain, Plan and Select loop on a task"""
         task = task or self.task_list[0]
         task_def = task_registry.get_task(task)
         if task_def is None:

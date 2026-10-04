@@ -1,5 +1,5 @@
 """
-Diffu_MoE_VLM: DEPS-style planning agent on a symbolic Minecraft tech tree.
+Diffu_MoE_VLM: planning agent in the Describe, Explain, Plan and Select style on a symbolic Minecraft tech tree.
 
 Submodules are imported lazily so that light-weight components (env, core,
 controller) do not pull in optional heavy dependencies such as torch or wandb.
