@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diffu-MoE-VLM</title>
-<meta name="description" content="Planning and learning agents for open-world crafting games: a DEPS-style LLM planner, MoE / diffusion policies on Crafter, and a reproducible Craftax pipeline in JAX.">
+<meta name="description" content="Planning and learning agents for open-world crafting games: an LLM planner in the Describe, Explain, Plan and Select style, MoE / diffusion policies on Crafter, and a reproducible Craftax pipeline in JAX.">
 <link rel="icon" href="data:,">
 <link rel="alternate" hreflang="ko" href="ko/">
 <link rel="stylesheet" href="assets/site.css">
@@ -44,7 +44,7 @@
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>This project started from a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds, but whose environment returned random pixels and ignored every action. It became three tested pipelines: a <b>DEPS-style LLM planner</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
+    <p>This project started from a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds, but whose environment returned random pixels and ignored every action. It became three tested pipelines: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
     <p>The final claim is intentionally narrow. On a 4-core CPU the pipelines learn, are deterministic, and resume bit-for-bit after interruption. Matching the reference end-of-training numbers needs the GPU run that this setup reduces to one command.</p>
     <p>Everything was built end-to-end in one repository: the audit, environments, agents, training infrastructure, 58 automated tests and this page.</p>
   </section>
@@ -62,7 +62,7 @@
       </div>
       <div class="kr">
         <span class="chip">Planning</span>
-        <h3>Quantity-aware DEPS loop</h3>
+        <h3>Quantity-aware Describe, Explain, Plan and Select loop</h3>
         <div class="k">Measured result</div>
         <p>A plan that skips steps fails after the <b>5-replan budget</b> when the controller only executes the chosen sub-goal, and succeeds when the controller gathers prerequisites. This ablation separates plan quality from control quality.</p>
         <div class="k">What I learned</div>
@@ -105,7 +105,7 @@
 
   <section id="architecture">
     <h2>System Architecture</h2>
-    <div class="card diagram" role="img" aria-label="System overview with three tracks: DEPS planning on a symbolic tech tree, PyTorch policies on Crafter, and JAX training on Craftax">
+    <div class="card diagram" role="img" aria-label="System overview with three tracks: Describe, Explain, Plan and Select planning on a symbolic tech tree, PyTorch policies on Crafter, and JAX training on Craftax">
       <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -114,7 +114,7 @@
         </defs>
         <!-- Lane A: planning -->
         <rect class="lane" x="0" y="0" width="900" height="150" rx="10"/>
-        <text class="lane-t" x="16" y="24">A · PLANNING (DEPS) — symbolic tech tree</text>
+        <text class="lane-t" x="16" y="24">A · PLANNING (Describe, Explain, Plan and Select) — symbolic tech tree</text>
         <rect class="box accent" x="16" y="52" width="150" height="58" rx="8"/>
         <text class="t" x="91" y="77" text-anchor="middle">LLM planner</text>
         <text class="s" x="91" y="95" text-anchor="middle">or rule-based fallback</text>
@@ -247,7 +247,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
   <section id="key-features">
     <h2>Key Features</h2>
 
-    <h3>1. Tech-tree environment and DEPS loop</h3>
+    <h3>1. Tech-tree environment and Describe, Explain, Plan and Select loop</h3>
     <p>The planner proposes a plan, a parser turns it into sub-goals (<code>Mine cobblestone x6</code>), a selector picks the next one, and the controller acts. Repeated failures, or a sub-goal that takes too long, trigger a replan that includes the inventory and the error message. Every rule lives in one pure function, so the environment, the controller's prerequisite search and the rule-based planner all share it.</p>
     <div class="code-title">diffu_moe_vlm/core.py</div>
 <pre><code>def apply_action(inventory, verb, item):
@@ -416,7 +416,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <table>
         <thead><tr><th>Metric</th><th>Value</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and DEPS loop are functional end to end</td></tr>
+          <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and Describe, Explain, Plan and Select loop are functional end to end</td></tr>
           <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO learns from pixels within 100k steps</td></tr>
           <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>Baseline config learns on CPU in 6.55M steps</td></tr>
           <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Runs can be interrupted without changing results</td></tr>
@@ -457,7 +457,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <h4>Models</h4>
     <ul class="ink-2">
       <li>Port the diffusion policy to the JAX path and compare MoE vs. dense trunks at scale.</li>
-      <li>Use the learned policies as low-level skills under the DEPS planner.</li>
+      <li>Use the learned policies as low-level skills under the Describe, Explain, Plan and Select planner.</li>
       <li>Connect real IMU recordings in the trajectory format.</li>
     </ul>
   </section>

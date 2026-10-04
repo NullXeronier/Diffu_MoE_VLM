@@ -255,7 +255,7 @@ blockquote { margin: 14px 0; padding: 10px 14px; border-left: 3px solid var(--ax
 .why { border-left: 3px solid var(--accent); background: var(--callout); border-radius: 0 8px 8px 0; padding: 10px 14px; }
 .intuition { border-left: 3px solid var(--axis); background: var(--surface); border-radius: 0 8px 8px 0; padding: 10px 14px; color: var(--ink-2); }
 .article h3 { margin-top: 30px; }
-table.glossary td:first-child { white-space: nowrap; font-weight: 600; }
+table.glossary td:first-child { min-width: 9.5em; max-width: 13em; font-weight: 600; }
 table.glossary td:last-child a { white-space: nowrap; }
 @media (max-width: 560px) {
   table.glossary thead { display: none; }

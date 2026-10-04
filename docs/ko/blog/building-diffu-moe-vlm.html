@@ -63,7 +63,7 @@
         <tr><td>MDP · 정책 · 리턴</td><td>상태를 보고 행동을 고르는 함수가 정책 \(\pi\), 보상의 할인 합이 리턴이다. 이 노트의 모든 학습은 기대 리턴을 키우는 것이 목표다.</td><td><a href="http://incompleteideas.net/book/the-book-2nd.html">Sutton &amp; Barto</a></td></tr>
         <tr><td>PPO</td><td>정책이 한 번에 너무 많이 바뀌지 않도록 업데이트 크기를 잘라내는 정책 경사 알고리즘.</td><td><a href="https://arxiv.org/abs/1707.06347">Schulman+ 2017</a></td></tr>
         <tr><td>GAE</td><td>행동이 평균보다 얼마나 좋았는지(이점)를 여러 스텝의 TD 오차를 섞어 추정한다.</td><td><a href="https://arxiv.org/abs/1506.02438">Schulman+ 2015</a></td></tr>
-        <tr><td>DEPS</td><td>LLM이 계획을 쓰고, 실패하면 실패 설명을 받아 계획을 고치는 Minecraft 에이전트 구조.</td><td><a href="https://arxiv.org/abs/2302.01560">Wang+ 2023</a></td></tr>
+        <tr><td>Describe, Explain, Plan and Select</td><td>LLM이 계획을 쓰고, 실패하면 실패 설명을 받아 계획을 고치는 Minecraft 에이전트 구조.</td><td><a href="https://arxiv.org/abs/2302.01560">Wang+ 2023</a></td></tr>
         <tr><td>Mixture of Experts</td><td>여러 '전문가' 네트워크 중 게이트가 입력마다 고른 일부의 출력만 섞는다.</td><td><a href="https://arxiv.org/abs/1701.06538">Shazeer+ 2017</a>, <a href="https://arxiv.org/abs/2101.03961">Fedus+ 2021</a></td></tr>
         <tr><td>Diffusion (DDPM · DDIM)</td><td>데이터에 노이즈를 점점 더하는 과정을 거꾸로 학습해 노이즈에서 샘플을 만든다. DDIM은 더 적은 단계로 샘플링한다.</td><td><a href="https://arxiv.org/abs/2006.11239">Ho+ 2020</a>, <a href="https://arxiv.org/abs/2010.02502">Song+ 2020</a></td></tr>
         <tr><td>Diffusion Policy</td><td>이미지 대신 행동 시퀀스를 생성하는 diffusion 모방학습.</td><td><a href="https://arxiv.org/abs/2303.04137">Chi+ 2023</a></td></tr>
@@ -94,7 +94,7 @@
   <section id="overview">
     <h2>1. Overview</h2>
     <h4>핵심 문제 및 기여</h4>
-    <p>이 프로젝트는 Minecraft류 세계에서 LLM이 계획하고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트를 목표로 했지만, 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시해서 어떤 결과도 측정할 수 없었다. 이 노트는 그것이 테스트된 세 갈래 파이프라인이 된 과정을 정리한다. 기호 기반 테크 트리 위의 <b>DEPS 방식 플래너</b>, Crafter 픽셀 위의 <b>MoE·Diffusion 정책</b>, 그리고 10억 스텝 레퍼런스 런과 같은 설정으로 학습하며 중단 후에도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>이 프로젝트는 Minecraft류 세계에서 LLM이 계획하고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트를 목표로 했지만, 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시해서 어떤 결과도 측정할 수 없었다. 이 노트는 그것이 테스트된 세 갈래 파이프라인이 된 과정을 정리한다. 기호 기반 테크 트리 위의 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀 위의 <b>MoE·Diffusion 정책</b>, 그리고 10억 스텝 레퍼런스 런과 같은 설정으로 학습하며 중단 후에도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
   </section>
 
   <section id="key-points">
@@ -117,12 +117,12 @@
       <figcaption><span class="fig-num">그림 1.</span> 다이아몬드까지의 경로. 각 상자의 아래 줄은 얻는 방법과 필요한 도구·재료다. 한 단계라도 빠지면 다음 행동은 실패한다.</figcaption>
     </figure>
 
-    <h3>3.2 DEPS 루프</h3>
-    <p class="why"><b>왜:</b> LLM은 한 번에 완벽한 계획을 쓰지 못한다. DEPS는 실패 이유를 설명해 돌려주면 LLM이 계획을 고칠 수 있다는 아이디어로, 계획 오류를 실행 도중에 회복하게 한다.</p>
+    <h3>3.2 Describe, Explain, Plan and Select 루프</h3>
+    <p class="why"><b>왜:</b> LLM은 한 번에 완벽한 계획을 쓰지 못한다. Describe, Explain, Plan and Select 방식은 실패 이유를 설명해 돌려주면 LLM이 계획을 고칠 수 있다는 아이디어로, 계획 오류를 실행 도중에 회복하게 한다.</p>
     <p>플래너(LLM 또는 수량을 고려하는 규칙 기반 폴백)가 계획을 내면, 파서가 이를 순서 있는 하위 목표 인스턴스 목록으로 바꾼다(<code>Mine cobblestone x6</code>은 6개가 된다). 셀렉터가 다음 대기 인스턴스를 고르고 컨트롤러가 행동한다. 인스턴스는 해당 아이템 수가 늘어날 때 완료된다.</p>
     <figure>
-      <div class="card diagram lg" role="img" aria-label="DEPS 루프: 플래너, 파서, 셀렉터, 컨트롤러, 테크 트리 환경을 거쳐 실패 시 재계획으로 돌아가는 순환"><svg viewBox="0 0 560 206" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-deps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box accent" x="10" y="10" width="160" height="56" rx="8"/><text class="t" x="90" y="34" text-anchor="middle">플래너</text><text class="s" x="90" y="52" text-anchor="middle">LLM 또는 규칙 기반</text><rect class="box" x="200" y="10" width="160" height="56" rx="8"/><text class="t" x="280" y="34" text-anchor="middle">파서</text><text class="s" x="280" y="52" text-anchor="middle">x6 → 인스턴스 6개</text><rect class="box" x="390" y="10" width="160" height="56" rx="8"/><text class="t" x="470" y="34" text-anchor="middle">셀렉터</text><text class="s" x="470" y="52" text-anchor="middle">다음 대기 하위 목표</text><rect class="box" x="390" y="140" width="160" height="56" rx="8"/><text class="t" x="470" y="164" text-anchor="middle">컨트롤러</text><text class="s" x="470" y="182" text-anchor="middle">선행 재료 수집</text><rect class="box" x="200" y="140" width="160" height="56" rx="8"/><text class="t" x="280" y="164" text-anchor="middle">테크 트리 환경</text><text class="s" x="280" y="182" text-anchor="middle">도구·재료 규칙 검사</text><rect class="box" x="10" y="140" width="160" height="56" rx="8"/><text class="t" x="90" y="164" text-anchor="middle">재계획 판단</text><text class="s" x="90" y="182" text-anchor="middle">인벤토리·오류 전달</text><path class="arrow" d="M170 38 H196" marker-end="url(#a-deps)"/><path class="arrow" d="M360 38 H386" marker-end="url(#a-deps)"/><path class="arrow" d="M470 66 V136" marker-end="url(#a-deps)"/><path class="arrow" d="M390 168 H364" marker-end="url(#a-deps)"/><path class="arrow" d="M200 168 H174" marker-end="url(#a-deps)"/><path class="arrow dash" d="M90 140 V70" marker-end="url(#a-deps)"/><text class="s" x="100" y="100">연속 실패 3회 또는</text><text class="s" x="100" y="116">한 목표에 50스텝 초과 → 재계획</text></svg></div>
-      <figcaption><span class="fig-num">그림 2.</span> DEPS 루프. 점선은 재계획 경로로, 현재 인벤토리와 오류 메시지가 다음 계획 프롬프트에 들어간다.</figcaption>
+      <div class="card diagram lg" role="img" aria-label="Describe, Explain, Plan and Select 루프: 플래너, 파서, 셀렉터, 컨트롤러, 테크 트리 환경을 거쳐 실패 시 재계획으로 돌아가는 순환"><svg viewBox="0 0 560 206" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-deps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box accent" x="10" y="10" width="160" height="56" rx="8"/><text class="t" x="90" y="34" text-anchor="middle">플래너</text><text class="s" x="90" y="52" text-anchor="middle">LLM 또는 규칙 기반</text><rect class="box" x="200" y="10" width="160" height="56" rx="8"/><text class="t" x="280" y="34" text-anchor="middle">파서</text><text class="s" x="280" y="52" text-anchor="middle">x6 → 인스턴스 6개</text><rect class="box" x="390" y="10" width="160" height="56" rx="8"/><text class="t" x="470" y="34" text-anchor="middle">셀렉터</text><text class="s" x="470" y="52" text-anchor="middle">다음 대기 하위 목표</text><rect class="box" x="390" y="140" width="160" height="56" rx="8"/><text class="t" x="470" y="164" text-anchor="middle">컨트롤러</text><text class="s" x="470" y="182" text-anchor="middle">선행 재료 수집</text><rect class="box" x="200" y="140" width="160" height="56" rx="8"/><text class="t" x="280" y="164" text-anchor="middle">테크 트리 환경</text><text class="s" x="280" y="182" text-anchor="middle">도구·재료 규칙 검사</text><rect class="box" x="10" y="140" width="160" height="56" rx="8"/><text class="t" x="90" y="164" text-anchor="middle">재계획 판단</text><text class="s" x="90" y="182" text-anchor="middle">인벤토리·오류 전달</text><path class="arrow" d="M170 38 H196" marker-end="url(#a-deps)"/><path class="arrow" d="M360 38 H386" marker-end="url(#a-deps)"/><path class="arrow" d="M470 66 V136" marker-end="url(#a-deps)"/><path class="arrow" d="M390 168 H364" marker-end="url(#a-deps)"/><path class="arrow" d="M200 168 H174" marker-end="url(#a-deps)"/><path class="arrow dash" d="M90 140 V70" marker-end="url(#a-deps)"/><text class="s" x="100" y="100">연속 실패 3회 또는</text><text class="s" x="100" y="116">한 목표에 50스텝 초과 → 재계획</text></svg></div>
+      <figcaption><span class="fig-num">그림 2.</span> Describe, Explain, Plan and Select 루프. 점선은 재계획 경로로, 현재 인벤토리와 오류 메시지가 다음 계획 프롬프트에 들어간다.</figcaption>
     </figure>
 
     <h3>3.3 PPO와 GAE</h3>
@@ -237,7 +237,7 @@
     <div class="table-wrap"><table class="glossary">
       <thead><tr><th>개념</th><th>비유</th></tr></thead>
       <tbody>
-        <tr><td>테크 트리 · DEPS</td><td>요리책을 보고 장보기 목록을 쓰고, 가게에 재료가 없으면 그 자리에서 목록을 고쳐 쓰는 것.</td></tr>
+        <tr><td>테크 트리 · Describe, Explain, Plan and Select</td><td>요리책을 보고 장보기 목록을 쓰고, 가게에 재료가 없으면 그 자리에서 목록을 고쳐 쓰는 것.</td></tr>
         <tr><td>PPO</td><td>운전 연수에서 매번 핸들을 조금만 더 꺾어 보는 것. 한 번에 크게 꺾으면 차가 도로를 벗어난다.</td></tr>
         <tr><td>GAE</td><td>시험 직후 채점(빠르지만 부정확)과 학기 말 성적(정확하지만 늦음) 사이에서 적당히 섞어 평가하는 것.</td></tr>
         <tr><td>MoE</td><td>전문의 네 명 중 접수처(게이트)가 증상에 맞는 두 명에게 묻고, 더 확신하는 의사의 말에 무게를 더 두는 것. 균형 손실은 한 의사에게 환자가 몰리지 않게 하는 규칙이다.</td></tr>

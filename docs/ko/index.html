@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diffu-MoE-VLM</title>
-<meta name="description" content="오픈월드 크래프팅 게임을 위한 계획·학습 에이전트: DEPS 방식 LLM 플래너, Crafter 위의 MoE·Diffusion 정책, JAX 기반 재현 가능한 Craftax 학습 파이프라인.">
+<meta name="description" content="오픈월드 크래프팅 게임을 위한 계획·학습 에이전트: Describe, Explain, Plan and Select 방식 LLM 플래너, Crafter 위의 MoE·Diffusion 정책, JAX 기반 재현 가능한 Craftax 학습 파이프라인.">
 <link rel="icon" href="data:,">
 <link rel="alternate" hreflang="en" href="../">
 <link rel="stylesheet" href="../assets/site.css">
@@ -44,7 +44,7 @@
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>이 프로젝트는 Minecraft류 세계를 위한 Diffusion·Mixture-of-Experts·Vision-Language 에이전트를 내세웠지만, 실제로는 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시하던 저장소에서 출발했다. 이를 테스트된 세 갈래 파이프라인으로 만들었다. 기호 기반 테크 트리 위의 <b>DEPS 방식 LLM 플래너</b>, PyTorch로 Crafter 픽셀을 학습하는 <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하기 위한 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>이 프로젝트는 Minecraft류 세계를 위한 Diffusion·Mixture-of-Experts·Vision-Language 에이전트를 내세웠지만, 실제로는 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시하던 저장소에서 출발했다. 이를 테스트된 세 갈래 파이프라인으로 만들었다. 기호 기반 테크 트리 위의 <b>Describe, Explain, Plan and Select 방식 LLM 플래너</b>, PyTorch로 Crafter 픽셀을 학습하는 <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하기 위한 <b>순수 JAX Craftax 학습기</b>다.</p>
     <p>최종 주장은 의도적으로 좁게 잡았다. 4코어 CPU에서 각 파이프라인이 실제로 학습하고, 결정론적으로 동작하며, 중단 후에도 비트 단위로 똑같이 이어서 학습한다. 레퍼런스의 학습 종료 수치를 맞추는 일은 GPU 실행이 필요하며, 이 구성은 그 실행을 명령어 한 줄로 줄여 둔다.</p>
     <p>진단, 환경, 에이전트, 학습 인프라, 자동 테스트 58개, 그리고 이 페이지까지 한 저장소 안에서 처음부터 끝까지 구현했다.</p>
   </section>
@@ -62,7 +62,7 @@
       </div>
       <div class="kr">
         <span class="chip">Planning</span>
-        <h3>수량을 고려한 DEPS 루프</h3>
+        <h3>수량을 고려한 Describe, Explain, Plan and Select 루프</h3>
         <div class="k">측정 결과</div>
         <p>단계를 빠뜨린 계획은 컨트롤러가 선택된 하위 목표만 실행할 때 <b>재계획 한도 5회</b>를 모두 쓰고 실패하고, 컨트롤러가 선행 재료를 스스로 모을 때는 성공한다. 이 비교 실험으로 계획 품질과 제어 품질을 분리해 측정할 수 있다.</p>
         <div class="k">배운 점</div>
@@ -105,7 +105,7 @@
 
   <section id="architecture">
     <h2>System Architecture</h2>
-    <div class="card diagram" role="img" aria-label="세 갈래 구성: 기호 테크 트리 위의 DEPS 계획, Crafter 위의 PyTorch 정책, Craftax 위의 JAX 학습">
+    <div class="card diagram" role="img" aria-label="세 갈래 구성: 기호 테크 트리 위의 Describe, Explain, Plan and Select 계획, Crafter 위의 PyTorch 정책, Craftax 위의 JAX 학습">
       <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -114,7 +114,7 @@
         </defs>
         <!-- Lane A: planning -->
         <rect class="lane" x="0" y="0" width="900" height="150" rx="10"/>
-        <text class="lane-t" x="16" y="24">A · PLANNING (DEPS) — symbolic tech tree</text>
+        <text class="lane-t" x="16" y="24">A · PLANNING (Describe, Explain, Plan and Select) — symbolic tech tree</text>
         <rect class="box accent" x="16" y="52" width="150" height="58" rx="8"/>
         <text class="t" x="91" y="77" text-anchor="middle">LLM planner</text>
         <text class="s" x="91" y="95" text-anchor="middle">or rule-based fallback</text>
@@ -247,7 +247,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
   <section id="key-features">
     <h2>Key Features</h2>
 
-    <h3>1. 테크 트리 환경과 DEPS 루프</h3>
+    <h3>1. 테크 트리 환경과 Describe, Explain, Plan and Select 루프</h3>
     <p>플래너가 계획을 세우면 파서가 이를 하위 목표(<code>Mine cobblestone x6</code>)로 바꾸고, 셀렉터가 다음 목표를 고르고, 컨트롤러가 행동한다. 실패가 반복되거나 한 목표에 너무 오래 머물면 인벤토리와 오류 메시지를 담아 재계획한다. 모든 규칙을 하나의 순수 함수에 두어 환경, 컨트롤러의 선행 조건 탐색, 규칙 기반 플래너가 같은 규칙을 공유한다.</p>
     <div class="code-title">diffu_moe_vlm/core.py</div>
 <pre><code>def apply_action(inventory, verb, item):
@@ -416,7 +416,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <table>
         <thead><tr><th>지표</th><th>값</th><th>의미</th></tr></thead>
         <tbody>
-          <tr><td><b>플래너 태스크</b></td><td>0/6 → 6/6</td><td>환경과 DEPS 루프가 처음부터 끝까지 동작함</td></tr>
+          <tr><td><b>플래너 태스크</b></td><td>0/6 → 6/6</td><td>환경과 Describe, Explain, Plan and Select 루프가 처음부터 끝까지 동작함</td></tr>
           <tr><td><b>Crafter 점수</b></td><td>1.56 → 4.63</td><td>MoE PPO가 10만 스텝 안에 픽셀로부터 학습함</td></tr>
           <tr><td><b>Craftax 리턴(PPO)</b></td><td>1.49 → 6.66</td><td>기본 설정이 CPU 655만 스텝에서 학습함</td></tr>
           <tr><td><b>이어서 학습 일치도</b></td><td>390개 중 차이 0</td><td>중단해도 결과가 바뀌지 않음</td></tr>
@@ -457,7 +457,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <h4>모델</h4>
     <ul class="ink-2">
       <li>Diffusion 정책을 JAX 경로로 옮기고, 대규모에서 MoE와 일반(dense) 몸통을 비교한다.</li>
-      <li>학습된 정책을 DEPS 플래너 아래의 하위 스킬로 사용한다.</li>
+      <li>학습된 정책을 Describe, Explain, Plan and Select 플래너 아래의 하위 스킬로 사용한다.</li>
       <li>실제 IMU 기록을 궤적 형식으로 연결한다.</li>
     </ul>
   </section>
