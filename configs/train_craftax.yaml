@@ -34,11 +34,12 @@ algo:
   optimistic_resets: true
   reset_ratio: 16
   icm: false
-  icm_reward_coef: 0.01            # bonus is normalized to mean 1 before this scale
+  icm_reward_coef: 0.01            # scale applied after normalization (mean/ema: bonus averages this)
   icm_lr: 3.0e-4
   icm_forward_coef: 1.0
   icm_inverse_coef: 1.0
-  icm_normalize: true
+  icm_normalize: mean              # mean | ema | std | none (run_icm_ablation.py compares them)
+  icm_ema_decay: 0.99              # per update, for icm_normalize=ema
 
 wandb:
   enabled: false

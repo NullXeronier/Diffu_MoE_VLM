@@ -33,7 +33,7 @@ def run_name(cfg) -> str:
     algo = cfg["algo"]
     tag = "PPO_RNN-" if algo["rnn"] else ""
     tag += "MoE-" if algo["moe"] else ""
-    tag += "ICM-" if algo["icm"] else ""
+    tag += f"ICM_{algo['icm_normalize']}-" if algo["icm"] else ""
     return f"{algo['env_name']}-{tag}{int(algo['total_timesteps'] // 1_000_000)}M"
 
 

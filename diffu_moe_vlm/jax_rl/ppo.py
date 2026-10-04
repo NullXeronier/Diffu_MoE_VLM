@@ -5,12 +5,19 @@ PPO / PPO-RNN for Craftax in pure JAX (after PureJaxRL and the Craftax baselines
 training loop under `jax.lax.scan`, so it can be jitted end to end. Options:
     rnn   GRU memory (PPO-RNN); otherwise the feed-forward baseline network
     moe   top-k mixture-of-experts hidden layers (+ load-balancing loss)
-    icm   Intrinsic Curiosity Module bonus. The forward-model error is divided by
-          its running mean (so the bonus averages 1) and scaled by
-          `icm_reward_coef`, so it cannot swamp the sparse extrinsic reward.
-          Dividing by the standard deviation is not enough: squared errors are
-          mostly mean, and the unscaled bonus is what made the reference ICM
-          run collapse to ~0 extrinsic reward.
+    icm   Intrinsic Curiosity Module bonus: icm_reward_coef * error / scale, where
+          `icm_normalize` picks the scale (see ICM_NORMALIZERS):
+            mean  running mean of the forward-model error (default), so the
+                  normalized bonus averages 1 and cannot swamp the sparse
+                  extrinsic reward
+            ema   exponential moving mean (`icm_ema_decay` per update), which
+                  follows the error as the forward model improves
+            std   running standard deviation. Not enough on its own: squared
+                  errors are mostly mean, so the bonus stays ~10x too large
+            none  raw error; the unscaled bonus is what made the reference ICM
+                  run collapse to ~0 extrinsic reward
+          The icm/* metrics track the raw error, the bonus and its share of the
+          total reward, to detect a runaway bonus (run_icm_ablation.py).
 
 Per update, metrics (episode return/length and achievement success rates of
 episodes that finished in that update, losses) are returned stacked and, if
@@ -61,8 +68,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "icm_lr": 3e-4,
     "icm_forward_coef": 1.0,
     "icm_inverse_coef": 1.0,
-    "icm_normalize": True,
+    "icm_normalize": "mean",
+    "icm_ema_decay": 0.99,
 }
+
+ICM_NORMALIZERS = ("none", "std", "mean", "ema")
 
 
 class Transition(NamedTuple):
@@ -90,6 +100,28 @@ def update_moments(m: RunningMoments, x: jax.Array) -> RunningMoments:
     mean = m.mean + delta * b_count / total
     m2 = m.var * m.count + b_var * b_count + delta ** 2 * m.count * b_count / total
     return RunningMoments(mean, m2 / total, total)
+
+
+def update_ema(m: RunningMoments, x: jax.Array, decay: float) -> RunningMoments:
+    """Exponential moving mean of batch means (`count` = number of batches; the first batch initializes it)"""
+    b_mean = x.mean()
+    mean = jnp.where(m.count < 1, b_mean, decay * m.mean + (1.0 - decay) * b_mean)
+    return RunningMoments(mean, m.var, jnp.floor(m.count) + 1)
+
+
+def icm_normalizer(config) -> str:
+    """`icm_normalize` as a mode name; booleans from older configs map to mean / none"""
+    mode = config["icm_normalize"]
+    if isinstance(mode, bool):
+        mode = "mean" if mode else "none"
+    if mode not in ICM_NORMALIZERS:
+        raise ValueError(f"icm_normalize must be one of {ICM_NORMALIZERS}, got {mode!r}")
+    return mode
+
+
+def craftax_score(rates: jax.Array) -> jax.Array:
+    """Crafter/Craftax score: geometric mean of success rates in %, exp(mean(ln(1 + s))) - 1"""
+    return jnp.exp(jnp.log1p(rates).mean()) - 1.0
 
 
 def compute_gae(rewards, values, dones, last_value, gamma: float, gae_lambda: float):
@@ -128,6 +160,7 @@ def make_train(config: Dict[str, Any], log_fn: Optional[Callable[[Dict, int], No
     network = build_network(config, action_dim)
     rnn = config["rnn"]
     icm_net = ICM(action_dim) if config["icm"] else None
+    icm_mode = icm_normalizer(config)
 
     def lr_schedule(count):
         frac = 1.0 - (count // (config["num_minibatches"] * config["update_epochs"])) / num_updates
@@ -204,13 +237,28 @@ def make_train(config: Dict[str, Any], log_fn: Optional[Callable[[Dict, int], No
 
             (_, (intrinsic, fwd_loss, inv_loss)), grads = jax.value_and_grad(icm_loss, has_aux=True)(icm_state.params)
             icm_state = icm_state.apply_gradients(grads=grads)
-            intrinsic = jax.lax.stop_gradient(intrinsic).reshape(ext_reward.shape)
-            if config["icm_normalize"]:
-                moments = update_moments(moments, intrinsic)
-                intrinsic = intrinsic / (moments.mean + 1e-8)
-            traj = traj._replace(reward=ext_reward + config["icm_reward_coef"] * intrinsic)
+            raw = jax.lax.stop_gradient(intrinsic).reshape(ext_reward.shape)
+            if icm_mode == "mean":
+                moments = update_moments(moments, raw)
+                scale = moments.mean
+            elif icm_mode == "std":
+                moments = update_moments(moments, raw)
+                scale = jnp.sqrt(moments.var)
+            elif icm_mode == "ema":
+                moments = update_ema(moments, raw, config["icm_ema_decay"])
+                scale = moments.mean
+            else:
+                scale = jnp.ones(())
+            intrinsic = raw / (scale + 1e-8)
+            bonus = config["icm_reward_coef"] * intrinsic
+            traj = traj._replace(reward=ext_reward + bonus)
+            bonus_sum, ext_sum = jnp.abs(bonus).sum(), jnp.abs(ext_reward).sum()
             icm_metrics = {"icm/forward_loss": fwd_loss, "icm/inverse_loss": inv_loss,
-                           "icm/intrinsic_reward": intrinsic.mean(), "icm/extrinsic_reward": ext_reward.mean()}
+                           "icm/intrinsic_reward": intrinsic.mean(), "icm/extrinsic_reward": ext_reward.mean(),
+                           "icm/raw_error_mean": raw.mean(), "icm/raw_error_max": raw.max(), "icm/scale": scale,
+                           "icm/bonus_mean": bonus.mean(), "icm/bonus_max": bonus.max(),
+                           # share of |reward| that is curiosity bonus; near 1 means the bonus has taken over
+                           "icm/bonus_share": bonus_sum / jnp.maximum(bonus_sum + ext_sum, 1e-8)}
 
         # ---- GAE ----
         _, _, last_val, _ = apply_net(train_state.params, hstate,
@@ -285,12 +333,17 @@ def make_train(config: Dict[str, Any], log_fn: Optional[Callable[[Dict, int], No
             "update": update_idx + 1,
             "env_steps": (update_idx + 1) * num_steps * num_envs,
         }
-        achieved = jnp.zeros(())
+        rates = []
         for key, value in info.items():
             if key.startswith("Achievements/"):
                 metrics[key] = value.sum() / denom  # success rate in %, info is already scaled by done * 100
-                achieved = achieved + metrics[key] / 100.0
-        metrics["achievements"] = achieved  # mean number of distinct achievements per finished episode
+                rates.append(metrics[key])
+        if rates:
+            rates = jnp.stack(rates)
+            metrics["achievements"] = (rates / 100.0).sum()  # mean distinct achievements per finished episode
+            # exploration: how many achievement types were reached at all in this update, and the score
+            metrics["achievement_coverage"] = (rates > 0).sum().astype(jnp.float32)
+            metrics["craftax_score"] = craftax_score(rates)
         metrics.update(icm_metrics)
         if log_fn is not None:
             jax.debug.callback(log_fn, metrics, update_idx)

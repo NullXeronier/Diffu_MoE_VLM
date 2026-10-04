@@ -129,3 +129,113 @@ def test_resume_from_checkpoint_is_bitwise_identical(tmp_path):
                                       np.concatenate([np.asarray(m_first[key]), np.asarray(m_second[key])]))
     for a, b in zip(jax.tree_util.tree_leaves(straight[0].params), jax.tree_util.tree_leaves(resumed[0].params)):
         np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
+
+
+# ---- ICM normalization ablation ----
+
+def test_ema_initializes_with_first_batch_then_decays():
+    from diffu_moe_vlm.jax_rl.ppo import update_ema
+
+    m = RunningMoments(jnp.zeros(()), jnp.ones(()), jnp.asarray(1e-4))
+    m = update_ema(m, jnp.full((4,), 10.0), 0.9)
+    assert float(m.mean) == pytest.approx(10.0) and float(m.count) == 1
+    m = update_ema(m, jnp.full((4,), 0.0), 0.9)
+    assert float(m.mean) == pytest.approx(9.0) and float(m.count) == 2
+
+
+def test_icm_normalizer_modes():
+    from diffu_moe_vlm.jax_rl.ppo import icm_normalizer
+
+    assert icm_normalizer({"icm_normalize": True}) == "mean"
+    assert icm_normalizer({"icm_normalize": False}) == "none"
+    assert icm_normalizer({"icm_normalize": "ema"}) == "ema"
+    with pytest.raises(ValueError):
+        icm_normalizer({"icm_normalize": "max"})
+
+
+def test_craftax_score_matches_formula():
+    from diffu_moe_vlm.jax_rl.ppo import craftax_score
+
+    rates = np.array([0.0, 10.0, 100.0], np.float32)
+    assert float(craftax_score(jnp.asarray(rates))) == pytest.approx(np.exp(np.log1p(rates).mean()) - 1, rel=1e-5)
+
+
+@pytest.mark.parametrize("mode", ["none", "std", "mean", "ema"])
+def test_icm_modes_log_bonus_and_exploration_metrics(mode):
+    coef = 0.01
+    cfg = dict(env_name="Craftax-Classic-Symbolic-v1", num_envs=16, num_steps=8, num_minibatches=2,
+               update_epochs=1, layer_size=32, total_timesteps=16 * 8 * 2, reset_ratio=4,
+               icm=True, icm_normalize=mode, icm_reward_coef=coef)
+    m = jax.jit(make_train(cfg))(jax.random.PRNGKey(0))["metrics"]
+    share = np.asarray(m["icm/bonus_share"])
+    assert ((share >= 0) & (share <= 1)).all()
+    for key in ("craftax_score", "achievement_coverage", "icm/raw_error_mean", "icm/bonus_max", "icm/scale"):
+        assert np.isfinite(np.asarray(m[key])).all()
+    first_bonus = float(np.asarray(m["icm/bonus_mean"])[0])
+    first_raw = float(np.asarray(m["icm/raw_error_mean"])[0])
+    if mode in ("mean", "ema"):     # the first batch defines the scale, so the bonus averages the coefficient
+        assert first_bonus == pytest.approx(coef, rel=1e-3)
+    elif mode == "none":
+        assert first_bonus == pytest.approx(coef * first_raw, rel=1e-4)
+
+
+def _rows(shares, returns, covered):
+    rows = []
+    for i, (s, r) in enumerate(zip(shares, returns)):
+        row = {"update": i + 1, "env_steps": (i + 1) * 2e7, "episodes": 4, "episode_return": r,
+               "craftax_score": r / 10, "achievements": r, "achievement_coverage": float(covered),
+               "Achievements/a": 50.0, "Achievements/b": 10.0 if covered > 1 else 0.0}
+        if s is not None:
+            row.update({"icm/bonus_share": s, "icm/raw_error_mean": 1.0 + i, "icm/bonus_mean": s, "icm/bonus_max": s})
+        rows.append(row)
+    return rows
+
+
+def test_analysis_detects_runaway_and_paired_exploration(tmp_path):
+    import json as _json
+
+    from analyze_icm_ablation import analyze, write_report
+
+    # icm_mean: early bonus share is high (sparse extrinsic reward) but falls; it must not count as runaway
+    arms = {"ppo": ([None] * 5, [1, 2, 3, 3, 3], 1), "icm_mean": ([0.8, 0.6, 0.3, 0.2, 0.1], [1, 2, 3, 4, 4], 2),
+            "icm_none": ([0.2, 0.6, 0.9, 0.95, 0.97], [1, 1, 0, 0, 0], 1)}
+    for arm, (shares, rets, cov) in arms.items():
+        for seed in range(3):
+            d = tmp_path / arm / f"seed{seed}"
+            d.mkdir(parents=True)
+            (d / "metrics.jsonl").write_text("\n".join(_json.dumps(r) for r in _rows(shares, rets, cov)))
+    result = analyze(tmp_path)
+    none, mean = result["arms"]["icm_none"]["seeds"][0], result["arms"]["icm_mean"]["seeds"][0]
+    assert none["runaway_fraction"] == pytest.approx(0.8) and none["runaway"] == 1.0
+    assert none["bonus_growth"] == pytest.approx(0.97 / 0.2)
+    assert mean["runaway"] == 0.0 and mean["bonus_growth"] < 1.0
+    assert result["comparisons"]["icm_mean"]["coverage_ever"]["positive"] == 3
+    assert result["verdict"]["H1"][0] == "supported" and result["verdict"]["H2"][0] == "supported"
+    assert "Verdict" in write_report(result, tmp_path) and (tmp_path / "summary.json").exists()
+    assert list(result["arms"]) == ["ppo", "icm_none", "icm_mean"]
+
+
+def test_analysis_refuses_verdict_on_short_runs(tmp_path):
+    import json as _json
+
+    from analyze_icm_ablation import analyze
+
+    for arm in ("ppo", "icm_mean"):
+        d = tmp_path / arm / "seed0"
+        d.mkdir(parents=True)
+        rows = _rows([None if arm == "ppo" else 0.1] * 3, [1, 2, 3], 1)
+        for r in rows:
+            r["env_steps"] = 1000.0
+        (d / "metrics.jsonl").write_text("\n".join(_json.dumps(r) for r in rows))
+    assert analyze(tmp_path)["verdict"]["H1"][0] == "too short"
+
+
+def test_ablation_runner_builds_one_change_per_arm(tmp_path):
+    from run_icm_ablation import build_runs
+
+    runs = build_runs("gpu", ["ppo", "icm_mean", "icm_std"], [0, 1], 1e9, tmp_path)
+    assert len(runs) == 6
+    by_arm = {r["arm"]: r["cmd"] for r in runs if r["seed"] == 0}
+    assert "algo.icm=false" in by_arm["ppo"] and "algo.icm_normalize=mean" in by_arm["icm_mean"]
+    common = lambda cmd: sorted(a for a in cmd[2:] if not a.startswith(("algo.icm", "output_dir", "name")))
+    assert common(by_arm["ppo"]) == common(by_arm["icm_mean"]) == common(by_arm["icm_std"])
