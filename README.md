@@ -48,6 +48,8 @@ SOCIAL LEARNING
 ├── train_ppo.py              # PPO + MoE training on Crafter
 ├── train_diffusion.py        # Diffusion policy behavior cloning on Crafter
 ├── evaluate_policy.py        # Policy evaluation (achievements, Crafter score)
+├── run_icm_ablation.py       # ICM normalization experiment (GPU preset, CPU debug preset)
+├── analyze_icm_ablation.py   # Report for the ICM experiment (bounded bonus? better exploration?)
 └── pyproject.toml
 ```
 
@@ -182,6 +184,21 @@ results to an uninterrupted run. `max_updates_per_run=N` stops after N updates f
 `docs/craftax_reference.json` holds end-of-training ranges read off the reference charts
 (PPO: return ~26-28, ~21 achievements/episode; PPO-RNN: return ~37, ~24.5). Default
 hyper-parameters follow the Craftax PPO baselines; confirm them against the reference runs' config.
+
+### Experiment: does moving-mean normalization of the ICM bonus help?
+
+`run_icm_ablation.py` trains the same Craftax PPO with one change per arm (`ppo` without curiosity,
+and ICM with the bonus left raw, divided by the running std, the running mean or an EMA of the mean)
+and `analyze_icm_ablation.py` answers two questions, paired by seed against `ppo`: does the
+moving-mean bonus stay bounded while the others run away (bonus share of |reward|), and does it
+explore more (achievement types reached, Craftax score) without lowering the extrinsic return?
+See [`docs/icm_normalization_experiment.md`](docs/icm_normalization_experiment.md).
+
+```bash
+python run_icm_ablation.py                         # GPU: 5 arms x 3 seeds x 1e9 steps, then report.md
+python run_icm_ablation.py --steps 2e8 --arms ppo icm_mean icm_std   # shorter screen
+python run_icm_ablation.py --preset cpu-debug      # CPU: pipeline check only, tiny model
+```
 
 ## Local LLM Setup
 
