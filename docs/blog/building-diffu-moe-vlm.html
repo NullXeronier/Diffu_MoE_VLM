@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffu-MoE-VLM Dev Log</title>
+<meta name="description" content="From a dummy world to reproducible Craftax: how Diffu-MoE-VLM went from an agent that could never succeed to tested planning and learning pipelines.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../assets/site.css">
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap narrow">
+    <a class="brand" href="../">Diffu-MoE-VLM</a>
+    <a class="link" href="../#results">Results</a>
+    <a class="link" href="./">Blog</a>
+    <a class="link optional" href="https://github.com/NullXeronier/Diffu_MoE_VLM">Code</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+  </div>
+</nav>
+
+<main class="wrap narrow article">
+  <section>
+    <div class="kicker">Dev log · October 2026</div>
+    <h1>From a dummy world to reproducible Craftax</h1>
+    <p class="lead">The repository promised a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds. An audit showed an agent that could never succeed. This is how it became four tested pipelines, and what the numbers do and do not say.</p>
+    <div class="callout"><span class="icon">i</span><div><b>Short version.</b> Fix the world before the agent; measure against the right reference; make every run resumable and deterministic, so a missing result is a compute problem, not a mystery.</div></div>
+  </section>
+
+  <section>
+    <h2>Timeline</h2>
+    <div class="timeline">
+      <div class="item"><b>Phase 0 · Audit</b><br><span class="ink-2">Map what exists vs. what the README claims.</span></div>
+      <div class="item"><b>Phase 1 · Hygiene</b><br><span class="ink-2">Remove committed secrets and artifacts; fix crashes and silent config bugs.</span></div>
+      <div class="item"><b>Phase 2 · A world that responds</b><br><span class="ink-2">Symbolic tech tree, DEPS loop, package layout: 0/6 → 6/6 tasks.</span></div>
+      <div class="item"><b>Phase 3 · Learned policies</b><br><span class="ink-2">Crafter pixels, MoE PPO, diffusion behaviour cloning, trajectory encoder.</span></div>
+      <div class="item"><b>Phase 4 · Reproduce the reference</b><br><span class="ink-2">Craftax in JAX with deterministic, resumable training.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Phase 0 · The audit</h2>
+    <p>The environment wrapper returned <code>np.random.randint</code> pixels and its step function was a <code>pass</code>; the inventory never changed, so every task ended at step 999 with <code>success: false</code>. None of the diffusion, MoE, VLM, PPO or IMU components named in the README existed in code.</p>
+    <details class="toggle">
+      <summary>Other findings</summary>
+      <ul>
+        <li>The full benchmark crashed after the first task: it called a <code>wandb</code> attribute the logger never had.</li>
+        <li>The README's <code>eval.single_task=true</code> override was silently ignored (the code read a top-level key).</li>
+        <li>Plans were split on a literal backslash-n, so real LLM output was never parsed line by line.</li>
+        <li>The rule-based fallback matched <code>wooden_slab</code> inside the prompt template and returned the slab plan for every task.</li>
+        <li>The data manager looked in the wrong directory and always used hard-coded defaults.</li>
+        <li>Goal embeddings used Python's salted <code>hash()</code>, so they changed on every run.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>Phase 1 · Hygiene first</h2>
+    <p>An API-key file, bytecode, W&amp;B runs and Hydra outputs were committed. The key file was removed from history, the repository was re-created from a single clean commit, and a <code>.gitignore</code> now keeps build and run artifacts out. Experiment records were later restored with personal values (email, host name, home paths, GPU UUID) masked, including inside the binary W&amp;B log, which was rewritten record by record so it stays valid.</p>
+    <div class="callout warn"><span class="icon">!</span><div>Deleting a file in a new commit does not remove it from history. A leaked key has to be revoked; history rewriting only limits further spread.</div></div>
+  </section>
+
+  <section>
+    <h2>Phase 2 · A world that responds</h2>
+    <p>The environment became a symbolic tech tree: mining needs the right pickaxe, crafting consumes ingredients and may need a table, smelting needs a furnace and coal. The DEPS loop on top of it: the planner proposes a plan, a parser turns it into sub-goals, a selector picks the next one, the controller acts, and repeated failures trigger a replan that includes the inventory and the error.</p>
+    <p>Two details mattered more than expected:</p>
+    <ul>
+      <li><b>Quantities.</b> "Have planks" is not "have three planks". Plans now say <code>Mine cobblestone x6</code>, and a sub-goal completes when its item is <i>obtained</i>, not merely present.</li>
+      <li><b>Ablations as a measuring stick.</b> With <code>controller.auto_prerequisites=false</code>, a plan that skips steps fails after its replan budget, so the controller no longer hides planning errors.</li>
+    </ul>
+    <p>Result: all six default tasks succeed (wooden slab in 3 steps, diamond in 34), versus 0/6 before.</p>
+  </section>
+
+  <section>
+    <h2>Phase 3 · Learned policies on Crafter</h2>
+    <p>Crafter gives 64×64 pixels, 17 actions and 22 achievements. The policy is a CNN (or ViT, or a frozen CLIP/SigLIP tower) feeding a top-k mixture-of-experts trunk with a Switch-style load-balancing loss, trained with PPO. A diffusion policy then clones PPO's action chunks and executes them in a receding horizon.</p>
+    <div class="callout"><span class="icon">i</span><div><b>A bug worth remembering.</b> The first diffusion model reached a low loss but produced the same action chunk for every observation. With epsilon-prediction, the loss at high noise barely depends on recovering the clean one-hot chunk. Predicting the clean sample directly fixed it: 40 of 40 samples correct on the test task.</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Policy (CPU, 20 episodes)</th><th class="num">Return</th><th class="num">Crafter score</th></tr></thead>
+        <tbody>
+          <tr><td>Random</td><td class="num">1.25</td><td class="num">1.56</td></tr>
+          <tr><td>PPO · CNN + MoE, 100k steps</td><td class="num">3.60</td><td class="num">4.63</td></tr>
+          <tr><td>Diffusion BC from PPO demos</td><td class="num">3.55</td><td class="num">3.56</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">The random score matches the published ~1.6%, a useful check that the metric code is right.</p>
+  </section>
+
+  <section>
+    <h2>Phase 4 · Reproducing the reference runs</h2>
+    <p>The reference W&amp;B charts looked far ahead of the local runs. Reading them closely explained why: they are <b>Craftax-Symbolic</b> runs at <b>1e9 steps</b> on a GPU (50k–95k steps/s), and their x-axis counts PPO updates. 1e9 / (1024 envs × 64 steps) ≈ 15,258, which is exactly the axis length.</p>
+    <p>The JAX pipeline runs environment and learner together under <code>jit</code>. Two engineering choices did most of the work:</p>
+    <ul>
+      <li><b>Optimistic resets.</b> World generation dominates a Craftax step; generating only a pool of fresh worlds per step and handing them to finished environments avoids paying it 1024 times.</li>
+      <li><b>Checkpoint and resume.</b> The full state (parameters, optimizer, environment states, RNG) is saved every few updates. The first long run here was stopped by a session time limit; with resume, the same command continues, and the results match an uninterrupted run bit for bit (0 of 390 logged values differ).</li>
+    </ul>
+    <figure>
+      <img src="../images/achievements_collect_diamond.png" alt="COLLECT_DIAMOND success rate over 15k updates in the reference runs" width="619" height="421">
+      <figcaption>Late, rare achievements such as COLLECT_DIAMOND are why the 1B-step budget matters.</figcaption>
+    </figure>
+    <p>On a 4-core CPU, PPO reached a return of 6.7 after 6.55M steps and PPO-RNN 5.2 after 3.3M, with the same early ordering of achievements as the reference. The end-of-training comparison (PPO ~26, PPO-RNN ~37) needs a GPU, and <code>compare_craftax_run.py</code> checks a finished run against 70 reference ranges.</p>
+    <details class="toggle">
+      <summary>What happened to the curiosity (ICM) run</summary>
+      <p>Its intrinsic reward climbed to ~7.5 per step while the extrinsic reward stayed near zero, and it lost even basic achievements such as placing a table. The bonus is now divided by its running mean and scaled by 0.01. Dividing by the standard deviation is not enough, because a squared prediction error is mostly mean.</p>
+    </details>
+  </section>
+
+  <section>
+    <h2>What I would tell myself at the start</h2>
+    <ol>
+      <li>Check that the environment can be solved at all before tuning the agent.</li>
+      <li>Find out exactly which environment, budget and axis the reference used before comparing numbers.</li>
+      <li>Make determinism and resume a test, not a hope. It turns "the run died" into "re-run the command".</li>
+      <li>Keep a dumb baseline (random, rule-based) in every table; it catches metric bugs.</li>
+    </ol>
+    <p><a href="../">← Back to the project page</a></p>
+  </section>
+</main>
+
+<footer><div class="wrap narrow">Diffu-MoE-VLM · research prototype</div></footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

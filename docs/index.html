@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffu-MoE-VLM</title>
+<meta name="description" content="Planning and learning agents for open-world crafting games: a DEPS-style LLM planner, MoE / diffusion policies on Crafter, and a reproducible Craftax pipeline in JAX.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="./">Diffu-MoE-VLM</a>
+    <a class="link optional" href="#overview">Overview</a>
+    <a class="link" href="#results">Results</a>
+    <a class="link" href="blog/">Blog</a>
+    <a class="link optional" href="https://github.com/NullXeronier/Diffu_MoE_VLM">Code</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Research prototype · 2025–2026</div>
+    <h1>Diffu-MoE-VLM</h1>
+    <p class="subtitle">Planning and learning agents for open-world crafting games: from an LLM planner on a toy world to reproducible Craftax training in JAX.</p>
+    <p class="meta">NullXeronier</p>
+    <div class="buttons">
+      <a class="btn primary" href="https://github.com/NullXeronier/Diffu_MoE_VLM/tree/research/prototype">Code</a>
+      <a class="btn" href="https://github.com/NullXeronier/Diffu_MoE_VLM/blob/research/prototype/docs/craftax_reproducibility.md">Reproducibility report</a>
+      <a class="btn" href="blog/building-diffu-moe-vlm.html">Dev log</a>
+      <a class="btn" href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <figure>
+    <img src="images/achievements_make_iron.png" alt="Achievement success rates for make_iron_sword, make_iron_pickaxe and make_iron_armour over 15k PPO updates on Craftax-Symbolic-v1" width="906" height="234">
+    <figcaption>Reference runs on Craftax-Symbolic-v1 (1B environment steps on one GPU). Iron tools emerge only late in training; PPO-RNN and the best PPO seed lead. The x-axis counts PPO updates of 1024 envs × 64 steps.</figcaption>
+  </figure>
+
+  <div class="card tldr">
+    <strong>TL;DR</strong>
+    <ul>
+      <li>A DEPS-style agent (describe, explain, plan, select) on a symbolic tech tree goes from <b>0/6</b> to <b>6/6</b> tasks once the environment, controller and replanning loop actually work.</li>
+      <li>On Crafter pixels, a CNN + mixture-of-experts PPO policy and a diffusion policy cloned from it reach roughly <b>3×</b> the random Crafter score within 100k CPU steps.</li>
+      <li>A pure-JAX Craftax pipeline (PPO / PPO-RNN, optional MoE and normalized ICM) reproduces the reference setup bit-for-bit across seeds, chunks and process restarts.</li>
+    </ul>
+  </div>
+
+  <div class="stats" aria-label="Key numbers">
+    <div class="stat"><div class="label">Planner tasks solved</div><div class="value">6 / 6</div><div class="delta good">▲ from 0 / 6 on the original dummy env</div></div>
+    <div class="stat"><div class="label">Automated tests</div><div class="value">58</div><div class="delta">core, Crafter, Craftax (JAX)</div></div>
+    <div class="stat"><div class="label">Values differing after resume</div><div class="value">0 / 390</div><div class="delta">single scan vs. checkpointed chunks</div></div>
+    <div class="stat"><div class="label">Craftax throughput</div><div class="value">1.2k sps</div><div class="delta">4-core CPU · reference GPU runs 50k–95k</div></div>
+  </div>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <p class="ink-2">The project has three tracks that share one repository and one evaluation vocabulary (tasks, achievements, success rates). Each track was built to be testable on a laptop-class CPU, with GPU scale-up as configuration only.</p>
+    <div class="card diagram" role="img" aria-label="System overview with three tracks: DEPS planning on a symbolic tech tree, PyTorch policies on Crafter, and JAX training on Craftax">
+      <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="head"/>
+          </marker>
+        </defs>
+        <!-- Lane A: planning -->
+        <rect class="lane" x="0" y="0" width="900" height="150" rx="10"/>
+        <text class="lane-t" x="16" y="24">A · PLANNING (DEPS) — symbolic tech tree</text>
+        <rect class="box accent" x="16" y="52" width="150" height="58" rx="8"/>
+        <text class="t" x="91" y="77" text-anchor="middle">LLM planner</text>
+        <text class="s" x="91" y="95" text-anchor="middle">or rule-based fallback</text>
+        <rect class="box" x="196" y="52" width="150" height="58" rx="8"/>
+        <text class="t" x="271" y="77" text-anchor="middle">Plan parser</text>
+        <text class="s" x="271" y="95" text-anchor="middle">"Mine cobblestone x6"</text>
+        <rect class="box" x="376" y="52" width="150" height="58" rx="8"/>
+        <text class="t" x="451" y="77" text-anchor="middle">Selector</text>
+        <text class="s" x="451" y="95" text-anchor="middle">plan order / horizon</text>
+        <rect class="box" x="556" y="52" width="150" height="58" rx="8"/>
+        <text class="t" x="631" y="77" text-anchor="middle">Controller</text>
+        <text class="s" x="631" y="95" text-anchor="middle">gathers prerequisites</text>
+        <rect class="box" x="736" y="52" width="148" height="58" rx="8"/>
+        <text class="t" x="810" y="77" text-anchor="middle">Tech-tree env</text>
+        <text class="s" x="810" y="95" text-anchor="middle">Gymnasium API</text>
+        <path class="arrow" d="M166 81 H192" marker-end="url(#arr)"/>
+        <path class="arrow" d="M346 81 H372" marker-end="url(#arr)"/>
+        <path class="arrow" d="M526 81 H552" marker-end="url(#arr)"/>
+        <path class="arrow" d="M706 81 H732" marker-end="url(#arr)"/>
+        <path class="arrow dash" d="M810 110 V132 H91 V114" marker-end="url(#arr)"/>
+        <text class="s" x="450" y="144" text-anchor="middle">explain &amp; replan on repeated failures (inventory + error message)</text>
+
+        <!-- Lane B: Crafter -->
+        <rect class="lane" x="0" y="164" width="900" height="150" rx="10"/>
+        <text class="lane-t" x="16" y="188">B · CRAFTER — PyTorch, 64×64 pixels</text>
+        <rect class="box" x="16" y="214" width="130" height="58" rx="8"/>
+        <text class="t" x="81" y="239" text-anchor="middle">Pixels</text>
+        <text class="s" x="81" y="257" text-anchor="middle">17 actions</text>
+        <rect class="box" x="176" y="214" width="150" height="58" rx="8"/>
+        <text class="t" x="251" y="239" text-anchor="middle">Visual encoder</text>
+        <text class="s" x="251" y="257" text-anchor="middle">CNN · ViT · CLIP/SigLIP</text>
+        <rect class="box accent" x="356" y="214" width="150" height="58" rx="8"/>
+        <text class="t" x="431" y="239" text-anchor="middle">MoE trunk</text>
+        <text class="s" x="431" y="257" text-anchor="middle">top-k + balance loss</text>
+        <rect class="box" x="536" y="214" width="150" height="58" rx="8"/>
+        <text class="t" x="611" y="239" text-anchor="middle">PPO heads</text>
+        <text class="s" x="611" y="257" text-anchor="middle">policy π · value V</text>
+        <rect class="box accent" x="716" y="214" width="168" height="58" rx="8"/>
+        <text class="t" x="800" y="239" text-anchor="middle">Diffusion policy</text>
+        <text class="s" x="800" y="257" text-anchor="middle">BC on PPO action chunks</text>
+        <rect class="box" x="166" y="282" width="180" height="26" rx="6"/>
+        <text class="s" x="256" y="299" text-anchor="middle">3D trajectory / IMU encoder</text>
+        <path class="arrow" d="M146 243 H172" marker-end="url(#arr)"/>
+        <path class="arrow" d="M326 243 H352" marker-end="url(#arr)"/>
+        <path class="arrow dash" d="M346 295 H431 V276" marker-end="url(#arr)"/>
+        <path class="arrow" d="M506 243 H532" marker-end="url(#arr)"/>
+        <path class="arrow dash" d="M686 243 H712" marker-end="url(#arr)"/>
+
+        <!-- Lane C: Craftax -->
+        <rect class="lane" x="0" y="328" width="900" height="150" rx="10"/>
+        <text class="lane-t" x="16" y="352">C · CRAFTAX — JAX, end-to-end on one accelerator</text>
+        <rect class="box" x="16" y="378" width="170" height="58" rx="8"/>
+        <text class="t" x="101" y="403" text-anchor="middle">vmapped Craftax</text>
+        <text class="s" x="101" y="421" text-anchor="middle">optimistic resets</text>
+        <rect class="box accent" x="216" y="378" width="170" height="58" rx="8"/>
+        <text class="t" x="301" y="403" text-anchor="middle">PPO / PPO-RNN</text>
+        <text class="s" x="301" y="421" text-anchor="middle">GRU · MoE · ICM (opt.)</text>
+        <rect class="box" x="416" y="378" width="170" height="58" rx="8"/>
+        <text class="t" x="501" y="403" text-anchor="middle">Checkpoint / resume</text>
+        <text class="s" x="501" y="421" text-anchor="middle">bit-identical restarts</text>
+        <rect class="box" x="616" y="378" width="268" height="58" rx="8"/>
+        <text class="t" x="750" y="403" text-anchor="middle">Compare vs. W&amp;B reference</text>
+        <text class="s" x="750" y="421" text-anchor="middle">70 metrics · end-of-training ranges</text>
+        <path class="arrow" d="M186 407 H212" marker-end="url(#arr)"/>
+        <path class="arrow" d="M386 407 H412" marker-end="url(#arr)"/>
+        <path class="arrow" d="M586 407 H612" marker-end="url(#arr)"/>
+      </svg>
+    </div>
+  </section>
+
+  <section id="tracks">
+    <h2>What was built</h2>
+    <div class="grid-3">
+      <div class="card">
+        <span class="tag">Track A</span>
+        <h3>DEPS on a working world</h3>
+        <p class="ink-2">The original environment returned random pixels and ignored actions, so no task could succeed. A symbolic tech-tree env, a recipe-aware controller, quantity-aware plans and event-based sub-goal completion turn the planner loop into something measurable.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Track B</span>
+        <h3>MoE + diffusion on Crafter</h3>
+        <p class="ink-2">PPO with a CNN encoder and a top-k MoE trunk, plus a diffusion policy that clones PPO action chunks with receding-horizon execution. Switching the denoiser to clean-sample prediction fixed observation-conditioning for one-hot actions.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Track C</span>
+        <h3>Reproducible Craftax</h3>
+        <p class="ink-2">PureJaxRL-style PPO and PPO-RNN with optimistic resets, an ICM bonus normalised by its running mean, and full-state checkpoints. The same command resumes a preempted run with identical results.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="results">
+    <h2>Results</h2>
+    <p class="ink-2">All numbers below were produced on a 4-core CPU with a single seed; they verify that the pipelines learn and reproduce, not final performance.</p>
+
+    <div class="chart-card">
+      <h3>Craftax-Symbolic-v1: episode return in the first millions of steps</h3>
+      <p class="sub">Baseline config (1024 envs × 64 steps, lr 2e-4). Return of episodes finishing in each update; reference runs reach ~26 (PPO) and ~37 (PPO-RNN) at 1B steps.</p>
+      <div class="chart" id="chart-return"></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Craftax-Symbolic-v1: first achievements (PPO)</h3>
+      <p class="sub">Success rate per finished episode, %. Basic achievements saturate first and the wood/stone tool chain follows, as in the reference curves.</p>
+      <div class="chart" id="chart-ach"></div>
+    </div>
+
+    <div>
+      <div class="chart-card">
+        <h3>Crafter score (higher is better)</h3>
+        <p class="sub">Geometric mean of 22 achievement success rates, 20 evaluation episodes.</p>
+        <div class="chart" id="chart-crafter"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Planner: environment steps to solve each task</h3>
+        <p class="sub">Rule-based planner, default config; all six tasks succeed.</p>
+        <div class="chart" id="chart-planner"></div>
+      </div>
+    </div>
+
+    <h3>Reproducibility checks</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Same seed, two runs (PPO and PPO-RNN)</td><td>bit-identical metrics</td></tr>
+          <tr><td>2 updates + save/load + 2 updates vs. 4 straight updates</td><td>identical metrics and parameters</td></tr>
+          <tr><td>Baseline scale: one scan vs. 5-update checkpointed chunks across processes</td><td>0 of 390 logged values differ</td></tr>
+          <tr><td>GAE vs. NumPy reference, optimistic resets, GRU reset at episode boundaries</td><td>pass</td></tr>
+          <tr><td>Random policy on Crafter vs. the published random score (~1.6%)</td><td>1.56%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="analysis">
+    <h2>Reading the reference runs</h2>
+    <div class="grid-2">
+      <figure>
+        <img src="images/paper_achievements_heatmap.png" alt="Heatmap of achievement success rates from the original multi-agent paper" width="1684" height="735">
+        <figcaption>Achievement success rates reported in the original paper (An Efficient Open World Environment for Multi-Agent Social Learning).</figcaption>
+      </figure>
+      <figure>
+        <img src="images/achievements_collect_diamond.png" alt="Achievement collect_diamond success rate over training" width="619" height="421">
+        <figcaption>COLLECT_DIAMOND over 15k updates in the reference Craftax runs: rare, slow and noisy, which is why 1B steps are needed.</figcaption>
+      </figure>
+    </div>
+    <div class="callout warn"><span class="icon">!</span><div><b>Why the first Crafter run looked far behind.</b> The reference charts are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps on a GPU; the first local run was Crafter pixels at 1e5 steps on a CPU: a different environment and 10,000× less data. The x-axis "Step" in the charts counts PPO updates, not environment steps.</div></div>
+    <div class="callout"><span class="icon">i</span><div><b>Why the ICM run collapsed.</b> Its curiosity bonus grew to ~7.5 per step while the extrinsic reward stayed ~0, so the agent optimised novelty only. The JAX trainer divides the bonus by its running mean and scales it by 0.01. Dividing by the standard deviation is not enough, because a squared prediction error is mostly mean.</div></div>
+  </section>
+
+  <section id="trajectory">
+    <h2>Embodied signal: 3D trajectories</h2>
+    <div class="grid-2">
+      <div>
+        <p class="ink-2">A transformer encoder embeds multi-joint 3D trajectories (hands and head) with velocities and a continuous-time embedding of irregular timestamps. It plugs into the MoE policy as an optional input; on synthetic motions it separates four activity classes with &gt;90% accuracy after 150 steps.</p>
+        <p class="ink-2">Data format: <code>positions (N,T,J,3)</code>, <code>timestamps (N,T)</code>, optional <code>mask</code> and <code>labels</code>.</p>
+      </div>
+      <figure>
+        <img src="images/trajectory_3d.png" alt="3D movement trajectory of left hand, right hand and head" width="794" height="839">
+        <figcaption>Recorded hand and head trajectory used to design the encoder input.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="next">
+    <h2>Next steps</h2>
+    <ul class="ink-2">
+      <li>Run the 1e9-step Craftax comparison on a GPU (3–4 hours per run) and check it with <code>compare_craftax_run.py</code> over 2–3 seeds.</li>
+      <li>Port the diffusion policy to the JAX path and evaluate MoE vs. dense trunks at scale.</li>
+      <li>Use the learned policies as low-level skills under the DEPS planner.</li>
+      <li>Connect real IMU recordings in the trajectory format.</li>
+    </ul>
+  </section>
+
+  <section id="bibtex">
+    <h2>BibTeX</h2>
+    <div class="bibtex">
+      <button class="copy-btn" type="button" data-target="bibtex-text">Copy</button>
+<pre><code id="bibtex-text">@misc{diffumoevlm2026,
+  title        = {Diffu-MoE-VLM: Planning and Learning Agents for Open-World Crafting Games},
+  author       = {NullXeronier},
+  year         = {2026},
+  howpublished = {\url{https://github.com/NullXeronier/Diffu_MoE_VLM}}
+}</code></pre>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Diffu-MoE-VLM · research prototype. Figures from the project's W&amp;B runs and repository; charts rendered from <code>docs/craftax_runs/*.jsonl</code>.</div>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  var D = window.SITE_DATA, C = window.SiteCharts;
+  var fmt1 = function (v) { return v.toFixed(1); };
+  var fmtInt = function (v) { return String(Math.round(v)); };
+  var fmtM = function (v) { return (Math.round(v * 10) / 10) + "M"; };
+
+  var ppo = D.craftax_cpu.ppo, rnn = D.craftax_cpu.ppo_rnn;
+  var ret = document.getElementById("chart-return");
+  C.lineChart(ret, {
+    ariaLabel: "Episode return versus environment steps for PPO and PPO-RNN",
+    series: [
+      { name: "PPO", color: "var(--series-1)", points: ppo.map(function (r) { return { x: r.steps, y: r["return"] }; }) },
+      { name: "PPO-RNN", color: "var(--series-2)", points: rnn.map(function (r) { return { x: r.steps, y: r["return"] }; }) }
+    ],
+    yMax: 10, xFormat: fmtM, xUnit: "env steps", yFormat: fmt1, tickFormat: fmtInt, xLabel: "env steps", yLabel: "episode return"
+  });
+  var rows = ppo.map(function (r) {
+    var m = rnn.filter(function (q) { return q.steps === r.steps; })[0];
+    return { steps: r.steps, ppo: r["return"], rnn: m ? m["return"] : null };
+  });
+  C.tableView(ret, [{ key: "steps", label: "Env steps (M)", num: true }, { key: "ppo", label: "PPO return", num: true },
+    { key: "rnn", label: "PPO-RNN return", num: true }], rows);
+
+  var ach = document.getElementById("chart-ach");
+  var achKeys = [["collect_wood", "collect wood"], ["place_table", "place table"], ["make_wood_pickaxe", "wood pickaxe"], ["eat_cow", "eat cow"]];
+  C.lineChart(ach, {
+    ariaLabel: "Achievement success rates for PPO over environment steps",
+    series: achKeys.map(function (k, i) {
+      return { name: k[1], color: "var(--series-" + (i + 1) + ")", points: ppo.map(function (r) { return { x: r.steps, y: r[k[0]] }; }) };
+    }),
+    yMax: 100, xFormat: fmtM, xUnit: "env steps", yFormat: function (v) { return Math.round(v) + "%"; }, xLabel: "env steps", yLabel: "success rate"
+  });
+  C.tableView(ach, [{ key: "steps", label: "Env steps (M)", num: true }].concat(achKeys.map(function (k) {
+    return { key: k[0], label: k[1] + " (%)", num: true };
+  })), ppo);
+
+  var cr = document.getElementById("chart-crafter");
+  C.barChart(cr, { ariaLabel: "Crafter score by policy", items: D.crafter.map(function (d) { return { label: d.policy, value: d.score }; }),
+    color: "var(--series-1)", valueFormat: function (v) { return v.toFixed(2); }, unit: "% score", max: 5 });
+  C.tableView(cr, [{ key: "policy", label: "Policy" }, { key: "score", label: "Score (%)", num: true }, { key: "return", label: "Return", num: true }], D.crafter);
+
+  var pl = document.getElementById("chart-planner");
+  C.barChart(pl, { ariaLabel: "Environment steps to solve each planner task", items: D.planner_steps.map(function (d) { return { label: d.task, value: d.steps }; }),
+    color: "var(--series-1)", unit: "steps", max: 40 });
+  C.tableView(pl, [{ key: "task", label: "Task" }, { key: "steps", label: "Steps", num: true }], D.planner_steps);
+})();
+</script>
+</body>
+</html>
