@@ -250,3 +250,25 @@ blockquote { margin: 14px 0; padding: 10px 14px; border-left: 3px solid var(--ax
 .analogy { background: var(--callout); border-radius: 10px; padding: 16px 18px; }
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 .article p, .article li { overflow-wrap: anywhere; }
+
+/* ---------- v3: research-note teaching aids ---------- */
+.why { border-left: 3px solid var(--accent); background: var(--callout); border-radius: 0 8px 8px 0; padding: 10px 14px; }
+.intuition { border-left: 3px solid var(--axis); background: var(--surface); border-radius: 0 8px 8px 0; padding: 10px 14px; color: var(--ink-2); }
+.article h3 { margin-top: 30px; }
+table.glossary td:first-child { white-space: nowrap; font-weight: 600; }
+table.glossary td:last-child a { white-space: nowrap; }
+@media (max-width: 560px) {
+  table.glossary thead { display: none; }
+  table.glossary tr { display: block; border-bottom: 1px solid var(--grid); padding: 8px 0; }
+  table.glossary td { display: block; border: none; padding: 2px 4px; white-space: normal; }
+}
+.diagram.lg { padding: 14px; }
+.diagram.lg .t { font-size: 14px; }
+.diagram.lg .s { font-size: 12px; }
+.diagram .dim { opacity: 0.45; }
+.refs { font-size: 0.9rem; padding-left: 22px; }
+.refs li { margin-bottom: 6px; }
+@media (max-width: 560px) {
+  .diagram.lg { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .diagram.lg svg { min-width: 500px; }
+}
