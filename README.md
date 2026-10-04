@@ -1,6 +1,6 @@
 # MC-Planner Describe, Explain, Plan and Select Simulator
 
-Project page and research note (English / 한국어): [`docs/index.html`](docs/index.html), [`docs/ko/index.html`](docs/ko/index.html) (GitHub Pages, served from `docs/`).
+Project page, code browser, reproducibility report and research note (English / 한국어): [`docs/index.html`](docs/index.html), [`docs/code.html`](docs/code.html), [`docs/reproducibility.html`](docs/reproducibility.html), [`docs/ko/index.html`](docs/ko/index.html) (GitHub Pages, served from `docs/`; rebuild the code snapshot with `python tools/build_code_snapshot.py`).
 
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT, MAKE...) in PPO Actor with IMU data 

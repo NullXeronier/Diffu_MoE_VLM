@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffu-MoE-VLM 코드</title>
+<meta name="description" content="Diffu-MoE-VLM 소스 코드, 모듈 지도와 빠른 시작.">
+<link rel="icon" href="data:,">
+<link rel="alternate" hreflang="en" href="../code.html">
+<link rel="stylesheet" href="../assets/site.css">
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="메인">
+  <div class="wrap">
+    <a class="brand" href="./">Diffu-MoE-VLM</a>
+    <a class="link optional" href="./#key-results">프로젝트</a>
+    <a class="link optional" href="code.html" aria-current="page">코드</a>
+    <a class="link optional" href="reproducibility.html">재현성</a>
+    <a class="link" href="blog/">블로그</a>
+    <a class="lang-switch" href="../code.html" hreflang="en" lang="en">English</a>
+    <button class="theme-toggle" type="button" aria-label="다크 모드 전환">◐</button>
+  </div>
+</nav>
+<main class="wrap">
+  <section>
+    <div class="kicker">코드</div>
+    <h1>소스 코드</h1>
+    <p class="ink-2">저장소의 Python 소스, 설정, 테스트를 이 페이지에서 바로 읽을 수 있다. 왼쪽 목록이나 아래 모듈 지도에서 파일을 고르고, 줄 번호를 누르면 그 줄로 가는 링크가 된다.</p>
+  </section>
+  <section id="quick-start">
+    <h2>빠른 시작</h2>
+<div class="bibtex"><button class="copy-btn" type="button" data-target="quick">Copy</button><pre id="quick"><code>pip install -e &quot;.[dev]&quot;                 # core + pytest
+pip install -e &quot;.[rl]&quot;                  # + torch / crafter
+pip install -e &quot;.[jax]&quot;                 # + jax / craftax
+
+python main.py                                          # planner on all base tasks
+python train_ppo.py ppo.total_steps=1000000             # PPO + MoE on Crafter
+python train_diffusion.py demos.policy_checkpoint=runs/ppo/checkpoint.pt
+python evaluate_policy.py policy=runs/diffusion/checkpoint.pt episodes=50
+python train_craftax.py                                 # Craftax PPO, 1e9 steps
+python train_craftax.py algo.rnn=true                   # Craftax PPO-RNN
+pytest -q                                               # test suite</code></pre></div>
+  </section>
+  <section id="modules">
+    <h2>모듈 지도</h2>
+    <p class="ink-2">세 갈래(계획, Crafter 정책, Craftax 학습)의 핵심 파일이다. 이름을 누르면 아래 뷰어에서 열린다.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>파일</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#f=diffu_moe_vlm/core.py"><code>diffu_moe_vlm/core.py</code></a></td><td>테크 트리(레시피·도구), 태스크, 계획 파싱</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/env.py"><code>diffu_moe_vlm/env.py</code></a></td><td>기호 테크 트리 환경 (Gymnasium API)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/planner.py"><code>diffu_moe_vlm/planner.py</code></a></td><td>LLM 플래너, 규칙 기반 폴백, 재계획</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/selector.py"><code>diffu_moe_vlm/selector.py</code></a></td><td>하위 목표 선택 (계획 순서·우선순위·의존성·horizon)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/controller.py"><code>diffu_moe_vlm/controller.py</code></a></td><td>목표 조건부 컨트롤러, 매크로 행동 생성</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/evaluator.py"><code>diffu_moe_vlm/evaluator.py</code></a></td><td>Describe, Explain, Plan and Select 평가 루프</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/crafter_env.py"><code>diffu_moe_vlm/crafter_env.py</code></a></td><td>Crafter 래퍼, 업적 성공률과 Crafter 점수</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/moe.py"><code>diffu_moe_vlm/nn/moe.py</code></a></td><td>Top-k 노이즈 게이트 MoE와 균형 손실</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/diffusion.py"><code>diffu_moe_vlm/nn/diffusion.py</code></a></td><td>행동 묶음 Diffusion 정책 (x0 예측, DDIM)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/encoders.py"><code>diffu_moe_vlm/nn/encoders.py</code></a></td><td>시각 인코더: CNN, ViT, 사전학습 CLIP/SigLIP</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/imu.py"><code>diffu_moe_vlm/imu.py</code></a></td><td>3D 궤적·IMU 데이터 형식과 합성 데이터 생성기</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/rl/ppo.py"><code>diffu_moe_vlm/rl/ppo.py</code></a></td><td>GAE, MoE 보조 손실, ICM을 포함한 PPO (PyTorch)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/rl/diffusion_bc.py"><code>diffu_moe_vlm/rl/diffusion_bc.py</code></a></td><td>PPO 시연으로 하는 Diffusion 모방학습</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/jax_rl/ppo.py"><code>diffu_moe_vlm/jax_rl/ppo.py</code></a></td><td>하나의 jax.jit 안의 PPO·PPO-RNN, 체크포인트와 재개</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/jax_rl/wrappers.py"><code>diffu_moe_vlm/jax_rl/wrappers.py</code></a></td><td>배치 Craftax, optimistic reset, 에피소드 로깅</td></tr>
+        <tr><td><a href="#f=train_ppo.py"><code>train_ppo.py</code></a></td><td>Crafter에서 PPO + MoE 학습</td></tr>
+        <tr><td><a href="#f=train_diffusion.py"><code>train_diffusion.py</code></a></td><td>Diffusion 정책 모방학습</td></tr>
+        <tr><td><a href="#f=evaluate_policy.py"><code>evaluate_policy.py</code></a></td><td>정책 평가 (업적, Crafter 점수)</td></tr>
+        <tr><td><a href="#f=train_craftax.py"><code>train_craftax.py</code></a></td><td>Craftax 학습 진입점 (청크 단위, 재개 가능)</td></tr>
+        <tr><td><a href="#f=compare_craftax_run.py"><code>compare_craftax_run.py</code></a></td><td>실행 결과를 레퍼런스 W&B 범위와 비교</td></tr>
+        <tr><td><a href="#f=tests/test_jax_rl.py"><code>tests/test_jax_rl.py</code></a></td><td>JAX 경로의 GAE·결정론·재개 테스트</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <section id="browse">
+    <h2>코드 보기</h2>
+    <div class="code-viewer" id="code-viewer" data-default="diffu_moe_vlm/core.py"></div>
+    <p class="muted small">스냅샷은 <code>python tools/build_code_snapshot.py</code>로 다시 만든다.</p>
+  </section>
+</main>
+<footer><div class="wrap">Diffu-MoE-VLM · 연구 프로토타입 · <a class="lang-switch" href="../code.html" hreflang="en" lang="en">English</a></div></footer>
+<script src="../assets/site.js"></script>
+<script src="../assets/code-snapshot.js"></script>
+<script src="../assets/code-viewer.js"></script>
+</body>
+</html>

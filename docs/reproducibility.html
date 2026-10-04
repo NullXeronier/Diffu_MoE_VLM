@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craftax Reproducibility Report</title>
+<meta name="description" content="Craftax reproducibility test: determinism, resume and early-learning results against the reference runs.">
+<link rel="icon" href="data:,">
+<link rel="alternate" hreflang="ko" href="ko/reproducibility.html">
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="./">Diffu-MoE-VLM</a>
+    <a class="link optional" href="./#key-results">Project</a>
+    <a class="link optional" href="code.html">Code</a>
+    <a class="link optional" href="reproducibility.html" aria-current="page">Reproducibility</a>
+    <a class="link" href="blog/">Blog</a>
+    <a class="lang-switch" href="ko/reproducibility.html" hreflang="ko" lang="ko">한국어</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+  </div>
+</nav>
+<main class="wrap">
+  <section>
+    <div class="kicker">Reproducibility report</div>
+    <h1>Craftax reproducibility test</h1>
+    <p class="ink-2">Goal: reproduce the reference W&amp;B runs (<code>Craftax-Symbolic-v1-1000M</code>, <code>Craftax-Symbolic-v1-PPO_RNN-1000M</code>, see <a href="craftax_reference.json">craftax_reference.json</a>) with <a href="code.html#f=train_craftax.py"><code>train_craftax.py</code></a>.</p>
+    <div class="stats">
+      <div class="stat"><div class="label">Logged values differing after resume</div><div class="value">0 / 390</div><div class="delta good">bit-identical</div></div>
+      <div class="stat"><div class="label">PPO return at 6.55M steps</div><div class="value">6.66</div><div class="delta">from 1.49</div></div>
+      <div class="stat"><div class="label">Share of reference budget</div><div class="value">0.66%</div><div class="delta">of 1B steps</div></div>
+      <div class="stat"><div class="label">Automated tests</div><div class="value">58</div><div class="delta good">all pass</div></div>
+    </div>
+  </section>
+  <section id="tested">
+    <h2>What was tested here (CPU, 4 cores, no GPU)</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Unit: GAE vs. NumPy reference, running moments, optimistic resets (fresh distinct worlds for done envs), MoE balance loss, GRU state reset at episode boundaries</td><td>pass (<code>tests/test_jax_rl.py</code>)</td></tr>
+        <tr><td>Determinism: same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ</td><td>pass</td></tr>
+        <tr><td>Resume: 2 + save/load + 2 updates is bit-identical to 4 straight updates (metrics and params)</td><td>pass</td></tr>
+        <tr><td>Real-scale determinism: baseline config (1024 envs × 64 steps), one uninterrupted <code>scan</code> vs. 5-update chunks with checkpoints, resumed across processes: 390 logged values at updates 5–30</td><td>0 differences</td></tr>
+        <tr><td>Learning, PPO, 100 updates = 6.55M steps (0.66% of the reference budget)</td><td>return 1.49 → 6.66, achievements/episode 2.4 → 7.6</td></tr>
+        <tr><td>Learning, PPO-RNN, 50 updates = 3.28M steps</td><td>return 1.49 → 5.15 (PPO at the same step: 5.47)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Throughput on this CPU: about 1,150–1,250 env steps/s (reference GPU runs: 50k–95k).</p>
+  </section>
+  <section id="early">
+    <h2>Early learning (single seed)</h2>
+    <div class="chart-card">
+      <h3>Episode return</h3>
+      <p class="sub">Default config, CPU. Reference runs reach about 26 (PPO) and 37 (PPO-RNN) at 1B steps.</p>
+      <div class="chart" id="chart-return"></div>
+    </div>
+    <div class="chart-card">
+      <h3>First achievements (PPO)</h3>
+      <p class="sub">Success rate over finished episodes.</p>
+      <div class="chart" id="chart-ach"></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Updates (env steps)</th><th>Model</th><th class="num">Return</th><th class="num">Ach./ep.</th><th class="num">collect_wood</th><th class="num">place_table</th><th class="num">make_wood_pickaxe</th><th class="num">eat_cow</th><th class="num">collect_stone</th></tr></thead>
+      <tbody>
+        <tr><td>10 (0.66M)</td><td>PPO</td><td class="num">2.45</td><td class="num">3.35</td><td class="num">65.0</td><td class="num">32.9</td><td class="num">0.8</td><td class="num">0.8</td><td class="num">0.4</td></tr>
+        <tr><td>10 (0.66M)</td><td>PPO-RNN</td><td class="num">2.57</td><td class="num">3.47</td><td class="num">62.6</td><td class="num">32.6</td><td class="num">1.1</td><td class="num">1.1</td><td class="num">0.0</td></tr>
+        <tr><td>50 (3.28M)</td><td>PPO</td><td class="num">5.47</td><td class="num">6.37</td><td class="num">96.4</td><td class="num">92.3</td><td class="num">39.4</td><td class="num">28.1</td><td class="num">2.3</td></tr>
+        <tr><td>50 (3.28M)</td><td>PPO-RNN</td><td class="num">5.15</td><td class="num">6.05</td><td class="num">95.8</td><td class="num">84.1</td><td class="num">19.3</td><td class="num">18.4</td><td class="num">4.2</td></tr>
+        <tr><td>100 (6.55M)</td><td>PPO</td><td class="num">6.66</td><td class="num">7.56</td><td class="num">97.1</td><td class="num">89.5</td><td class="num">50.0</td><td class="num">70.5</td><td class="num">17.6</td></tr>
+      </tbody>
+    </table></div>
+    <p>This matches the start of the reference curves: the basic achievements (collect_wood, place_table, collect_sapling, place_plant) saturate first, wake_up starts near 100% and declines later, and the wood/stone tool chain follows. The reference PPO-RNN advantage appears over hundreds of millions of steps; at 3M steps the two are within single-seed noise.</p>
+    <p>Raw logs: <a href="craftax_runs/craftax_cpu_ppo_6.5M.jsonl">craftax_cpu_ppo_6.5M.jsonl</a>, <a href="craftax_runs/craftax_cpu_ppo_rnn_3.3M.jsonl">craftax_cpu_ppo_rnn_3.3M.jsonl</a></p>
+  </section>
+  <section id="not-tested">
+    <h2>Not tested here</h2>
+    <p>The end-of-training numbers (PPO return about 26–28, PPO-RNN about 37) need the full 1e9 steps: about 3–4 hours per run on one GPU (the reference runs) versus about 10 days on this CPU. To finish the test on a GPU:</p>
+    <div class="bibtex"><button class="copy-btn" type="button" data-target="gpu">Copy</button><pre id="gpu"><code>pip install -e &quot;.[jax]&quot; &amp;&amp; pip install -U &quot;jax[cuda12]&quot;
+python train_craftax.py output_dir=runs/ppo seed=0
+python train_craftax.py algo.rnn=true output_dir=runs/ppo_rnn seed=0
+python compare_craftax_run.py runs/ppo/metrics.jsonl --ref ppo
+python compare_craftax_run.py runs/ppo_rnn/metrics.jsonl --ref ppo_rnn</code></pre></div>
+    <p>A run is reproduced when <a href="code.html#f=compare_craftax_run.py"><code>compare_craftax_run.py</code></a> reports the return, length, achievements per episode and per-achievement rates inside the reference ranges. The ranges are read off chart images and are approximate, so use 2–3 seeds. If a run is interrupted, re-run the same command to resume.</p>
+    <div class="callout warn"><span class="icon">!</span><div>Hyper-parameters follow the Craftax PPO baselines (1024 envs, 64 steps, lr 2e-4, γ 0.99, λ 0.8, 3×512 tanh MLP / GRU-512). The reference runs' own config was not available, so confirm these against it if possible.</div></div>
+  </section>
+</main>
+<footer><div class="wrap">Diffu-MoE-VLM · research prototype · <a class="lang-switch" href="ko/reproducibility.html" hreflang="ko" lang="ko">한국어</a></div></footer>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/project-charts.js"></script>
+</body>
+</html>

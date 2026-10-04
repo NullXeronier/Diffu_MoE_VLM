@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffu-MoE-VLM Code</title>
+<meta name="description" content="Diffu-MoE-VLM source code, module map and quick start.">
+<link rel="icon" href="data:,">
+<link rel="alternate" hreflang="ko" href="ko/code.html">
+<link rel="stylesheet" href="assets/site.css">
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="./">Diffu-MoE-VLM</a>
+    <a class="link optional" href="./#key-results">Project</a>
+    <a class="link optional" href="code.html" aria-current="page">Code</a>
+    <a class="link optional" href="reproducibility.html">Reproducibility</a>
+    <a class="link" href="blog/">Blog</a>
+    <a class="lang-switch" href="ko/code.html" hreflang="ko" lang="ko">한국어</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+  </div>
+</nav>
+<main class="wrap">
+  <section>
+    <div class="kicker">Code</div>
+    <h1>Source code</h1>
+    <p class="ink-2">Read the repository's Python sources, configs and tests right on this page. Pick a file from the list or the module map below; clicking a line number gives a link to that line.</p>
+  </section>
+  <section id="quick-start">
+    <h2>Quick start</h2>
+<div class="bibtex"><button class="copy-btn" type="button" data-target="quick">Copy</button><pre id="quick"><code>pip install -e &quot;.[dev]&quot;                 # core + pytest
+pip install -e &quot;.[rl]&quot;                  # + torch / crafter
+pip install -e &quot;.[jax]&quot;                 # + jax / craftax
+
+python main.py                                          # planner on all base tasks
+python train_ppo.py ppo.total_steps=1000000             # PPO + MoE on Crafter
+python train_diffusion.py demos.policy_checkpoint=runs/ppo/checkpoint.pt
+python evaluate_policy.py policy=runs/diffusion/checkpoint.pt episodes=50
+python train_craftax.py                                 # Craftax PPO, 1e9 steps
+python train_craftax.py algo.rnn=true                   # Craftax PPO-RNN
+pytest -q                                               # test suite</code></pre></div>
+  </section>
+  <section id="modules">
+    <h2>Module map</h2>
+    <p class="ink-2">The key files of the three tracks (planning, Crafter policies, Craftax training). Click a name to open it in the viewer below.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>File</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#f=diffu_moe_vlm/core.py"><code>diffu_moe_vlm/core.py</code></a></td><td>Tech tree (recipes, tools), tasks, plan parsing</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/env.py"><code>diffu_moe_vlm/env.py</code></a></td><td>Symbolic tech-tree environment (Gymnasium API)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/planner.py"><code>diffu_moe_vlm/planner.py</code></a></td><td>LLM planner with rule-based fallback and replanning</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/selector.py"><code>diffu_moe_vlm/selector.py</code></a></td><td>Subgoal selection (plan order, priority, dependency, horizon)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/controller.py"><code>diffu_moe_vlm/controller.py</code></a></td><td>Goal-conditioned controller producing macro actions</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/evaluator.py"><code>diffu_moe_vlm/evaluator.py</code></a></td><td>Describe, Explain, Plan and Select evaluation loop</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/crafter_env.py"><code>diffu_moe_vlm/crafter_env.py</code></a></td><td>Crafter wrapper, achievement rates and Crafter score</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/moe.py"><code>diffu_moe_vlm/nn/moe.py</code></a></td><td>Top-k noisy-gated Mixture of Experts with balance loss</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/diffusion.py"><code>diffu_moe_vlm/nn/diffusion.py</code></a></td><td>Diffusion policy over action chunks (x0 prediction, DDIM)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/encoders.py"><code>diffu_moe_vlm/nn/encoders.py</code></a></td><td>Visual encoders: CNN, ViT, pretrained CLIP/SigLIP</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/imu.py"><code>diffu_moe_vlm/imu.py</code></a></td><td>3D trajectory / IMU format and synthetic generator</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/rl/ppo.py"><code>diffu_moe_vlm/rl/ppo.py</code></a></td><td>PPO with GAE, MoE aux loss and ICM (PyTorch)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/rl/diffusion_bc.py"><code>diffu_moe_vlm/rl/diffusion_bc.py</code></a></td><td>Diffusion behavior cloning from PPO demonstrations</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/jax_rl/ppo.py"><code>diffu_moe_vlm/jax_rl/ppo.py</code></a></td><td>PPO / PPO-RNN in one jax.jit, checkpoint and resume</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/jax_rl/wrappers.py"><code>diffu_moe_vlm/jax_rl/wrappers.py</code></a></td><td>Batched Craftax, optimistic resets, episode logging</td></tr>
+        <tr><td><a href="#f=train_ppo.py"><code>train_ppo.py</code></a></td><td>Train PPO + MoE on Crafter</td></tr>
+        <tr><td><a href="#f=train_diffusion.py"><code>train_diffusion.py</code></a></td><td>Train the diffusion policy by behavior cloning</td></tr>
+        <tr><td><a href="#f=evaluate_policy.py"><code>evaluate_policy.py</code></a></td><td>Evaluate a policy (achievements, Crafter score)</td></tr>
+        <tr><td><a href="#f=train_craftax.py"><code>train_craftax.py</code></a></td><td>Craftax training entry point (chunked, resumable)</td></tr>
+        <tr><td><a href="#f=compare_craftax_run.py"><code>compare_craftax_run.py</code></a></td><td>Compare a run against the reference W&B ranges</td></tr>
+        <tr><td><a href="#f=tests/test_jax_rl.py"><code>tests/test_jax_rl.py</code></a></td><td>GAE, determinism and resume tests for the JAX path</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <section id="browse">
+    <h2>Browse</h2>
+    <div class="code-viewer" id="code-viewer" data-default="diffu_moe_vlm/core.py"></div>
+    <p class="muted small">Regenerate the snapshot with <code>python tools/build_code_snapshot.py</code>.</p>
+  </section>
+</main>
+<footer><div class="wrap">Diffu-MoE-VLM · research prototype · <a class="lang-switch" href="ko/code.html" hreflang="ko" lang="ko">한국어</a></div></footer>
+<script src="assets/site.js"></script>
+<script src="assets/code-snapshot.js"></script>
+<script src="assets/code-viewer.js"></script>
+</body>
+</html>
