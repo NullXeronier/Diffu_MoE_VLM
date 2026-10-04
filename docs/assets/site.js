@@ -89,7 +89,7 @@
     var det = document.createElement("details");
     det.className = "table-view";
     var sum = document.createElement("summary");
-    sum.textContent = "Show data table";
+    sum.textContent = (document.documentElement.lang || "").indexOf("ko") === 0 ? "데이터 표 보기" : "Show data table";
     det.appendChild(sum);
     var wrap = document.createElement("div");
     wrap.className = "table-wrap";

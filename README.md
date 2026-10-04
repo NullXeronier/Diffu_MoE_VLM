@@ -1,6 +1,6 @@
 # MC-Planner DEPS Simulator
 
-Project page and dev log: [`docs/index.html`](docs/index.html) (GitHub Pages, served from `docs/`).
+Project page and research note (English / 한국어): [`docs/index.html`](docs/index.html), [`docs/ko/index.html`](docs/ko/index.html) (GitHub Pages, served from `docs/`).
 
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT, MAKE...) in PPO Actor with IMU data 

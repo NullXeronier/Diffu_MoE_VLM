@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffu-MoE-VLM 연구 노트</title>
+<meta name="description" content="연구 노트: 동작하지 않던 프로토타입에서 재현 가능한 Craftax 학습까지, 오픈월드 크래프팅 게임을 위한 계획·학습 에이전트.">
+<link rel="icon" href="data:,">
+<link rel="alternate" hreflang="en" href="../../blog/building-diffu-moe-vlm.html">
+<link rel="stylesheet" href="../../assets/site.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<script defer src="../../assets/katex/katex.min.js"></script>
+<script defer src="../../assets/katex/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]})"></script>
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+</head>
+<body>
+<nav class="nav" aria-label="메인">
+  <div class="wrap narrow">
+    <a class="brand" href="../">Diffu-MoE-VLM</a>
+    <a class="link" href="../#key-results">프로젝트</a>
+    <a class="link" href="./">블로그</a>
+    <a class="lang-switch" href="../../blog/building-diffu-moe-vlm.html" hreflang="en" lang="en">English</a>
+    <button class="theme-toggle" type="button" aria-label="다크 모드 전환">◐</button>
+  </div>
+</nav>
+
+<main class="wrap narrow article">
+  <section>
+    <div class="kicker">연구 노트</div>
+    <h1>오픈월드에서 계획하고 제작하는 법을 배우기</h1>
+    <p class="lead">동작하지 않던 프로토타입에서 테스트된 계획, MoE·Diffusion 정책, 재현 가능한 Craftax 학습까지.</p>
+    <div class="props">
+      <div class="pk">Project</div><div>Diffu-MoE-VLM</div>
+      <div class="pk">Author</div><div>NullXeronier</div>
+      <div class="pk">Status</div><div>연구 프로토타입 · 2025–2026</div>
+      <div class="pk">URL</div><div><a href="https://github.com/NullXeronier/Diffu_MoE_VLM">github.com/NullXeronier/Diffu_MoE_VLM</a></div>
+      <div class="pk">유형</div><div><span class="tag">LLM</span><span class="tag">RL</span><span class="tag">Agent</span><span class="tag">Vision</span></div>
+    </div>
+    <div class="toc">
+      <b>목차</b>
+      <ol>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#key-points">Key points</a></li>
+        <li><a href="#methodology">Methodology</a></li>
+        <li><a href="#results">Experimental Results</a></li>
+        <li><a href="#consideration">In-depth Consideration</a></li>
+        <li><a href="#easy">Easy Explanation</a></li>
+        <li><a href="#gamedev">In Game Development</a></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="overview">
+    <h2>1. Overview</h2>
+    <h4>핵심 문제 및 기여</h4>
+    <p>이 프로젝트는 Minecraft류 세계에서 LLM이 계획하고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트를 목표로 했지만, 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시해서 어떤 결과도 측정할 수 없었다. 이 노트는 그것이 테스트된 세 갈래 파이프라인이 된 과정을 정리한다. 기호 기반 테크 트리 위의 <b>DEPS 방식 플래너</b>, Crafter 픽셀 위의 <b>MoE·Diffusion 정책</b>, 그리고 10억 스텝 레퍼런스 런과 같은 설정으로 학습하며 중단 후에도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
+  </section>
+
+  <section id="key-points">
+    <h2>2. Key points</h2>
+    <p><b>푸는 에이전트보다 풀 수 있는 세계가 먼저:</b> 도구·재료·연료 규칙이 적용되는 Gymnasium 테크 트리로 기본 태스크 성공이 0/6에서 6/6이 되었고, 행동 30%가 무작위로 실패해도 재계획으로 6/6을 유지한다.</p>
+    <p><b>계획 품질과 제어 품질의 분리 측정:</b> 선행 재료 수집을 끄면 단계를 빠뜨린 계획은 재계획 한도를 모두 쓰고 실패하고, 켜면 같은 계획이 성공한다.</p>
+    <p><b>픽셀로부터의 MoE PPO와 Diffusion 모방학습:</b> Crafter에서 CNN과 전문가 4개 중 2개를 고르는 MoE 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배에 도달하고, 이를 모방한 Diffusion 정책이 교사의 리턴에 거의 근접한다.</p>
+    <p><b>레퍼런스를 올바르게 읽기:</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과이고, x축은 PPO 업데이트 횟수다. JAX 파이프라인은 바로 그 설정을 실행한다.</p>
+    <p><b>테스트로 보장하는 결정론:</b> 체크포인트 청크로 나눠 여러 프로세스에서 이어 붙인 런이 중단 없이 끝낸 런을 재현하며, 기록된 값 390개 중 차이가 0개다.</p>
+  </section>
+
+  <section id="methodology">
+    <h2>3. Methodology</h2>
+    <p><b>테크 트리 환경:</b> 기호 세계는 인벤토리 \(s \in \mathbb{N}^{19}\)와 매크로 행동 \(a = (\text{verb}, \text{item})\), \(\text{verb} \in \{\text{mine}, \text{craft}, \text{smelt}\}\) 위의 MDP로 정식화한다. 행동은 필요한 도구를 갖고 재료가 충분할 때만 성공하며, 재료는 소모되고 도구는 소모되지 않는다. 목표 아이템이 인벤토리에 들어오면 태스크가 성공한다.</p>
+    <p><b>DEPS 루프:</b> 플래너(LLM 또는 수량을 고려하는 규칙 기반 폴백)가 계획을 내면, 파서가 이를 순서 있는 하위 목표 인스턴스 목록으로 바꾼다(<code>Mine cobblestone x6</code>은 6개가 된다). 셀렉터가 다음 대기 인스턴스를 고르고 컨트롤러가 행동한다. 인스턴스는 해당 아이템 수가 늘어날 때 완료된다. 3회 연속 실패하거나 한 하위 목표에 50스텝 이상 머물면 인벤토리와 오류 메시지를 담아 재계획한다.</p>
+    <p><b>PPO:</b> 두 학습 경로 모두 클리핑된 목적함수와 일반화 이점 추정(GAE)을 사용한다.</p>
+    <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(r_t(\theta)\hat{A}_t,\ \operatorname{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\hat{A}_t\right)\right],\quad r_t = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
+    <div class="math-block">$$\hat{A}_t = \sum_{l\ge 0} (\gamma\lambda)^l \delta_{t+l},\qquad \delta_t = r_t + \gamma V(s_{t+1})(1-d_t) - V(s_t)$$</div>
+    <p><b>Mixture of Experts:</b> 게이트가 \(p = \operatorname{softmax}(W_g x + \varepsilon)\)를 만들고, 확률이 가장 큰 전문가 2개를 다시 정규화한 가중치로 섞는다. 균형 손실이 전문가들이 고르게 쓰이도록 한다.</p>
+    <div class="math-block">$$y = \sum_{i \in \text{top-}k(p)} \frac{p_i}{\sum_{j\in\text{top-}k} p_j} E_i(x),\qquad L_{\text{aux}} = E \sum_{i=1}^{E} f_i\, \bar{p}_i$$</div>
+    <p>여기서 \(f_i\)는 전문가 \(i\)로 1순위 라우팅된 입력의 비율, \(\bar{p}_i\)는 평균 게이트 확률이다(완전 균형이면 \(L_{\text{aux}} = 1\), 한쪽으로 몰리면 \(E\)).</p>
+    <p><b>Diffusion 정책:</b> 길이 \(H = 8\)의 행동 묶음을 \([-1, 1]\)로 스케일한 원-핫 벡터로 표현하고, 디노이저가 깨끗한 묶음을 예측한다.</p>
+    <div class="math-block">$$\mathcal{L} = \mathbb{E}_{t,\epsilon}\left\| f_\theta\!\left(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\ t,\ \phi(o)\right) - x_0 \right\|^2$$</div>
+    <p>샘플링은 간격을 둔 DDIM 10단계로 하고, 앞의 4개 행동을 실행한 뒤 다시 샘플링한다.</p>
+    <p><b>호기심 보너스:</b> ICM의 forward 오차 \(e_t\)를 이동평균으로 나눈 뒤 스케일해서 평균 기여도를 고정한다.</p>
+    <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
+    <p><b>Crafter 점수:</b> 업적 성공률 \(s_i\)(%)를 \(S = \exp\big(\tfrac{1}{N}\sum_i \ln(1+s_i)\big) - 1\)로 합친다.</p>
+    <p><b>학습 파이프라인:</b> Crafter 정책은 멀티프로세스 환경과 PyTorch를 사용한다. Craftax는 환경, GAE, PPO를 하나의 <code>jax.jit</code> 안에서 업데이트당 환경 1024개 × 64스텝으로 돌리고, optimistic reset(스텝당 새 월드 64개)과 몇 업데이트마다의 전체 상태 체크포인트를 사용한다.</p>
+  </section>
+
+  <section id="results">
+    <h2>4. Experimental Results</h2>
+    <h4>평가 환경 및 지표</h4>
+    <ul>
+      <li><b>기호 테크 트리:</b> 기본 태스크 6개의 성공 여부, 성공까지의 스텝 수, 재계획 횟수.</li>
+      <li><b>Crafter:</b> 고정된 월드에서 에피소드 20개의 리턴과 Crafter 점수.</li>
+      <li><b>Craftax-Symbolic-v1:</b> 리턴, 에피소드당 업적 수, 모든 업적의 성공률. 레퍼런스 범위는 10억 스텝 W&amp;B 런에서 가져왔다.</li>
+    </ul>
+    <h4>주요 정량적 결과</h4>
+    <ul>
+      <li><b>플래너:</b> 태스크 0/6 → 6/6(나무 반블록 3스텝, 다이아몬드 34스텝). 행동 30% 무작위 실패에서도 6/6.</li>
+      <li><b>Crafter:</b> 점수 랜덤 1.56 → MoE PPO 4.63 → Diffusion 모방학습 3.56, 리턴 1.25 / 3.60 / 3.55. 랜덤 점수가 논문 수치(약 1.6%)와 일치한다.</li>
+      <li><b>Diffusion 조건 반영:</b> 깨끗한 샘플 예측으로 행동 묶음 40/40 정확히 일치. 노이즈 예측 방식은 관측과 무관한 묶음을 냈다.</li>
+      <li><b>Craftax(CPU, 기본 설정):</b> PPO 리턴 655만 스텝 동안 1.49 → 6.66. 328만 스텝에서 PPO-RNN 5.15, PPO 5.47. 655만 스텝에서 COLLECT_WOOD 97%, PLACE_TABLE 90%, MAKE_WOOD_PICKAXE 50%.</li>
+      <li><b>재현성:</b> 중단 없이 끝낸 런과 프로세스를 바꿔 이어 붙인 체크포인트 청크 사이에 기록된 값 390개 중 차이 0개. 자동 테스트 58개 통과.</li>
+    </ul>
+    <figure>
+      <img src="../../images/achievements_collect_diamond.png" alt="레퍼런스 런의 15k 업데이트 동안 COLLECT_DIAMOND 성공률" width="619" height="421">
+      <figcaption>레퍼런스 런: COLLECT_DIAMOND 같은 드문 업적은 늦게야 오른다. 10억 스텝이 필요한 이유다.</figcaption>
+    </figure>
+  </section>
+
+  <section id="consideration">
+    <h2>5. In-depth Consideration</h2>
+    <h4>기술적 의의 및 장점</h4>
+    <ul>
+      <li>기호 세계의 모든 규칙이 환경, 컨트롤러, 규칙 기반 플래너가 공유하는 하나의 순수 함수에 있다. 그래서 플래너 기준선이 정확한 상한이 되고, LLM 계획을 그에 대어 채점할 수 있다.</li>
+      <li>JAX 학습기는 레퍼런스 설정을 GPU 1대에서 명령 한 줄로 만들고, 청크 단위 체크포인트는 중단을 무해하게 만든다. 레퍼런스 런은 10개 중 8개가 failed 상태로 끝났다.</li>
+      <li>이 노트의 모든 실패(가짜 환경, 조건을 무시한 Diffusion, 잘못 읽은 그래프, 호기심 보상 붕괴)를 테스트나 명시적인 검사로 바꿨다.</li>
+    </ul>
+    <h4>한계점 및 비판적 고찰</h4>
+    <ul>
+      <li><b>규모:</b> Craftax 결과는 레퍼런스 학습량의 0.3~0.7%를 시드 1개로 측정한 것이다. 학습 종료 시점 비교(PPO 약 26, PPO-RNN 약 37)는 아직 실행하지 않았다.</li>
+      <li><b>레퍼런스 값:</b> 범위는 그래프 이미지에서 읽은 근사치다. 레퍼런스 런의 실제 하이퍼파라미터를 구하지 못해 Craftax baseline 기본값을 사용했다.</li>
+      <li><b>오라클 플래너:</b> 규칙 기반 플래너는 레시피를 모두 알기 때문에 6/6은 LLM 결과가 아니라 상한이다. LLM 계획은 선행 재료 수집을 끈 상태로 측정해야 한다.</li>
+      <li><b>모듈 범위:</b> 궤적·IMU 인코더는 합성 동작에서만 검증했고, Diffusion 정책은 PyTorch 경로에만 있다.</li>
+    </ul>
+  </section>
+
+  <section id="easy">
+    <h2>6. Easy Explanation</h2>
+    <div class="analogy">
+      <p>누군가에게 코스 요리를 가르친다고 생각해 보자. 먼저 불이 실제로 켜지고 재료가 실제로 줄어드는 주방이 있어야 한다. 원래 프로젝트는 가전제품이 그림으로 그려진 주방이라 어떤 레시피도 성공할 수 없었다. 그다음 레시피북(플래너)을 주고 손기술(학습된 정책)을 익히게 한다. 마지막으로 전문 셰프와 비교하려면 같은 메뉴를 같은 시간 동안 만들어야 한다. 레퍼런스 결과는 다른 주방에서 훨씬 오래 연습한 결과였다. 정확한 조리 일지(체크포인트)를 남겨 두면 정전이 나도 처음부터 다시 시작할 필요가 없다.</p>
+    </div>
+  </section>
+
+  <section id="gamedev">
+    <h2>7. In Game Development</h2>
+    <p><b>제작 시스템의 자동 클리어 가능성 검증:</b> 수량을 고려하는 플래너는 어떤 아이템이든 얻기까지의 정확한 행동 순서를 계산한다. 레시피나 드롭률을 바꿨을 때 얻을 수 없는 아이템이 생기는지, 플레이어에게 몇 스텝이 필요한지를 플레이테스트 전에 확인할 수 있다.</p>
+    <p><b>스텝 수 기반 난이도 곡선:</b> 아이템까지의 스텝 수(예제 트리에서 나무 반블록 3, 다이아몬드 34)는 진행 속도를 직접 나타내는 자동화 가능한 지표로, 밸런스 패치마다 추적할 수 있다.</p>
+    <p><b>하이브리드 NPC:</b> 플래너가 목표를 고르고 학습된 스킬이나 스크립트가 실행하면, 계획이 텍스트로 남아 NPC 행동을 설명할 수 있으면서 저수준 제어는 견고하게 유지된다. 실패 시 재계획으로 막힌 경로나 부족한 자원에 대응한다.</p>
+    <p><b>대규모 자동 플레이테스트:</b> JAX 파이프라인은 GPU 1대에서 초당 수만 게임 스텝을 돌리고, 결정론적이며 이어서 실행 가능한 런 덕분에 에이전트 기반 회귀 테스트를 빌드마다 똑같이 반복할 수 있다.</p>
+    <p><b>프레임 예산 안의 모델 용량:</b> 전문가 4개 중 2개를 고르는 MoE는 입력마다 전문가 2개만 섞는다. 희소 디스패치를 적용하면(현재 구현은 단순함을 위해 모든 전문가를 계산한다) 실시간 프레임 예산 안에서 더 큰 용량의 NPC 정책을 쓸 수 있다.</p>
+    <p><a href="../">← 프로젝트 페이지로 돌아가기</a></p>
+  </section>
+</main>
+
+<footer><div class="wrap narrow">Diffu-MoE-VLM · 연구 노트 · <a href="../../blog/building-diffu-moe-vlm.html" hreflang="en">English</a></div></footer>
+<script src="../../assets/site.js"></script>
+</body>
+</html>

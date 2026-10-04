@@ -6,6 +6,7 @@
 <title>Diffu-MoE-VLM</title>
 <meta name="description" content="Planning and learning agents for open-world crafting games: a DEPS-style LLM planner, MoE / diffusion policies on Crafter, and a reproducible Craftax pipeline in JAX.">
 <link rel="icon" href="data:,">
+<link rel="alternate" hreflang="ko" href="ko/">
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 </head>
@@ -13,25 +14,24 @@
 <nav class="nav" aria-label="Main">
   <div class="wrap">
     <a class="brand" href="./">Diffu-MoE-VLM</a>
-    <a class="link optional" href="#overview">Overview</a>
-    <a class="link" href="#results">Results</a>
+    <a class="link optional" href="#key-results">Key Results</a>
+    <a class="link optional" href="#problem-solving">Problem Solving</a>
     <a class="link" href="blog/">Blog</a>
-    <a class="link optional" href="https://github.com/NullXeronier/Diffu_MoE_VLM">Code</a>
+    <a class="lang-switch" href="ko/" hreflang="ko" lang="ko">한국어</a>
     <button class="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
   </div>
 </nav>
 
 <header class="hero">
   <div class="wrap">
-    <div class="kicker">Research prototype · 2025–2026</div>
+    <div class="kicker">Research prototype · Game AI / Reinforcement learning</div>
     <h1>Diffu-MoE-VLM</h1>
     <p class="subtitle">Planning and learning agents for open-world crafting games: from an LLM planner on a toy world to reproducible Craftax training in JAX.</p>
     <p class="meta">NullXeronier</p>
     <div class="buttons">
       <a class="btn primary" href="https://github.com/NullXeronier/Diffu_MoE_VLM/tree/research/prototype">Code</a>
       <a class="btn" href="https://github.com/NullXeronier/Diffu_MoE_VLM/blob/research/prototype/docs/craftax_reproducibility.md">Reproducibility report</a>
-      <a class="btn" href="blog/building-diffu-moe-vlm.html">Dev log</a>
-      <a class="btn" href="#bibtex">BibTeX</a>
+      <a class="btn" href="blog/building-diffu-moe-vlm.html">Research note</a>
     </div>
   </div>
 </header>
@@ -39,28 +39,72 @@
 <main class="wrap">
   <figure>
     <img src="images/achievements_make_iron.png" alt="Achievement success rates for make_iron_sword, make_iron_pickaxe and make_iron_armour over 15k PPO updates on Craftax-Symbolic-v1" width="906" height="234">
-    <figcaption>Reference runs on Craftax-Symbolic-v1 (1B environment steps on one GPU). Iron tools emerge only late in training; PPO-RNN and the best PPO seed lead. The x-axis counts PPO updates of 1024 envs × 64 steps.</figcaption>
+    <figcaption><span class="fig-num">Fig 1.</span> Reference runs on Craftax-Symbolic-v1 (1B environment steps on one GPU). Iron tools appear only late in training. The x-axis counts PPO updates of 1024 envs × 64 steps.</figcaption>
   </figure>
-
-  <div class="card tldr">
-    <strong>TL;DR</strong>
-    <ul>
-      <li>A DEPS-style agent (describe, explain, plan, select) on a symbolic tech tree goes from <b>0/6</b> to <b>6/6</b> tasks once the environment, controller and replanning loop actually work.</li>
-      <li>On Crafter pixels, a CNN + mixture-of-experts PPO policy and a diffusion policy cloned from it reach roughly <b>3×</b> the random Crafter score within 100k CPU steps.</li>
-      <li>A pure-JAX Craftax pipeline (PPO / PPO-RNN, optional MoE and normalized ICM) reproduces the reference setup bit-for-bit across seeds, chunks and process restarts.</li>
-    </ul>
-  </div>
-
-  <div class="stats" aria-label="Key numbers">
-    <div class="stat"><div class="label">Planner tasks solved</div><div class="value">6 / 6</div><div class="delta good">▲ from 0 / 6 on the original dummy env</div></div>
-    <div class="stat"><div class="label">Automated tests</div><div class="value">58</div><div class="delta">core, Crafter, Craftax (JAX)</div></div>
-    <div class="stat"><div class="label">Values differing after resume</div><div class="value">0 / 390</div><div class="delta">single scan vs. checkpointed chunks</div></div>
-    <div class="stat"><div class="label">Craftax throughput</div><div class="value">1.2k sps</div><div class="delta">4-core CPU · reference GPU runs 50k–95k</div></div>
-  </div>
 
   <section id="overview">
     <h2>Overview</h2>
-    <p class="ink-2">The project has three tracks that share one repository and one evaluation vocabulary (tasks, achievements, success rates). Each track was built to be testable on a laptop-class CPU, with GPU scale-up as configuration only.</p>
+    <p>This project started from a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds, but whose environment returned random pixels and ignored every action. It became three tested pipelines: a <b>DEPS-style LLM planner</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
+    <p>The final claim is intentionally narrow. On a 4-core CPU the pipelines learn, are deterministic, and resume bit-for-bit after interruption. Matching the reference end-of-training numbers needs the GPU run that this setup reduces to one command.</p>
+    <p>Everything was built end-to-end in one repository: the audit, environments, agents, training infrastructure, 58 automated tests and this page.</p>
+  </section>
+
+  <section id="key-results">
+    <h2>Key Results</h2>
+    <div class="kr-grid">
+      <div class="kr">
+        <span class="chip">Environment</span>
+        <h3>Symbolic tech-tree world</h3>
+        <div class="k">Measured result</div>
+        <p>Replaced the random-pixel environment with a Gymnasium tech tree in which tools, tables, furnaces and fuel are enforced. The default tasks went from <b>0/6 to 6/6</b> (wooden slab in 3 steps, diamond in 34), and stayed at <b>6/6 with 30% random action failures</b> through replanning.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">An agent cannot be evaluated until the world responds to its actions. The first test of any setup is whether a scripted policy can solve it.</p>
+      </div>
+      <div class="kr">
+        <span class="chip">Planning</span>
+        <h3>Quantity-aware DEPS loop</h3>
+        <div class="k">Measured result</div>
+        <p>A plan that skips steps fails after the <b>5-replan budget</b> when the controller only executes the chosen sub-goal, and succeeds when the controller gathers prerequisites. This ablation separates plan quality from control quality.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">"Have planks" is not "have three planks". Sub-goals have to complete when an item is obtained, not when it happens to be present.</p>
+      </div>
+      <div class="kr">
+        <span class="chip">Algorithm</span>
+        <h3>MoE PPO on Crafter pixels</h3>
+        <div class="k">Measured result</div>
+        <p>A CNN encoder with a 4-expert, top-2 MoE trunk raised the Crafter score from <b>1.56 (random) to 4.63</b> after 100k CPU steps (about 3×); return went from 1.25 to 3.60.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">A random baseline that matches the published ~1.6% validates the metric code before any learning claim is made.</p>
+      </div>
+      <div class="kr">
+        <span class="chip">Training method</span>
+        <h3>Diffusion behaviour cloning</h3>
+        <div class="k">Measured result</div>
+        <p>A diffusion policy cloned from PPO demonstrations reached a score of <b>3.56</b> and return 3.55 (teacher 3.60). Switching to clean-sample prediction gave <b>40/40</b> exact action-chunk matches on the conditioning test.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">A low diffusion loss does not mean the model uses its condition. For one-hot targets, epsilon-prediction barely constrains the clean sample at high noise.</p>
+      </div>
+      <div class="kr">
+        <span class="chip">Infrastructure</span>
+        <h3>Craftax in JAX</h3>
+        <div class="k">Measured result</div>
+        <p>Environment and PPO are jitted together with optimistic resets: about <b>1,200 steps/s</b> on 4 CPU cores (reference GPU runs: 50k–95k). PPO return rose from 1.49 to <b>6.66</b> in 6.55M steps with the baseline config.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">World generation dominates the cost of a Craftax step, so resets have to be pooled rather than paid by every environment.</p>
+      </div>
+      <div class="kr">
+        <span class="chip">Empirical analysis</span>
+        <h3>Determinism and resume</h3>
+        <div class="k">Measured result</div>
+        <p>One uninterrupted run vs. 5-update checkpointed chunks resumed across processes: <b>0 of 390</b> logged values differ. Same-seed reruns are bit-identical for PPO and PPO-RNN.</p>
+        <div class="k">What I learned</div>
+        <p class="learned">Resumable runs turn "the run died" into "re-run the command"; 8 of the 10 reference runs ended in a failed state.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture">
+    <h2>System Architecture</h2>
     <div class="card diagram" role="img" aria-label="System overview with three tracks: DEPS planning on a symbolic tech tree, PyTorch policies on Crafter, and JAX training on Craftax">
       <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -139,91 +183,249 @@
         <path class="arrow" d="M586 407 H612" marker-end="url(#arr)"/>
       </svg>
     </div>
-  </section>
+    <p class="muted" style="font-size:0.9rem;margin-top:8px"><span class="fig-num">Fig 2.</span> Three tracks sharing one repository and one evaluation vocabulary (tasks, achievements, success rates).</p>
 
-  <section id="tracks">
-    <h2>What was built</h2>
-    <div class="grid-3">
-      <div class="card">
-        <span class="tag">Track A</span>
-        <h3>DEPS on a working world</h3>
-        <p class="ink-2">The original environment returned random pixels and ignored actions, so no task could succeed. A symbolic tech-tree env, a recipe-aware controller, quantity-aware plans and event-based sub-goal completion turn the planner loop into something measurable.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Track B</span>
-        <h3>MoE + diffusion on Crafter</h3>
-        <p class="ink-2">PPO with a CNN encoder and a top-k MoE trunk, plus a diffusion policy that clones PPO action chunks with receding-horizon execution. Switching the denoiser to clean-sample prediction fixed observation-conditioning for one-hot actions.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Track C</span>
-        <h3>Reproducible Craftax</h3>
-        <p class="ink-2">PureJaxRL-style PPO and PPO-RNN with optimistic resets, an ICM bonus normalised by its running mean, and full-state checkpoints. The same command resumes a preempted run with identical results.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="results">
-    <h2>Results</h2>
-    <p class="ink-2">All numbers below were produced on a 4-core CPU with a single seed; they verify that the pipelines learn and reproduce, not final performance.</p>
-
-    <div class="chart-card">
-      <h3>Craftax-Symbolic-v1: episode return in the first millions of steps</h3>
-      <p class="sub">Baseline config (1024 envs × 64 steps, lr 2e-4). Return of episodes finishing in each update; reference runs reach ~26 (PPO) and ~37 (PPO-RNN) at 1B steps.</p>
-      <div class="chart" id="chart-return"></div>
-    </div>
-
-    <div class="chart-card">
-      <h3>Craftax-Symbolic-v1: first achievements (PPO)</h3>
-      <p class="sub">Success rate per finished episode, %. Basic achievements saturate first and the wood/stone tool chain follows, as in the reference curves.</p>
-      <div class="chart" id="chart-ach"></div>
-    </div>
-
-    <div>
-      <div class="chart-card">
-        <h3>Crafter score (higher is better)</h3>
-        <p class="sub">Geometric mean of 22 achievement success rates, 20 evaluation episodes.</p>
-        <div class="chart" id="chart-crafter"></div>
-      </div>
-      <div class="chart-card">
-        <h3>Planner: environment steps to solve each task</h3>
-        <p class="sub">Rule-based planner, default config; all six tasks succeed.</p>
-        <div class="chart" id="chart-planner"></div>
-      </div>
-    </div>
-
-    <h3>Reproducibility checks</h3>
+    <h3>Tech Stack</h3>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <thead><tr><th>Category</th><th>Technologies</th></tr></thead>
         <tbody>
-          <tr><td>Same seed, two runs (PPO and PPO-RNN)</td><td>bit-identical metrics</td></tr>
-          <tr><td>2 updates + save/load + 2 updates vs. 4 straight updates</td><td>identical metrics and parameters</td></tr>
-          <tr><td>Baseline scale: one scan vs. 5-update checkpointed chunks across processes</td><td>0 of 390 logged values differ</td></tr>
-          <tr><td>GAE vs. NumPy reference, optimistic resets, GRU reset at episode boundaries</td><td>pass</td></tr>
-          <tr><td>Random policy on Crafter vs. the published random score (~1.6%)</td><td>1.56%</td></tr>
+          <tr><td><b>Language</b></td><td>Python 3.9+</td></tr>
+          <tr><td><b>Planning</b></td><td>LLM through an OpenAI-compatible endpoint (local models), rule-based fallback planner</td></tr>
+          <tr><td><b>Environments</b></td><td>Gymnasium (symbolic tech tree), Crafter, Craftax (JAX)</td></tr>
+          <tr><td><b>Deep learning</b></td><td>PyTorch (Crafter policies); JAX, Flax, Optax, Distrax (Craftax)</td></tr>
+          <tr><td><b>Models</b></td><td>CNN / ViT encoders, HuggingFace CLIP / SigLIP (optional), top-k MoE, DDPM diffusion policy, GRU, ICM, trajectory transformer</td></tr>
+          <tr><td><b>Configuration</b></td><td>Hydra, OmegaConf</td></tr>
+          <tr><td><b>Monitoring</b></td><td>Weights &amp; Biases, JSONL metrics</td></tr>
+          <tr><td><b>Testing</b></td><td>pytest (58 tests), Playwright (this site)</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <section id="analysis">
-    <h2>Reading the reference runs</h2>
-    <div class="grid-2">
-      <figure>
-        <img src="images/paper_achievements_heatmap.png" alt="Heatmap of achievement success rates from the original multi-agent paper" width="1684" height="735">
-        <figcaption>Achievement success rates reported in the original paper (An Efficient Open World Environment for Multi-Agent Social Learning).</figcaption>
-      </figure>
-      <figure>
-        <img src="images/achievements_collect_diamond.png" alt="Achievement collect_diamond success rate over training" width="619" height="421">
-        <figcaption>COLLECT_DIAMOND over 15k updates in the reference Craftax runs: rare, slow and noisy, which is why 1B steps are needed.</figcaption>
-      </figure>
+  <section id="environment">
+    <h2>Training Environment</h2>
+    <p>The same agent stack is measured on three environments of increasing difficulty. Each reports success per task or per achievement, so results stay comparable across them.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Environment</th><th>Observation</th><th>Actions</th><th>Success signal</th></tr></thead>
+        <tbody>
+          <tr><td><b>Symbolic tech tree</b></td><td>Inventory vector (19 items) + placeholder RGB</td><td>20 macros (mine / craft / smelt + noop)</td><td>Target item in inventory</td></tr>
+          <tr><td><b>Crafter</b></td><td>64 × 64 × 3 pixels</td><td>17 discrete</td><td>22 achievements; score = geometric mean of success rates</td></tr>
+          <tr><td><b>Craftax-Symbolic-v1</b></td><td>8,268-dim symbolic vector</td><td>43 discrete</td><td>~65 achievements across dungeon floors</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="callout warn"><span class="icon">!</span><div><b>Why the first Crafter run looked far behind.</b> The reference charts are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps on a GPU; the first local run was Crafter pixels at 1e5 steps on a CPU: a different environment and 10,000× less data. The x-axis "Step" in the charts counts PPO updates, not environment steps.</div></div>
-    <div class="callout"><span class="icon">i</span><div><b>Why the ICM run collapsed.</b> Its curiosity bonus grew to ~7.5 per step while the extrinsic reward stayed ~0, so the agent optimised novelty only. The JAX trainer divides the bonus by its running mean and scales it by 0.01. Dividing by the standard deviation is not enough, because a squared prediction error is mostly mean.</div></div>
+
+    <h3>Tech-tree rules</h3>
+    <p>Mining needs the right tool (cobblestone and coal need a wooden pickaxe, iron needs stone, diamond needs iron). Crafting consumes ingredients and may need a crafting table. Smelting needs a furnace and consumes one coal. A task succeeds when its target item reaches the inventory, and an episode is truncated after <code>max_steps</code>.</p>
+
+    <h3>Craftax PPO configuration</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Parameter</th><th class="num">Value</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Parallel environments × rollout</td><td class="num">1024 × 64</td><td>65,536 steps per update; 15,258 updates = 1e9 steps</td></tr>
+          <tr><td>Learning rate (annealed)</td><td class="num">2e-4</td><td>Adam, gradient clip 1.0</td></tr>
+          <tr><td>γ / GAE λ</td><td class="num">0.99 / 0.8</td><td></td></tr>
+          <tr><td>Epochs × minibatches</td><td class="num">4 × 8</td><td>PPO-RNN minibatches whole sequences by environment</td></tr>
+          <tr><td>Network</td><td class="num">3 × 512 tanh</td><td>PPO-RNN: 512 embedding → GRU → heads</td></tr>
+          <tr><td>Optimistic reset ratio</td><td class="num">16</td><td>64 fresh worlds per step for 1024 envs</td></tr>
+          <tr><td>ICM bonus scale</td><td class="num">0.01</td><td>Bonus divided by its running mean first</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Score and bonus definitions</h3>
+<pre><code># Crafter score: geometric mean of achievement success rates s_i (in %)
+score = exp(mean_i ln(1 + s_i)) - 1
+
+# ICM bonus (per step), normalised so it cannot swamp sparse task rewards
+r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre>
   </section>
 
-  <section id="trajectory">
-    <h2>Embodied signal: 3D trajectories</h2>
+  <section id="key-features">
+    <h2>Key Features</h2>
+
+    <h3>1. Tech-tree environment and DEPS loop</h3>
+    <p>The planner proposes a plan, a parser turns it into sub-goals (<code>Mine cobblestone x6</code>), a selector picks the next one, and the controller acts. Repeated failures, or a sub-goal that takes too long, trigger a replan that includes the inventory and the error message. Every rule lives in one pure function, so the environment, the controller's prerequisite search and the rule-based planner all share it.</p>
+    <div class="code-title">diffu_moe_vlm/core.py</div>
+<pre><code>def apply_action(inventory, verb, item):
+    if obtain_method(item) != verb:
+        return dict(inventory), False, f"cannot {verb} {item}"
+    tools, consumed = action_requirements(verb, item)
+    missing = {req: amount - inventory.get(req, 0)
+               for req, amount in {**tools, **consumed}.items()
+               if inventory.get(req, 0) &lt; amount}
+    if missing:
+        desc = ", ".join(f"{n} {k}" for k, n in missing.items())
+        return dict(inventory), False, f"cannot {verb} {item}: missing {desc}"
+    new_inv = dict(inventory)
+    for req, amount in consumed.items():
+        new_inv[req] -= amount          # tools are required but not consumed
+    new_inv[item] = new_inv.get(item, 0) + output_quantity(verb, item)
+    return new_inv, True, ""</code></pre>
+
+    <h3>2. Mixture-of-experts trunk</h3>
+    <p>Top-k noisy gating routes each observation embedding to two of four MLP experts. A Switch-style load-balancing loss (1.0 when balanced, E when collapsed) keeps experts in use, and per-layer expert load is logged during training. <code>model.trunk=mlp</code> gives the dense ablation.</p>
+    <div class="code-title">diffu_moe_vlm/nn/moe.py</div>
+<pre><code>probs = logits.softmax(dim=-1)                          # (B, E)
+top_vals, top_idx = probs.topk(self.top_k, dim=-1)       # (B, k)
+weights = top_vals / top_vals.sum(dim=-1, keepdim=True)
+expert_out = torch.stack([e(x) for e in self.experts], dim=1)
+chosen = expert_out.gather(1, top_idx.unsqueeze(-1).expand(-1, -1, x.shape[-1]))
+y = (weights.unsqueeze(-1) * chosen).sum(dim=1)
+
+load = F.one_hot(top_idx[:, 0], self.num_experts).float().mean(0)
+aux_loss = self.num_experts * (load * probs.mean(0)).sum()</code></pre>
+
+    <h3>3. Diffusion policy over action chunks</h3>
+    <p>An 8-step action chunk is a one-hot (H × A) tensor scaled to [-1, 1]. A FiLM-conditioned denoiser predicts the clean chunk from the noisy one, the diffusion step and the image embedding. At run time the policy samples a chunk with 10 strided DDIM steps, executes the first 4 actions and resamples.</p>
+    <div class="code-title">diffu_moe_vlm/nn/diffusion.py</div>
+<pre><code>x0 = self.encode_actions(actions)                     # one-hot * 2 - 1
+t = torch.randint(0, self.num_diffusion_steps, (x0.shape[0],))
+noise = torch.randn_like(x0)
+ab = self.alphas_bar[t].view(-1, 1, 1)
+x_t = ab.sqrt() * x0 + (1 - ab).sqrt() * noise
+pred = self.denoiser(x_t, t.float(), self.encoder(obs))
+return F.mse_loss(pred, x0 if self.prediction_type == "sample" else noise)</code></pre>
+
+    <h3>4. Craftax trainer in JAX</h3>
+    <p>Environment stepping, GAE and PPO updates run inside <code>jax.lax.scan</code> under one <code>jit</code>. Finished environments draw from a small pool of freshly generated worlds instead of generating one each. Training advances in checkpointed chunks that save the full state (parameters, optimizer, environment states, RNG), so a re-run continues exactly where it stopped.</p>
+    <div class="code-title">diffu_moe_vlm/jax_rl/wrappers.py — optimistic resets</div>
+<pre><code>obs_re, state_re = jax.vmap(self._env.reset_env, in_axes=(0, None))(
+    jax.random.split(key_reset, self.num_resets), params)   # num_envs / 16 worlds
+rank = jnp.cumsum(done) - 1                                  # distinct worlds for done envs
+pick = jnp.where(rank &lt; self.num_resets, rank,
+                 jax.random.randint(key_pick, (self.num_envs,), 0, self.num_resets))
+state = jax.tree.map(select, state_re, state_st)</code></pre>
+    <div class="code-title">train_craftax.py — resumable chunks</div>
+<pre><code>while next_update &lt; stop_at:
+    num = min(chunk, stop_at - next_update)
+    runner, _ = jax.block_until_ready(train.run_updates(runner, next_update, num))
+    next_update += num
+    save_runner(ckpt_path, runner, next_update)</code></pre>
+  </section>
+
+  <section id="problem-solving">
+    <h2>Problem Solving</h2>
+
+    <div class="problem">
+      <h3>Problem 1: An agent that could never succeed</h3>
+      <div class="step"><div class="lbl">Symptom</div><div><p>Every benchmark task ended at step 999 with <code>success: false</code>, and the full benchmark crashed after the first task.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The environment returned <code>np.random.randint</code> pixels and its action handler was a <code>pass</code>, so the inventory never changed. On top of that, the fallback planner matched <code>wooden_slab</code> inside its own prompt template and returned the slab plan for every task, plan text was split on a literal backslash-n, and the logger called an attribute that did not exist.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>A world in which success is possible and measurable before any learning is added.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><ul><li>Symbolic tech-tree environment with Gymnasium API, enforced tools and ingredients.</li><li>Quantity-aware rule-based planner; event-based sub-goal completion; replanning with inventory and error context.</li><li>Fixes to config keys, parsing, logging and data loading; package layout and tests.</li></ul></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>0/6 → 6/6 default tasks; 6/6 with 30% random action failures; 34 unit tests on the planner path.</p></div></div>
+    </div>
+
+    <div class="problem">
+      <h3>Problem 2: The diffusion policy ignored its observation</h3>
+      <div class="step"><div class="lbl">Symptom</div><div><p>Training loss fell, but the sampled action chunk was nearly identical for a dark and a bright image that should map to different chunks.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>With epsilon-prediction, the loss at high noise levels barely depends on recovering the clean one-hot chunk, so the sampler's early, decisive steps were barely conditioned.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>Observation-dependent action chunks for both full DDPM and strided DDIM sampling.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Predict the clean sample (x<sub>0</sub>) and derive the noise from it during sampling; keep epsilon-prediction as an option.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>40/40 exact matches after 400 training steps on the conditioning test (correct from step 100); diffusion BC on Crafter scores 3.56 against the 4.63 PPO teacher.</p></div></div>
+    </div>
+
+    <div class="problem">
+      <h3>Problem 3: Results far below the reference charts</h3>
+      <div class="step"><div class="lbl">Symptom</div><div><p>The Crafter PPO run had 0% EAT_PLANT and no iron tools, while the reference charts showed iron swords and diamonds.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The reference runs are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps and 50k–95k steps/s on a GPU, and their x-axis counts PPO updates: 1e9 / (1024 × 64) ≈ 15,258. The local run was Crafter pixels at 1e5 steps, a different environment with 10,000× less data.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>A pipeline that runs the reference setup as-is and can be checked against it.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Pure-JAX PPO / PPO-RNN on Craftax with the baseline configuration, plus <code>compare_craftax_run.py</code> and a reference file with 70 end-of-training ranges read off the charts.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>On CPU the early learning order matches the reference (basic achievements saturate first, then the wood and stone tools); the 1e9-step comparison is one GPU command away.</p></div></div>
+    </div>
+
+    <div class="problem">
+      <h3>Problem 4: Runs dying mid-training</h3>
+      <div class="step"><div class="lbl">Symptom</div><div><p>A 100-update CPU run was stopped by a session time limit at update ~32; 8 of the 10 reference runs also ended in a failed state.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The whole training loop ran as one jitted scan with no state saved until the end.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>Interrupted runs continue with exactly the same results as uninterrupted ones.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Split training into jitted chunks of N updates and save the complete runner state after each one; re-running the same command restores it. <code>max_updates_per_run</code> stops deliberately for time-limited jobs.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>0 of 390 logged values differ between one uninterrupted scan and 5-update chunks resumed across processes; a unit test checks parameters are bit-identical.</p></div></div>
+    </div>
+
+    <div class="problem">
+      <h3>Problem 5: Curiosity reward swamped the task</h3>
+      <div class="step"><div class="lbl">Symptom</div><div><p>In the reference ICM run, the intrinsic reward climbed to ~7.5 per step while the extrinsic reward stayed near 0, and even PLACE_TABLE dropped to 0%.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>An unscaled forward-model error was added to a sparse task reward, so the agent optimised novelty only.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus whose average contribution is fixed and small relative to task rewards.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Divide the bonus by its running mean (so it averages 1) and scale it by 0.01. Dividing by the standard deviation was tried first and left a mean of ~12, because a squared error is mostly mean.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>The normalized bonus averages 0.01 per step, about 5 per typical episode against a task return above 20 at convergence.</p></div></div>
+    </div>
+  </section>
+
+  <section id="analysis">
+    <h2>Empirical Analysis</h2>
+    <div class="chart-card">
+      <h3>Craftax-Symbolic-v1: episode return in the first millions of steps</h3>
+      <p class="sub">Baseline config (1024 envs × 64 steps, lr 2e-4), single seed, 4-core CPU. Reference runs reach ~26 (PPO) and ~37 (PPO-RNN) at 1e9 steps.</p>
+      <div class="chart" id="chart-return"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Craftax-Symbolic-v1: first achievements (PPO)</h3>
+      <p class="sub">Success rate per finished episode. Basic achievements saturate first and the wood/stone tool chain follows, as in the reference curves.</p>
+      <div class="chart" id="chart-ach"></div>
+    </div>
+
+    <h3>PPO vs. PPO-RNN at 3.28M steps</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">PPO</th><th class="num">PPO-RNN</th></tr></thead>
+        <tbody>
+          <tr><td>Episode return</td><td class="num">5.47</td><td class="num">5.15</td></tr>
+          <tr><td>Achievements per episode</td><td class="num">6.37</td><td class="num">6.05</td></tr>
+          <tr><td>PLACE_TABLE (%)</td><td class="num">92.3</td><td class="num">84.1</td></tr>
+          <tr><td>MAKE_WOOD_PICKAXE (%)</td><td class="num">39.4</td><td class="num">19.3</td></tr>
+          <tr><td>EAT_COW (%)</td><td class="num">28.1</td><td class="num">18.4</td></tr>
+          <tr><td>COLLECT_DRINK (%)</td><td class="num">43.0</td><td class="num">59.0</td></tr>
+          <tr><td>COLLECT_STONE (%)</td><td class="num">2.3</td><td class="num">4.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Interpretation scope</h4>
+    <p class="ink-2">These are single-seed runs covering 0.3–0.7% of the reference budget. They show that both models learn the expected early achievements in the expected order; the reference PPO-RNN advantage builds over hundreds of millions of steps and is not visible yet.</p>
+    <div class="grid-2">
+      <figure>
+        <img src="images/achievements_collect_diamond.png" alt="COLLECT_DIAMOND success rate over 15k updates in the reference runs" width="619" height="421">
+        <figcaption><span class="fig-num">Fig 3.</span> COLLECT_DIAMOND in the reference runs: rare, late and noisy.</figcaption>
+      </figure>
+      <figure>
+        <img src="images/paper_achievements_heatmap.png" alt="Heatmap of achievement success rates from the original multi-agent paper" width="1684" height="735">
+        <figcaption><span class="fig-num">Fig 4.</span> Achievement success rates in the original paper (An Efficient Open World Environment for Multi-Agent Social Learning).</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="results">
+    <h2>Results</h2>
+    <div class="chart-card">
+      <h3>Crafter score (higher is better)</h3>
+      <p class="sub">Geometric mean of 22 achievement success rates, 20 evaluation episodes on the same worlds.</p>
+      <div class="chart" id="chart-crafter"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Planner: environment steps to solve each task</h3>
+      <p class="sub">Rule-based planner, default configuration; all six tasks succeed.</p>
+      <div class="chart" id="chart-planner"></div>
+    </div>
+
+    <h3>Key Metrics Summary</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and DEPS loop are functional end to end</td></tr>
+          <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO learns from pixels within 100k steps</td></tr>
+          <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>Baseline config learns on CPU in 6.55M steps</td></tr>
+          <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Runs can be interrupted without changing results</td></tr>
+          <tr><td><b>Automated tests</b></td><td>58 pass</td><td>Core, Crafter (PyTorch) and Craftax (JAX) paths</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Embodied signal: 3D trajectories</h3>
     <div class="grid-2">
       <div>
         <p class="ink-2">A transformer encoder embeds multi-joint 3D trajectories (hands and head) with velocities and a continuous-time embedding of irregular timestamps. It plugs into the MoE policy as an optional input; on synthetic motions it separates four activity classes with &gt;90% accuracy after 150 steps.</p>
@@ -231,88 +433,42 @@
       </div>
       <figure>
         <img src="images/trajectory_3d.png" alt="3D movement trajectory of left hand, right hand and head" width="794" height="839">
-        <figcaption>Recorded hand and head trajectory used to design the encoder input.</figcaption>
+        <figcaption><span class="fig-num">Fig 5.</span> Recorded hand and head trajectory used to design the encoder input.</figcaption>
       </figure>
     </div>
   </section>
 
-  <section id="next">
-    <h2>Next steps</h2>
+  <section id="trials">
+    <h2>Miscellaneous Trials &amp; Errors</h2>
+    <h4>1. Normalising curiosity by its standard deviation</h4>
+    <p class="ink-2">The first ICM fix divided the bonus by its running standard deviation. The bonus still averaged ~12 per step, because a squared prediction error is mostly mean, not variance. Dividing by the running mean fixed the scale.</p>
+    <h4>2. CPU oversubscription</h4>
+    <p class="ink-2">Running the test suite next to a Crafter PPO run dropped training from ~80 to 15 steps/s: eight environment processes and two PyTorch thread pools competed for four cores. A <code>torch_threads</code> option now leaves cores for environment workers.</p>
+    <h4>3. Reading the reference charts</h4>
+    <p class="ink-2">The first comparison read the W&amp;B "Step" axis as environment steps. It counts PPO updates; matching 15k updates to 1e9 steps is what identified the batch size of the reference runs.</p>
+  </section>
+
+  <section id="future">
+    <h2>Future Plans</h2>
+    <h4>Full-scale reproduction</h4>
     <ul class="ink-2">
-      <li>Run the 1e9-step Craftax comparison on a GPU (3–4 hours per run) and check it with <code>compare_craftax_run.py</code> over 2–3 seeds.</li>
-      <li>Port the diffusion policy to the JAX path and evaluate MoE vs. dense trunks at scale.</li>
+      <li>Run the 1e9-step PPO and PPO-RNN comparison on a GPU (3–4 hours per run) over 2–3 seeds and check it with <code>compare_craftax_run.py</code>.</li>
+    </ul>
+    <h4>Models</h4>
+    <ul class="ink-2">
+      <li>Port the diffusion policy to the JAX path and compare MoE vs. dense trunks at scale.</li>
       <li>Use the learned policies as low-level skills under the DEPS planner.</li>
       <li>Connect real IMU recordings in the trajectory format.</li>
     </ul>
   </section>
-
-  <section id="bibtex">
-    <h2>BibTeX</h2>
-    <div class="bibtex">
-      <button class="copy-btn" type="button" data-target="bibtex-text">Copy</button>
-<pre><code id="bibtex-text">@misc{diffumoevlm2026,
-  title        = {Diffu-MoE-VLM: Planning and Learning Agents for Open-World Crafting Games},
-  author       = {NullXeronier},
-  year         = {2026},
-  howpublished = {\url{https://github.com/NullXeronier/Diffu_MoE_VLM}}
-}</code></pre>
-    </div>
-  </section>
 </main>
 
 <footer>
-  <div class="wrap">Diffu-MoE-VLM · research prototype. Figures from the project's W&amp;B runs and repository; charts rendered from <code>docs/craftax_runs/*.jsonl</code>.</div>
+  <div class="wrap">Diffu-MoE-VLM · research prototype · <a href="ko/" hreflang="ko">한국어</a>. Figures from the project's W&amp;B runs and repository; charts rendered from <code>docs/craftax_runs/*.jsonl</code>.</div>
 </footer>
 
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
-<script>
-(function () {
-  var D = window.SITE_DATA, C = window.SiteCharts;
-  var fmt1 = function (v) { return v.toFixed(1); };
-  var fmtInt = function (v) { return String(Math.round(v)); };
-  var fmtM = function (v) { return (Math.round(v * 10) / 10) + "M"; };
-
-  var ppo = D.craftax_cpu.ppo, rnn = D.craftax_cpu.ppo_rnn;
-  var ret = document.getElementById("chart-return");
-  C.lineChart(ret, {
-    ariaLabel: "Episode return versus environment steps for PPO and PPO-RNN",
-    series: [
-      { name: "PPO", color: "var(--series-1)", points: ppo.map(function (r) { return { x: r.steps, y: r["return"] }; }) },
-      { name: "PPO-RNN", color: "var(--series-2)", points: rnn.map(function (r) { return { x: r.steps, y: r["return"] }; }) }
-    ],
-    yMax: 10, xFormat: fmtM, xUnit: "env steps", yFormat: fmt1, tickFormat: fmtInt, xLabel: "env steps", yLabel: "episode return"
-  });
-  var rows = ppo.map(function (r) {
-    var m = rnn.filter(function (q) { return q.steps === r.steps; })[0];
-    return { steps: r.steps, ppo: r["return"], rnn: m ? m["return"] : null };
-  });
-  C.tableView(ret, [{ key: "steps", label: "Env steps (M)", num: true }, { key: "ppo", label: "PPO return", num: true },
-    { key: "rnn", label: "PPO-RNN return", num: true }], rows);
-
-  var ach = document.getElementById("chart-ach");
-  var achKeys = [["collect_wood", "collect wood"], ["place_table", "place table"], ["make_wood_pickaxe", "wood pickaxe"], ["eat_cow", "eat cow"]];
-  C.lineChart(ach, {
-    ariaLabel: "Achievement success rates for PPO over environment steps",
-    series: achKeys.map(function (k, i) {
-      return { name: k[1], color: "var(--series-" + (i + 1) + ")", points: ppo.map(function (r) { return { x: r.steps, y: r[k[0]] }; }) };
-    }),
-    yMax: 100, xFormat: fmtM, xUnit: "env steps", yFormat: function (v) { return Math.round(v) + "%"; }, xLabel: "env steps", yLabel: "success rate"
-  });
-  C.tableView(ach, [{ key: "steps", label: "Env steps (M)", num: true }].concat(achKeys.map(function (k) {
-    return { key: k[0], label: k[1] + " (%)", num: true };
-  })), ppo);
-
-  var cr = document.getElementById("chart-crafter");
-  C.barChart(cr, { ariaLabel: "Crafter score by policy", items: D.crafter.map(function (d) { return { label: d.policy, value: d.score }; }),
-    color: "var(--series-1)", valueFormat: function (v) { return v.toFixed(2); }, unit: "% score", max: 5 });
-  C.tableView(cr, [{ key: "policy", label: "Policy" }, { key: "score", label: "Score (%)", num: true }, { key: "return", label: "Return", num: true }], D.crafter);
-
-  var pl = document.getElementById("chart-planner");
-  C.barChart(pl, { ariaLabel: "Environment steps to solve each planner task", items: D.planner_steps.map(function (d) { return { label: d.task, value: d.steps }; }),
-    color: "var(--series-1)", unit: "steps", max: 40 });
-  C.tableView(pl, [{ key: "task", label: "Task" }, { key: "steps", label: "Steps", num: true }], D.planner_steps);
-})();
-</script>
+<script src="assets/project-charts.js"></script>
 </body>
 </html>
