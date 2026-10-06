@@ -47,7 +47,7 @@
   <section id="overview">
     <h2>Overview</h2>
     <p>The starting point was a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds. Its environment returned random pixels and ignored every action. I rebuilt it as three pipelines, each with tests: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
-    <p>What this page claims is modest. On a 4-core CPU all three pipelines learn, give the same result for the same seed, and pick up bit-for-bit after an interruption. Matching the reference end-of-training numbers takes a GPU run, which is one command here.</p>
+    <p>What this page claims is modest. On a 4-core CPU all three pipelines learn, give the same result for the same seed, and pick up bit-for-bit after an interruption. Whether the reference end-of-training numbers are matched is untested: it needs a 1e9-step GPU run (one command here), and the reference runs' own hyper-parameters are unknown.</p>
     <p>The audit, environments, agents, training infrastructure, 68 automated tests and this page all live in one repository.</p>
   </section>
 
@@ -98,7 +98,7 @@
         <span class="chip">Empirical analysis</span>
         <h3>Determinism and resume</h3>
         <div class="k">Measured result</div>
-        <p>One uninterrupted run vs. 5-update checkpointed chunks resumed across processes: <b>0 of 390</b> logged values differ. Same-seed reruns are bit-identical for PPO and PPO-RNN.</p>
+        <p>One uninterrupted run vs. 5-update checkpointed chunks resumed across processes: <b>0 of 390</b> logged values differ. On CPU, same-seed reruns are bit-identical for PPO and PPO-RNN.</p>
         <div class="k">What I learned</div>
         <p class="learned">If a run can resume, a crash only costs a re-run of the same command. 8 of the 10 reference runs ended in a failed state.</p>
       </div>
@@ -334,9 +334,9 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <h3>Problem 3: Results far below the reference charts</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>The Crafter PPO run had 0% EAT_PLANT and no iron tools, while the reference charts showed iron swords and diamonds.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The reference runs are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps and 50k–95k steps/s on a GPU, and their x-axis counts PPO updates: 1e9 / (1024 × 64) ≈ 15,258. The local run was Crafter pixels at 1e5 steps, a different environment with 10,000× less data.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>Run the reference setup as it is and compare the results with it directly.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>Run the same environment and budget as the reference, with the published Craftax baseline settings, and compare the results with the reference curves.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Pure-JAX PPO / PPO-RNN on Craftax with the baseline configuration, plus <code>compare_craftax_run.py</code> and a reference file with 70 end-of-training ranges read off the charts.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>On CPU the early learning order matches the reference (basic achievements saturate first, then the wood and stone tools); the 1e9-step comparison needs one command on a GPU.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>On CPU, the order in which early achievements are learned looks like the start of the reference curves (basic achievements first, then wood and stone tools). That is a visual comparison of one seed at 0.7% of the budget, not a reproduction. The 1e9-step run has not been done; it can be started with one GPU command, but whether it reaches the reference numbers is open.</p></div></div>
     </div>
 
     <div class="problem">
@@ -353,8 +353,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <div class="step"><div class="lbl">Symptom</div><div><p>In the reference ICM run, the intrinsic reward climbed to ~7.5 per step while the extrinsic reward stayed near 0, and even PLACE_TABLE dropped to 0%.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The raw forward-model error was added straight onto a sparse task reward, and the agent ended up chasing novelty alone.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus with a fixed average size, small next to the task reward.</p></div></div>
-      <div class="step"><div class="lbl">Solution</div><div><p>Divide the bonus by its running mean (so it averages 1) and scale it by 0.01. Dividing by the standard deviation was tried first and left a mean of ~12, because a squared error is mostly mean.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>The normalized bonus averages 0.01 per step, about 5 per typical episode against a task return above 20 at convergence. Whether this actually prevents runaway and helps exploration has not been tested with a controlled run yet (see <a href="#experiment">Experiment Design</a>).</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Divide the error by its running mean (the mean of all errors seen so far) and scale by 0.01. Dividing by the standard deviation was tried first and left the bonus at ~12 per step, because the error's mean is much larger than its spread.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>The first batch averages exactly 0.01 per step. Later batches average 0.01 × (current mean error / all-time mean error), so the bonus shrinks as the forward model improves and grows when the agent reaches poorly predicted states; single steps are not bounded. This fixes the typical scale, not a guarantee. Whether it prevents runaway and helps exploration has not been tested with a controlled run yet (see <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
 
@@ -456,7 +456,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
           <tr><td><code>ppo</code></td><td>none</td><td>baseline</td></tr>
           <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>takes over the reward when the raw error is large</td></tr>
           <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>still too large: a squared error is mostly mean</td></tr>
-          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>current default; averages 0.01</td></tr>
+          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>current default; about 0.01 on average while the error distribution is stable</td></tr>
           <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>follows the error down as the forward model improves (decay 0.99 per update)</td></tr>
         </tbody>
       </table>

@@ -47,7 +47,7 @@
   <section id="overview">
     <h2>Overview</h2>
     <p>출발점은 Minecraft류 세계용 Diffusion·Mixture-of-Experts·Vision-Language 에이전트라고 소개된 저장소였다. 막상 열어 보니 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시했다. 이 저장소를 테스트가 붙은 파이프라인 세 개로 다시 세웠다. 기호 테크 트리에서 계획하는 <b>Describe, Explain, Plan and Select 방식 LLM 플래너</b>, Crafter 픽셀로 학습하는 PyTorch <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하려고 만든 <b>순수 JAX Craftax 학습기</b>다.</p>
-    <p>여기서 주장하는 것은 많지 않다. 4코어 CPU에서 세 파이프라인 모두 실제로 학습하고, 같은 시드면 같은 결과가 나오며, 중간에 끊겨도 비트 단위로 똑같이 이어진다. 레퍼런스의 최종 수치까지 맞추려면 GPU로 돌려야 하는데, 그 실행은 명령어 한 줄이면 된다.</p>
+    <p>여기서 주장하는 것은 많지 않다. 4코어 CPU에서 세 파이프라인 모두 실제로 학습하고, 같은 시드면 같은 결과가 나오며, 중간에 끊겨도 비트 단위로 똑같이 이어진다. 레퍼런스의 최종 수치를 맞추는지는 확인하지 않았다. GPU에서 10억 스텝을 돌려야 하고(명령 한 줄이면 된다), 레퍼런스 런의 하이퍼파라미터도 모른다.</p>
     <p>문제 진단부터 환경, 에이전트, 학습 인프라, 자동 테스트 68개, 이 페이지까지 모두 한 저장소에서 직접 만들었다.</p>
   </section>
 
@@ -98,7 +98,7 @@
         <span class="chip">Empirical analysis</span>
         <h3>결정론과 이어서 학습</h3>
         <div class="k">측정 결과</div>
-        <p>한 번에 끝까지 돌린 런과, 5업데이트마다 저장하고 다른 프로세스에서 이어 붙인 런을 비교했다. 기록된 값 <b>390개 중 다른 값은 0개</b>였다. 같은 시드로 다시 돌려도 PPO, PPO-RNN 모두 비트 단위로 같다.</p>
+        <p>한 번에 끝까지 돌린 런과, 5업데이트마다 저장하고 다른 프로세스에서 이어 붙인 런을 비교했다. 기록된 값 <b>390개 중 다른 값은 0개</b>였다. CPU에서는 같은 시드로 다시 돌려도 PPO, PPO-RNN 모두 비트 단위로 같다.</p>
         <div class="k">배운 점</div>
         <p class="learned">이어서 학습할 수 있으면 런이 죽어도 같은 명령을 다시 치면 그만이다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</p>
       </div>
@@ -334,9 +334,9 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <h3>Problem 3: 레퍼런스 그래프에 한참 못 미치는 결과</h3>
       <div class="step"><div class="lbl">증상</div><div><p>로컬 Crafter PPO 런은 EAT_PLANT가 0%였고 철 도구는 하나도 없었다. 레퍼런스 그래프에는 철 칼과 다이아몬드까지 있었다.</p></div></div>
       <div class="step"><div class="lbl">원인</div><div><p>레퍼런스는 Craftax-Symbolic(기호 관측, 업적 약 65개)을 GPU에서 초당 5만~9.5만 스텝으로 10억 스텝 학습한 런이었다. 그래프 x축도 PPO 업데이트 횟수였다(10억 ÷ (1024 × 64) ≈ 15,258). 로컬 런은 Crafter 픽셀 10만 스텝이었으니 환경부터 달랐고 데이터는 1만 분의 1이었다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>레퍼런스 설정을 그대로 돌리고 결과를 레퍼런스와 맞대어 볼 수 있어야 한다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>레퍼런스와 같은 환경, 같은 학습량을 공개된 Craftax baseline 설정으로 돌리고 결과를 레퍼런스 곡선과 맞대어 볼 수 있어야 한다.</p></div></div>
       <div class="step"><div class="lbl">해결</div><div><p>기본 설정으로 도는 순수 JAX PPO·PPO-RNN Craftax 학습기를 만들었다. 그래프에서 읽어 낸 학습 종료 범위 70개는 레퍼런스 파일에 담고, <code>compare_craftax_run.py</code>로 비교한다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>CPU에서 본 초기 학습 순서가 레퍼런스와 같다(기본 업적이 먼저 차고 나무·돌 도구가 뒤를 잇는다). 10억 스텝 비교는 GPU에서 명령 한 줄만 돌리면 된다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>CPU에서 초기 업적을 배우는 순서가 레퍼런스 곡선의 앞부분과 비슷해 보인다(기본 업적이 먼저 차고 나무·돌 도구가 뒤를 잇는다). 시드 1개, 학습량 0.7%를 눈으로 비교한 것이라 재현이라고 할 수는 없다. 10억 스텝 실행은 아직 하지 않았다. GPU 명령 한 줄로 시작할 수 있지만, 레퍼런스 수치에 닿을지는 모른다.</p></div></div>
     </div>
 
     <div class="problem">
@@ -353,8 +353,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 intrinsic reward는 스텝당 7.5 안팎까지 올랐지만 extrinsic reward는 0 근처를 맴돌았다. PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
       <div class="step"><div class="lbl">원인</div><div><p>스케일을 맞추지 않은 forward 모델 오차를 드문드문 나오는 태스크 보상에 그대로 더했다. 에이전트는 새로운 상태만 쫓았다.</p></div></div>
       <div class="step"><div class="lbl">목표</div><div><p>평균 크기가 일정하고 태스크 보상보다 작은 탐험 보너스.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>보너스를 오차의 running mean으로 나눠 평균을 1로 맞추고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 제곱 오차는 거의 평균 성분이라 보너스 평균이 12 안팎에 머물렀다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>정규화한 보너스는 스텝당 평균 0.01, 보통 길이의 에피소드로 치면 5 정도다. 수렴하면 20을 넘는 태스크 리턴보다 한참 작다. 다만 이 방식이 실제로 폭주를 막고 탐험을 늘리는지는 아직 대조 실험으로 확인하지 않았다(아래 <a href="#experiment">Experiment Design</a>).</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>오차를 running mean(지금까지 본 모든 오차의 평균)으로 나누고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 오차의 평균이 퍼짐보다 훨씬 커서 보너스가 스텝당 12 안팎에 머물렀다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>첫 배치는 스텝당 평균이 정확히 0.01이다. 그 뒤 배치는 0.01 × (지금 평균 오차 / 지금까지의 평균 오차)라서, forward 모델이 좋아지면 줄고 잘 못 맞히는 새 상태에 가면 커진다. 스텝 하나하나에는 상한이 없다. 보통 크기를 정해 줄 뿐 보장은 아니다. 이 방식이 실제로 폭주를 막고 탐험을 늘리는지는 아직 대조 실험으로 확인하지 않았다(아래 <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
 
@@ -456,7 +456,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
           <tr><td><code>ppo</code></td><td>없음</td><td>기준선</td></tr>
           <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>원본 오차가 크면 보너스가 보상을 덮는다</td></tr>
           <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>제곱 오차는 평균 성분이 커서 여전히 너무 크다</td></tr>
-          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>현재 기본값. 평균 0.01에 머문다</td></tr>
+          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>현재 기본값. 오차 분포가 안정적이면 평균 0.01 근처</td></tr>
           <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>오차가 줄어드는 만큼 스케일도 따라간다(업데이트당 감쇠 0.99)</td></tr>
         </tbody>
       </table>

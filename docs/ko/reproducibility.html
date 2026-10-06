@@ -27,6 +27,7 @@
     <div class="kicker">재현성 보고서</div>
     <h1>Craftax 재현성 테스트</h1>
     <p class="ink-2">레퍼런스 W&amp;B 런(<code>Craftax-Symbolic-v1-1000M</code>, <code>Craftax-Symbolic-v1-PPO_RNN-1000M</code>, <a href="../craftax_reference.json">craftax_reference.json</a>)을 <a href="code.html#f=train_craftax.py"><code>train_craftax.py</code></a>로 재현하는 것이 목표다.</p>
+    <div class="callout warn"><span class="icon">!</span><div>범위: 레퍼런스 런은 아직 <b>재현하지 못했다</b>. 여기서 확인한 것은 CPU에서 학습이 결정론적이고 이어서 돌릴 수 있다는 점, 초기 학습 모양이 레퍼런스 곡선 앞부분과 비슷하다는 점까지다. 10억 스텝 비교는 아직이고, 레퍼런스 런의 설정을 구하지 못해 Craftax baseline 하이퍼파라미터로 돌릴 예정이다.</div></div>
     <div class="stats">
       <div class="stat"><div class="label">재개 후 기록 값 차이</div><div class="value">0 / 390</div><div class="delta good">비트 단위 동일</div></div>
       <div class="stat"><div class="label">PPO 리턴 (655만 스텝)</div><div class="value">6.66</div><div class="delta">시작 1.49</div></div>
@@ -40,7 +41,7 @@
       <thead><tr><th>확인 항목</th><th>결과</th></tr></thead>
       <tbody>
         <tr><td>단위 테스트: GAE를 NumPy 구현과 대조, running moments, optimistic reset(끝난 환경마다 서로 다른 새 월드), MoE load-balancing loss, 에피소드가 바뀔 때 GRU 상태 초기화</td><td>통과 (<code>tests/test_jax_rl.py</code>)</td></tr>
-        <tr><td>결정론: 시드가 같으면 지표가 비트 단위로 같고(PPO, PPO-RNN) 시드가 다르면 달라진다</td><td>통과</td></tr>
+        <tr><td>결정론(CPU): 시드가 같으면 지표가 비트 단위로 같고(PPO, PPO-RNN) 시드가 다르면 달라진다. GPU에서는 비트 단위로 같지 않을 수 있다</td><td>통과</td></tr>
         <tr><td>재개: 2업데이트 → 저장·복원 → 2업데이트가 4업데이트를 한 번에 돌린 것과 비트 단위로 같다(지표, 파라미터)</td><td>통과</td></tr>
         <tr><td>실제 규모 결정론: 기본 설정(환경 1024 × 64스텝)에서 <code>scan</code> 한 번으로 끝낸 런과, 5업데이트마다 체크포인트를 남기고 프로세스를 바꿔 이어 붙인 런을 비교. 업데이트 5–30에서 기록한 값 390개</td><td>차이 0개</td></tr>
         <tr><td>학습, PPO, 100업데이트 = 655만 스텝 (레퍼런스 예산의 0.66%)</td><td>리턴 1.49 → 6.66, 에피소드당 업적 2.4 → 7.6</td></tr>
@@ -71,7 +72,7 @@
         <tr><td>100 (6.55M)</td><td>PPO</td><td class="num">6.66</td><td class="num">7.56</td><td class="num">97.1</td><td class="num">89.5</td><td class="num">50.0</td><td class="num">70.5</td><td class="num">17.6</td></tr>
       </tbody>
     </table></div>
-    <p>레퍼런스 곡선의 앞부분과 모양이 같다. 기본 업적(collect_wood, place_table, collect_sapling, place_plant)이 먼저 차오르고, wake_up은 100% 가까이에서 시작했다가 나중에 내려가며, 나무·돌 도구가 차례로 뒤따른다. 레퍼런스에서 PPO-RNN이 앞서는 건 수억 스텝은 지나야 드러난다. 300만 스텝에서는 두 모델 차이가 시드 1개로 생기는 오차 범위를 넘지 않는다.</p>
+    <p>눈으로 보면 레퍼런스 곡선의 앞부분과 모양이 비슷하다. 기본 업적(collect_wood, place_table, collect_sapling, place_plant)이 먼저 차오르고, wake_up은 100% 가까이에서 시작했다가 나중에 내려가며, 나무·돌 도구가 차례로 뒤따른다. 레퍼런스에서 PPO-RNN이 앞서는 건 수억 스텝은 지나야 드러난다. 300만 스텝에서는 두 모델 차이가 시드 1개로 생기는 오차 범위를 넘지 않는다.</p>
     <p>원본 로그: <a href="../craftax_runs/craftax_cpu_ppo_6.5M.jsonl">craftax_cpu_ppo_6.5M.jsonl</a>, <a href="../craftax_runs/craftax_cpu_ppo_rnn_3.3M.jsonl">craftax_cpu_ppo_rnn_3.3M.jsonl</a></p>
   </section>
   <section id="not-tested">

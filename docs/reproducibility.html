@@ -27,6 +27,7 @@
     <div class="kicker">Reproducibility report</div>
     <h1>Craftax reproducibility test</h1>
     <p class="ink-2">Goal: reproduce the reference W&amp;B runs (<code>Craftax-Symbolic-v1-1000M</code>, <code>Craftax-Symbolic-v1-PPO_RNN-1000M</code>, see <a href="craftax_reference.json">craftax_reference.json</a>) with <a href="code.html#f=train_craftax.py"><code>train_craftax.py</code></a>.</p>
+    <div class="callout warn"><span class="icon">!</span><div>Scope: the reference runs have <b>not</b> been reproduced. What was tested here is that training is deterministic and resumable on CPU and that early learning looks like the start of the reference curves. The 1e9-step comparison is still to be run, with Craftax baseline hyper-parameters because the reference runs' own config was not available.</div></div>
     <div class="stats">
       <div class="stat"><div class="label">Logged values differing after resume</div><div class="value">0 / 390</div><div class="delta good">bit-identical</div></div>
       <div class="stat"><div class="label">PPO return at 6.55M steps</div><div class="value">6.66</div><div class="delta">from 1.49</div></div>
@@ -40,7 +41,7 @@
       <thead><tr><th>Check</th><th>Result</th></tr></thead>
       <tbody>
         <tr><td>Unit: GAE vs. NumPy reference, running moments, optimistic resets (fresh distinct worlds for done envs), MoE balance loss, GRU state reset at episode boundaries</td><td>pass (<code>tests/test_jax_rl.py</code>)</td></tr>
-        <tr><td>Determinism: same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ</td><td>pass</td></tr>
+        <tr><td>Determinism (CPU): same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ. GPU runs may not be bit-identical</td><td>pass</td></tr>
         <tr><td>Resume: 2 + save/load + 2 updates is bit-identical to 4 straight updates (metrics and params)</td><td>pass</td></tr>
         <tr><td>Real-scale determinism: baseline config (1024 envs × 64 steps), one uninterrupted <code>scan</code> vs. 5-update chunks with checkpoints, resumed across processes: 390 logged values at updates 5–30</td><td>0 differences</td></tr>
         <tr><td>Learning, PPO, 100 updates = 6.55M steps (0.66% of the reference budget)</td><td>return 1.49 → 6.66, achievements/episode 2.4 → 7.6</td></tr>
@@ -71,7 +72,7 @@
         <tr><td>100 (6.55M)</td><td>PPO</td><td class="num">6.66</td><td class="num">7.56</td><td class="num">97.1</td><td class="num">89.5</td><td class="num">50.0</td><td class="num">70.5</td><td class="num">17.6</td></tr>
       </tbody>
     </table></div>
-    <p>The early part of the reference curves looks the same: the basic achievements (collect_wood, place_table, collect_sapling, place_plant) saturate first, wake_up starts near 100% and declines later, and the wood/stone tool chain follows. In the reference runs PPO-RNN only pulls ahead after hundreds of millions of steps. At 3M steps the difference between the two is within single-seed noise.</p>
+    <p>By eye, the early part of the reference curves looks similar: the basic achievements (collect_wood, place_table, collect_sapling, place_plant) saturate first, wake_up starts near 100% and declines later, and the wood/stone tool chain follows. In the reference runs PPO-RNN only pulls ahead after hundreds of millions of steps. At 3M steps the difference between the two is within single-seed noise.</p>
     <p>Raw logs: <a href="craftax_runs/craftax_cpu_ppo_6.5M.jsonl">craftax_cpu_ppo_6.5M.jsonl</a>, <a href="craftax_runs/craftax_cpu_ppo_rnn_3.3M.jsonl">craftax_cpu_ppo_rnn_3.3M.jsonl</a></p>
   </section>
   <section id="not-tested">

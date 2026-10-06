@@ -81,7 +81,7 @@
       <thead><tr><th>기호</th><th>의미</th></tr></thead>
       <tbody>
         <tr><td>\(s_t,\ a_t,\ r_t\)</td><td>시점 \(t\)의 상태, 행동, 보상</td></tr>
-        <tr><td>\(d_t\)</td><td>에피소드 종료 여부(끝나면 1)</td></tr>
+        <tr><td>\(d_t\)</td><td>스텝 \(t\) 뒤 에피소드 종료 여부(시간 제한으로 끝난 경우 포함, 끝나면 1)</td></tr>
         <tr><td>\(\gamma,\ \lambda\)</td><td>할인율, GAE 계수 (Craftax 0.99 / 0.8, Crafter 0.95 / 0.65)</td></tr>
         <tr><td>\(V(s)\)</td><td>가치 함수: 상태 \(s\)에서 기대되는 리턴</td></tr>
         <tr><td>\(\rho_t(\theta),\ \hat{A}_t\)</td><td>새 정책과 옛 정책의 probability ratio, advantage 추정치</td></tr>
@@ -97,7 +97,7 @@
   <section id="overview">
     <h2>1. Overview</h2>
     <h4>무엇이 문제였고 무엇을 했나</h4>
-    <p>목표는 Minecraft류 세계에서 LLM이 계획을 세우고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트였다. 그런데 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시해서, 어떤 결과도 잴 수가 없었다. 이 노트는 그 저장소를 테스트가 붙은 세 갈래 파이프라인으로 바꾼 과정이다. 기호 테크 트리에서 도는 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀로 배우는 <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런과 같은 설정으로 학습하고 중간에 끊겨도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>목표는 Minecraft류 세계에서 LLM이 계획을 세우고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트였다. 그런데 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시해서, 어떤 결과도 잴 수가 없었다. 이 노트는 그 저장소를 테스트가 붙은 세 갈래 파이프라인으로 바꾼 과정이다. 기호 테크 트리에서 도는 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀로 배우는 <b>MoE·Diffusion 정책</b>, 공개된 Craftax PPO baseline 설정으로 학습하고(레퍼런스 런 자체의 설정은 구하지 못했다) CPU에서는 중간에 끊겨도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
   </section>
 
   <section id="key-points">
@@ -105,7 +105,7 @@
     <p><b>에이전트보다 풀 수 있는 세계가 먼저다.</b> 도구·재료·연료 규칙이 들어간 Gymnasium 테크 트리를 만들자 기본 태스크 성공이 0/6에서 6/6이 됐다. 행동 30%를 무작위로 실패시켜도 재계획으로 6/6을 지킨다.</p>
     <p><b>계획과 제어를 따로 잰다.</b> 선행 재료 수집을 끄면 단계를 빠뜨린 계획은 재계획 한도를 다 쓰고 실패한다. 켜면 같은 계획이 성공한다.</p>
     <p><b>픽셀만 보고 배우는 MoE PPO와 Diffusion 모방학습.</b> Crafter에서 CNN에 expert 4개 중 2개를 고르는 MoE를 붙인 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배가 됐다. 이 정책을 흉내 낸 Diffusion 정책은 teacher 리턴에 거의 따라붙는다.</p>
-    <p><b>레퍼런스부터 제대로 읽는다.</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과였고, x축은 PPO 업데이트 횟수였다. JAX 파이프라인은 그 설정을 그대로 돌린다.</p>
+    <p><b>레퍼런스부터 제대로 읽는다.</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과였고, x축은 PPO 업데이트 횟수였다. JAX 파이프라인은 같은 환경과 같은 학습량을 Craftax baseline 하이퍼파라미터로 돌린다. 이 값이 레퍼런스 런과 같은지는 모른다.</p>
     <p><b>결정론은 테스트로 확인한다.</b> 체크포인트 청크로 나눠 여러 프로세스에서 이어 붙인 런이 한 번에 끝낸 런과 같다. 기록된 값 390개 중 다른 값은 0개다.</p>
   </section>
 
@@ -131,8 +131,8 @@
     <h3>3.3 PPO와 GAE</h3>
     <p class="why"><b>왜:</b> 정책 경사는 업데이트가 조금만 커져도 정책이 무너지기 쉽다. PPO는 같은 배치로 여러 번 업데이트하면서도 정책이 옛 정책에서 너무 멀어지지 않게 막는다. 가장 흔히 쓰는 기준선이고, 레퍼런스 Craftax 런도 PPO다.</p>
     <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\hat{A}_t,\ \operatorname{clip}\big(\rho_t(\theta), 1-\epsilon_{\text{clip}}, 1+\epsilon_{\text{clip}}\big)\hat{A}_t\right)\right],\quad \rho_t(\theta) = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
-    <div class="math-block">$$\hat{A}_t = \sum_{l\ge 0} (\gamma\lambda)^l \delta_{t+l},\qquad \delta_t = r_t + \gamma V(s_{t+1})(1-d_t) - V(s_t)$$</div>
-    <p class="intuition"><b>직관:</b> advantage \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. 그런데 probability ratio \(\rho_t\)가 \(1\pm\epsilon_{\text{clip}}\) 밖으로 나가면 더 밀어붙여도 목적함수가 늘지 않는다. 그래서 업데이트 한 번에 정책이 크게 바뀌지 않는다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이고, \(\lambda\)는 한 스텝만 보고 추정할지(\(\lambda=0\), 분산 작고 편향 큼) 끝까지 보고 추정할지(\(\lambda=1\), 반대)를 정한다.</p>
+    <div class="math-block">$$\delta_t = r_t + \gamma (1-d_t)\, V(s_{t+1}) - V(s_t),\qquad \hat{A}_t = \delta_t + \gamma\lambda\,(1-d_t)\,\hat{A}_{t+1},\qquad \hat{A}_T = 0$$</div>
+    <p class="intuition"><b>직관:</b> advantage \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. probability ratio \(\rho_t\)가 advantage가 미는 방향으로 \(1\pm\epsilon_{\text{clip}}\)을 넘어가면 그 샘플은 더 이상 그래디언트를 주지 않는다. 그래서 정책이 크게 바뀌는 것을 억제하지만 엄밀히 막지는 못한다. 에폭과 미니배치를 여러 번 돌면 ratio가 범위 밖으로 나갈 수 있다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이다. \((1-d_t)\) 항은 에피소드가 끝나는 지점에서 재귀를 끊는다. 그래서 한 롤아웃 안에 에피소드가 바뀌어도 다음 에피소드의 TD 오차가 섞이지 않는다. 64스텝 롤아웃의 끝에서는 마지막 \(V(s_T)\)로 나머지를 bootstrap한다. \(\lambda\)는 편향과 분산 사이를 조절한다. \(\lambda=0\)이면 TD 오차 하나만 쓰고, \(\lambda=1\)이면 에피소드 끝이나 롤아웃 끝 중 먼저 오는 곳까지 TD 오차를 모두 더한다. 두 학습 경로 모두 시간 제한으로 끝난 에피소드를 실제 종료처럼 다룬다(bootstrap 안 함). Craftax baseline과 같은 방식이지만, 시간 제한 직전 상태의 value는 그만큼 약간 치우친다.</p>
 
     <h3>3.4 Mixture of Experts</h3>
     <p class="why"><b>왜:</b> Crafter에서 하는 일은 나무 채집, 전투, 제작처럼 성격이 제각각이다. 입력에 따라 다른 expert가 맡게 하면 같은 계산량으로 용량을 늘리거나, expert마다 다른 스킬을 맡게 될 수도 있다. 다만 expert가 실제로 나뉘는지는 아직 재 보지 않았다.</p>
@@ -156,8 +156,8 @@
 
     <h3>3.6 호기심 보너스 (ICM)</h3>
     <p class="why"><b>왜:</b> Crafter 보상은 업적을 처음 달성할 때만 나와서 드물다. 예측하기 어려운 상태로 갈 때 보너스를 주면 보상이 없는 구간에서도 계속 돌아다닌다.</p>
-    <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}\)는 그 running mean이다. 처음에는 표준편차로 나눴는데, 오차의 평균 성분이 그대로 남아서 보너스 평균이 12 안팎이 됐고 extrinsic reward를 덮어 버렸다. running mean으로 나누면 \(e_t/\overline{e}\)의 평균이 늘 1 근처라 보너스 평균이 \(\beta\)에 묶인다. 그러면 보너스는 extrinsic reward를 거드는 정도에 그친다. 이 정규화가 정말 폭주를 막고 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
+    <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}_k},\qquad \overline{e}_k = \text{mean of all errors up to update } k,\qquad \beta = 0.01$$</div>
+    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}_k\)는 지금 배치까지 본 모든 오차의 평균(running mean)이다. 처음에는 표준편차로 나눴는데, 오차의 평균이 퍼짐보다 훨씬 커서 내 실행에서 보너스가 스텝당 12 안팎이 됐고 extrinsic reward를 덮어 버렸다. running mean으로 나누면 스케일은 맞지만, 평균적으로만, 그리고 오차 분포가 바뀌지 않는 동안만 그렇다. 첫 배치는 평균이 정확히 \(\beta\)다. 그 뒤로는 배치 평균이 \(\beta\) × (지금 평균 오차 / 지금까지의 평균 오차)가 된다. forward 모델이 좋아지면 \(\beta\)보다 작아지고, 모델이 못 맞히는 새 상태에 들어가면 커진다. 스텝 하나하나에는 상한이 아예 없다. 즉 이 정규화는 보너스의 보통 크기를 정해 줄 뿐, 작게 머문다고 보장하지는 않는다. 실제로 폭주를 막는지, 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
 
     <h3>3.7 Crafter 점수</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>
@@ -173,7 +173,7 @@
     </ul>
     <figure>
       <div class="card diagram lg" role="img" aria-label="체크포인트 청크: 중단 없는 런과 세 프로세스로 나눠 이어 붙인 런이 같은 결과를 낸다"><svg viewBox="0 0 560 168" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-ckpt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><text class="t" x="10" y="40">중단 없는 런</text><text class="t" x="10" y="100">청크 + 재시작</text><rect class="box" x="160" y="20" width="388" height="30" rx="6"/><text class="s" x="354" y="40" text-anchor="middle">업데이트 0 → N, 프로세스 1개</text><rect class="box accent" x="160" y="80" width="124" height="30" rx="6"/><text class="s" x="222" y="100" text-anchor="middle">프로세스 1</text><rect class="box accent" x="292" y="80" width="124" height="30" rx="6"/><text class="s" x="354" y="100" text-anchor="middle">프로세스 2</text><rect class="box accent" x="424" y="80" width="124" height="30" rx="6"/><text class="s" x="486" y="100" text-anchor="middle">프로세스 3</text><text class="s" x="288" y="72" text-anchor="middle">저장 → 복원</text><text class="s" x="420" y="72" text-anchor="middle">저장 → 복원</text><text class="s" x="354" y="140" text-anchor="middle">PRNG 키·파라미터·옵티마이저·환경 상태를 모두 저장</text><text class="s" x="354" y="158" text-anchor="middle">→ 기록 값 390개 중 차이 0개</text></svg></div>
-      <figcaption><span class="fig-num">그림 5.</span> 난수의 출처(PRNG 키)까지 저장하니까 이어 붙인 런이 한 번에 끝낸 런과 비트 단위로 같다.</figcaption>
+      <figcaption><span class="fig-num">그림 5.</span> 난수의 출처(PRNG 키)까지 저장하니까 이어 붙인 런이 한 번에 끝낸 런과 비트 단위로 같다. CPU에서 확인한 결과이고, GPU에서는 XLA가 비결정적 커널을 쓸 수 있어 같다고 보장할 수 없다.</figcaption>
     </figure>
   </section>
 
@@ -230,7 +230,7 @@
     <h4>잘 된 점</h4>
     <ul>
       <li>기호 세계의 규칙은 전부 순수 함수 하나에 있고, 환경과 컨트롤러와 규칙 기반 플래너가 이 함수를 같이 쓴다. 그래서 규칙 기반 플래너가 정확한 상한이 되고, LLM 계획을 거기에 대 보며 채점할 수 있다.</li>
-      <li>JAX 학습기로 레퍼런스 설정을 GPU 1대에서 명령 한 줄로 돌릴 수 있다. 청크마다 체크포인트를 남기니 런이 끊겨도 잃는 게 없다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</li>
+      <li>JAX 학습기로 baseline 설정의 10억 스텝 런을 GPU 1대에서 명령 한 줄로 돌릴 수 있다. 청크(기본 50업데이트)마다 체크포인트를 남기니 런이 끊겨도 마지막 체크포인트 이후의 업데이트만 잃는다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</li>
       <li>이 노트에 나온 실패(가짜 환경, 조건을 무시한 Diffusion, 잘못 읽은 그래프, 호기심 보상 붕괴)는 하나도 빠짐없이 테스트나 검사 코드로 남겼다.</li>
     </ul>
     <h4>한계</h4>
@@ -239,7 +239,8 @@
       <li><b>레퍼런스 값:</b> 범위는 그래프 이미지에서 눈으로 읽은 근사치다. 레퍼런스 런의 실제 하이퍼파라미터를 못 구해서 Craftax baseline 기본값을 썼다.</li>
       <li><b>오라클 플래너:</b> 규칙 기반 플래너는 레시피를 전부 알고 있다. 그러니 6/6은 LLM의 성적이 아니라 상한이다. LLM 계획은 선행 재료 수집을 끄고 재야 한다.</li>
       <li><b>모듈 범위:</b> 궤적·IMU 인코더는 합성 동작으로만 검증했고, Diffusion 정책은 PyTorch 쪽에만 있다.</li>
-      <li><b>ICM 효과:</b> running mean 정규화가 보너스를 일정한 크기로 묶는 것까지는 식으로 보장된다. 하지만 폭주를 정말 막는지, 탐험이 실제로 늘어나는지는 아직 대조 실험을 돌리지 않았다(4장 끝).</li>
+      <li><b>ICM 효과:</b> running mean 정규화는 보너스의 보통 크기를 정할 뿐 상한을 두지는 않는다. 폭주를 정말 막는지, 탐험이 실제로 늘어나는지는 아직 대조 실험을 돌리지 않았다(4장 끝).</li>
+      <li><b>결정론:</b> 같은 시드 재실행과 재개가 비트 단위로 같다는 것은 CPU에서만 확인했다. GPU에서는 끝자리가 달라질 수 있다.</li>
     </ul>
   </section>
 
@@ -257,7 +258,7 @@
         <tr><td>GAE</td><td>시험 직후 채점(빠르지만 부정확)과 학기 말 성적(정확하지만 늦음) 사이에서 적당히 섞어 평가하는 것.</td></tr>
         <tr><td>MoE</td><td>전문의 네 명 중 접수처(게이트)가 증상에 맞는 두 명에게 묻고, 더 확신하는 의사의 말에 무게를 더 두는 것. load-balancing loss는 한 의사에게 환자가 몰리지 않게 하는 규칙이다.</td></tr>
         <tr><td>Diffusion 정책</td><td>흐릿한 낙서를 눈앞의 장면을 보면서 조금씩 또렷하게 고쳐 그리는 것. 완성된 8컷 중 앞 4컷만 실행하고 다시 그린다.</td></tr>
-        <tr><td>ICM</td><td>처음 가 보는 골목일수록 궁금해지는 것. 단, 궁금함이 너무 크면 목적지를 잊으니 평균 크기에 묶어 둔다.</td></tr>
+        <tr><td>ICM</td><td>처음 가 보는 골목일수록 궁금해지는 것. 궁금함의 크기는 평소에 궁금해하던 정도에 맞춰 줄여서, 흔한 골목에서는 목적지를 잊지 않게 한다.</td></tr>
         <tr><td>Crafter 점수</td><td>과목별 점수를 곱해서 평균을 내는 성적표. 한 과목이 0점에 가까우면 전체가 크게 깎인다.</td></tr>
         <tr><td>체크포인트</td><td>주사위 상태까지 저장되는 게임 세이브 파일. 불러와서 이어 하면 쉬지 않고 한 판과 똑같이 진행된다.</td></tr>
       </tbody>

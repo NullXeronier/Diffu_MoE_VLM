@@ -81,7 +81,7 @@
       <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
       <tbody>
         <tr><td>\(s_t,\ a_t,\ r_t\)</td><td>state, action and reward at time \(t\)</td></tr>
-        <tr><td>\(d_t\)</td><td>episode-done flag (1 when the episode ends)</td></tr>
+        <tr><td>\(d_t\)</td><td>episode-done flag after step \(t\) (1 when the episode ends, including by time limit)</td></tr>
         <tr><td>\(\gamma,\ \lambda\)</td><td>discount and GAE coefficient (Craftax 0.99 / 0.8, Crafter 0.95 / 0.65)</td></tr>
         <tr><td>\(V(s)\)</td><td>value function: expected return from state \(s\)</td></tr>
         <tr><td>\(\rho_t(\theta),\ \hat{A}_t\)</td><td>new-to-old policy probability ratio, advantage estimate</td></tr>
@@ -97,7 +97,7 @@
   <section id="overview">
     <h2>1. Overview</h2>
     <h4>The problem and what I did</h4>
-    <p>The goal was an agent for Minecraft-like worlds where an LLM plans and diffusion / mixture-of-experts policies act. The environment, though, returned random pixels and ignored every action, so nothing could be measured. This note covers how it became three pipelines with tests: a <b>planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels, and a <b>pure-JAX Craftax trainer</b> that matches the setup of 1B-step reference runs and resumes bit-for-bit after interruption.</p>
+    <p>The goal was an agent for Minecraft-like worlds where an LLM plans and diffusion / mixture-of-experts policies act. The environment, though, returned random pixels and ignored every action, so nothing could be measured. This note covers how it became three pipelines with tests: a <b>planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels, and a <b>pure-JAX Craftax trainer</b> that uses the published Craftax PPO baseline settings (the reference runs' own config was not available) and, on CPU, resumes bit-for-bit after interruption.</p>
   </section>
 
   <section id="key-points">
@@ -105,7 +105,7 @@
     <p><b>Fix the world first.</b> With a Gymnasium tech tree that checks tools, ingredients and fuel, the default tasks went from 0/6 to 6/6. Replanning keeps them at 6/6 even when 30% of actions fail at random.</p>
     <p><b>Planning and control are measured apart.</b> With prerequisite gathering switched off, a plan that skips steps runs out of replans. Switch it on and the same plan succeeds.</p>
     <p><b>MoE PPO and diffusion cloning from pixels.</b> On Crafter, a CNN with a top-2-of-4 MoE reaches about 3× the random score in 100k CPU steps. A diffusion policy cloned from it gets close to its return.</p>
-    <p><b>Read the reference charts properly.</b> They show Craftax-Symbolic at 1e9 steps, not Crafter at 1e5, and their x-axis counts PPO updates. The JAX pipeline runs that exact setup.</p>
+    <p><b>Read the reference charts properly.</b> They show Craftax-Symbolic at 1e9 steps, not Crafter at 1e5, and their x-axis counts PPO updates. The JAX pipeline runs the same environment and budget with the Craftax baseline hyper-parameters; whether those match the reference runs is unknown.</p>
     <p><b>Determinism is tested.</b> A run split into checkpointed chunks across processes matches an uninterrupted run: 0 of 390 logged values differ.</p>
   </section>
 
@@ -131,8 +131,8 @@
     <h3>3.3 PPO and GAE</h3>
     <p class="why"><b>Why:</b> with policy gradients, one update that is a bit too large can wreck the policy. PPO reuses each batch for several updates but keeps the policy close to the old one. It is the usual baseline, and the reference Craftax runs use it.</p>
     <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\hat{A}_t,\ \operatorname{clip}\big(\rho_t(\theta), 1-\epsilon_{\text{clip}}, 1+\epsilon_{\text{clip}}\big)\hat{A}_t\right)\right],\quad \rho_t(\theta) = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
-    <div class="math-block">$$\hat{A}_t = \sum_{l\ge 0} (\gamma\lambda)^l \delta_{t+l},\qquad \delta_t = r_t + \gamma V(s_{t+1})(1-d_t) - V(s_t)$$</div>
-    <p class="intuition"><b>Intuition:</b> actions with positive advantage \(\hat{A}_t\) become more likely and negative ones less likely, but once the ratio \(\rho_t\) leaves \(1\pm\epsilon_{\text{clip}}\) pushing further no longer increases the objective, so one update cannot move the policy far. \(\delta_t\) is "what we got minus what we expected"; \(\lambda\) chooses between a one-step estimate (\(\lambda=0\): low variance, high bias) and a full-episode one (\(\lambda=1\): the opposite).</p>
+    <div class="math-block">$$\delta_t = r_t + \gamma (1-d_t)\, V(s_{t+1}) - V(s_t),\qquad \hat{A}_t = \delta_t + \gamma\lambda\,(1-d_t)\,\hat{A}_{t+1},\qquad \hat{A}_T = 0$$</div>
+    <p class="intuition"><b>Intuition:</b> actions with positive advantage \(\hat{A}_t\) become more likely and negative ones less likely. Once \(\rho_t\) moves past \(1\pm\epsilon_{\text{clip}}\) in the direction the advantage pushes, that sample stops contributing gradient. This discourages large policy changes but does not strictly bound them: with several epochs and minibatches the ratio can still end up outside the range. \(\delta_t\) is "what we got minus what we expected". The \((1-d_t)\) factors cut the recursion at episode ends, so an advantage never sums TD errors from the next episode in the same rollout. At the end of a 64-step rollout the last \(V(s_T)\) bootstraps whatever is left. \(\lambda\) trades bias for variance: \(\lambda=0\) uses one TD error, \(\lambda=1\) sums TD errors up to the episode end or the rollout end, whichever comes first. Both training paths treat an episode that ends by time limit as terminal (no bootstrap), as the Craftax baselines do; values just before the limit are slightly biased by this.</p>
 
     <h3>3.4 Mixture of Experts</h3>
     <p class="why"><b>Why:</b> what an agent does in Crafter varies a lot: collecting wood, fighting, crafting. If different experts handle different inputs, you can get more capacity for the same compute, and maybe experts that specialize in different skills. I haven't measured whether they actually specialize.</p>
@@ -156,8 +156,8 @@
 
     <h3>3.6 Curiosity bonus (ICM)</h3>
     <p class="why"><b>Why:</b> Crafter only gives a reward the first time an achievement is unlocked, so rewards are rare. A bonus for reaching states that are hard to predict keeps the agent exploring in between.</p>
-    <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>Intuition:</b> \(e_t\) is ICM's next-state prediction error and \(\overline{e}\) its running mean. Dividing by the standard deviation at first left the error's large mean in place, so the bonus averaged about 12 and drowned out the extrinsic reward. Dividing by the running mean keeps \(e_t/\overline{e}\) near 1 on average, which pins the mean bonus at \(\beta\) and keeps it a helper to the real reward. Whether this actually prevents runaway and helps exploration is the subject of the experiment at the end of section 4.</p>
+    <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}_k},\qquad \overline{e}_k = \text{mean of all errors up to update } k,\qquad \beta = 0.01$$</div>
+    <p class="intuition"><b>Intuition:</b> \(e_t\) is ICM's next-state prediction error and \(\overline{e}_k\) the mean of every error seen so far, including the current batch. Dividing by the standard deviation at first left the bonus at about 12 per step in my run, because the error's mean is much larger than its spread; it drowned out the extrinsic reward. Dividing by the running mean fixes the scale, but only on average and only while the error distribution stays put. The first batch averages exactly \(\beta\). After that, the batch average is \(\beta\) times (current mean error / all-time mean error): it drops below \(\beta\) as the forward model improves and rises above it when the agent finds states the model predicts badly. Single steps have no upper bound at all. So this sets the typical size of the bonus; it does not guarantee the bonus stays small. Whether it prevents runaway in practice and helps exploration is the subject of the experiment at the end of section 4.</p>
 
     <h3>3.7 Crafter score</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>
@@ -173,7 +173,7 @@
     </ul>
     <figure>
       <div class="card diagram lg" role="img" aria-label="Checkpoint chunks: an uninterrupted run and a run split across three processes produce the same result"><svg viewBox="0 0 560 168" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-ckpt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><text class="t" x="10" y="40">Uninterrupted</text><text class="t" x="10" y="100">Chunked</text><rect class="box" x="160" y="20" width="388" height="30" rx="6"/><text class="s" x="354" y="40" text-anchor="middle">updates 0 → N, one process</text><rect class="box accent" x="160" y="80" width="124" height="30" rx="6"/><text class="s" x="222" y="100" text-anchor="middle">process 1</text><rect class="box accent" x="292" y="80" width="124" height="30" rx="6"/><text class="s" x="354" y="100" text-anchor="middle">process 2</text><rect class="box accent" x="424" y="80" width="124" height="30" rx="6"/><text class="s" x="486" y="100" text-anchor="middle">process 3</text><text class="s" x="288" y="72" text-anchor="middle">save → load</text><text class="s" x="420" y="72" text-anchor="middle">save → load</text><text class="s" x="354" y="140" text-anchor="middle">saves PRNG key, params, optimizer and env state</text><text class="s" x="354" y="158" text-anchor="middle">→ 0 of 390 logged values differ</text></svg></div>
-      <figcaption><span class="fig-num">Figure 5.</span> Because the source of randomness (the PRNG key) is saved too, a resumed run is bit-for-bit identical to one that ran straight through.</figcaption>
+      <figcaption><span class="fig-num">Figure 5.</span> Because the source of randomness (the PRNG key) is saved too, a resumed run is bit-for-bit identical to one that ran straight through. This was checked on CPU; on GPU, XLA may use nondeterministic kernels, so the same is not guaranteed there.</figcaption>
     </figure>
   </section>
 
@@ -230,7 +230,7 @@
     <h4>What worked</h4>
     <ul>
       <li>All the rules of the symbolic world are in one pure function that the environment, the controller and the rule-based planner all call. That makes the rule-based planner an exact upper bound to score LLM plans against.</li>
-      <li>With the JAX trainer, the reference setup is one command on one GPU, and because it checkpoints every chunk, a preempted run loses nothing. 8 of 10 reference runs had ended in a failed state.</li>
+      <li>With the JAX trainer, a 1e9-step run with the baseline settings is one command on one GPU. It checkpoints every chunk (50 updates by default), so a preempted run loses at most the updates since the last checkpoint. 8 of 10 reference runs had ended in a failed state.</li>
       <li>Every failure in this note (dummy environment, diffusion that ignored its condition, misread charts, curiosity collapse) now has a test or a check in the code.</li>
     </ul>
     <h4>Limitations</h4>
@@ -239,7 +239,8 @@
       <li><b>Reference values:</b> ranges were read off chart images and are approximate; the reference runs' own hyper-parameters were not available, so the Craftax baseline defaults were used.</li>
       <li><b>Oracle planner:</b> the rule-based planner knows the recipes, so 6/6 is an upper bound, not an LLM result; LLM planning should be measured with prerequisite gathering off.</li>
       <li><b>Scope of modules:</b> the trajectory / IMU encoder is validated on synthetic motions only, and the diffusion policy exists only on the PyTorch path.</li>
-      <li><b>ICM effect:</b> mean normalization bounds the bonus size by construction, but whether it prevents runaway and improves exploration has not been tested with a controlled run (end of section 4).</li>
+      <li><b>ICM effect:</b> mean normalization sets the typical scale of the bonus but does not bound it, and whether it prevents runaway or improves exploration has not been tested with a controlled run (end of section 4).</li>
+      <li><b>Determinism:</b> bit-identical reruns and resumes were verified on CPU only. GPU runs may differ in the last bits.</li>
     </ul>
   </section>
 
@@ -257,7 +258,7 @@
         <tr><td>GAE</td><td>Grading somewhere between "right after the quiz" (fast but noisy) and "end-of-term result" (accurate but late).</td></tr>
         <tr><td>MoE</td><td>A front desk (the gate) sends you to two of four specialists and weighs the more confident one more. The balance loss stops every patient going to the same doctor.</td></tr>
         <tr><td>Diffusion policy</td><td>Turning a blurry sketch into a clear drawing step by step while looking at the scene. Of the eight finished frames, act out the first four, then redraw.</td></tr>
-        <tr><td>ICM</td><td>Getting curious about streets you have never walked. Curiosity is capped at its average size so you don't forget the destination.</td></tr>
+        <tr><td>ICM</td><td>Getting curious about streets you have never walked. Curiosity is scaled by how curious you usually are, so on an ordinary street it doesn't make you forget the destination.</td></tr>
         <tr><td>Crafter score</td><td>A report card that multiplies subject scores: one near-zero subject drags the whole thing down.</td></tr>
         <tr><td>Checkpoint</td><td>A game save that also stores the dice state; loading it plays out exactly as if you had never stopped.</td></tr>
       </tbody>
