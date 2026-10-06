@@ -41,13 +41,13 @@
 <main class="wrap">
   <figure>
     <img src="images/achievements_make_iron.png" alt="Achievement success rates for make_iron_sword, make_iron_pickaxe and make_iron_armour over 15k PPO updates on Craftax-Symbolic-v1" width="906" height="234">
-    <figcaption><span class="fig-num">Fig 1.</span> Reference runs on Craftax-Symbolic-v1 (1B environment steps on one GPU). Iron tools appear only late in training. The x-axis counts PPO updates of 1024 envs × 64 steps.</figcaption>
+    <figcaption><span class="fig-num">Fig 1.</span> Reference runs on Craftax-Symbolic-v1 (1B environment steps on one GPU). Iron tools appear only late in training. The x-axis counts PPO (Proximal Policy Optimization) updates; each update uses 1024 environments × 64 steps.</figcaption>
   </figure>
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>The starting point was a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds. Its environment returned random pixels and ignored every action. I rebuilt it as three pipelines, each with tests: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
-    <p>What this page claims is modest. On a 4-core CPU all three pipelines learn, give the same result for the same seed, and pick up bit-for-bit after an interruption. Whether the reference end-of-training numbers are matched is untested: it needs a 1e9-step GPU run (one command here), and the reference runs' own hyper-parameters are unknown.</p>
+    <p>The starting point was a repository that described a diffusion, mixture-of-experts (MoE), vision-language agent for Minecraft-like worlds. Its environment returned random pixels and ignored every action. I rebuilt it as three pipelines, each with tests: an <b>LLM (large language model) planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
+    <p>On a 4-core CPU I verified three things: all three pipelines learn, the same seed gives the same result, and an interrupted run continues bit-for-bit. I have not checked whether the reference end-of-training numbers are matched. That needs a 1B-step GPU run (one command), and I couldn't get the reference runs' hyper-parameters.</p>
     <p>The audit, environments, agents, training infrastructure, 68 automated tests and this page all live in one repository.</p>
 
     <details class="toggle" id="abbreviations"><summary>Abbreviations on this page (21)</summary>
@@ -70,9 +70,9 @@
         <span class="chip">Planning</span>
         <h3>Quantity-aware Describe, Explain, Plan and Select loop</h3>
         <div class="k">Measured result</div>
-        <p>Give the controller a plan that skips steps. If it only executes the chosen sub-goal, it uses up the <b>5-replan budget</b> and fails; if it gathers prerequisites itself, the same plan succeeds. Comparing the two separates plan quality from control quality.</p>
+        <p>Give the controller a plan that skips steps. If it only executes the chosen subgoal, it uses up the <b>5-replan budget</b> and fails; if it gathers prerequisites itself, the same plan succeeds. Comparing the two separates plan quality from control quality.</p>
         <div class="k">What I learned</div>
-        <p class="learned">"Have planks" and "have three planks" are different states. A sub-goal should complete when the item is obtained, not when some of it is already in the inventory.</p>
+        <p class="learned">"Have planks" and "have three planks" are different states. A subgoal should complete when the item is obtained, not when some of it is already in the inventory.</p>
       </div>
       <div class="kr">
         <span class="chip">Algorithm</span>
@@ -84,7 +84,7 @@
       </div>
       <div class="kr">
         <span class="chip">Training method</span>
-        <h3>Diffusion behaviour cloning</h3>
+        <h3>Diffusion behavior cloning (BC)</h3>
         <div class="k">Measured result</div>
         <p>A diffusion policy cloned from PPO demonstrations reached a score of <b>3.56</b> and return 3.55 (teacher 3.60). Switching to clean-sample prediction gave <b>40/40</b> exact action-chunk matches on the conditioning test.</p>
         <div class="k">What I learned</div>
@@ -94,9 +94,9 @@
         <span class="chip">Infrastructure</span>
         <h3>Craftax in JAX</h3>
         <div class="k">Measured result</div>
-        <p>Environment and PPO are jitted together with optimistic resets: about <b>1,200 steps/s</b> on 4 CPU cores (reference GPU runs: 50k–95k). PPO return rose from 1.49 to <b>6.66</b> in 6.55M steps with the baseline config.</p>
+        <p>Environment and PPO are jitted together with optimiztic resets: about <b>1,200 steps/s</b> on 4 CPU cores (reference GPU runs: 50k–95k). PPO return rose from 1.49 to <b>6.66</b> in 6.55M steps with the baseline config.</p>
         <div class="k">What I learned</div>
-        <p class="learned">Most of a Craftax step is spent generating worlds, so finished environments should share a small pool of new worlds instead of each building its own.</p>
+        <p class="learned">Most of a Craftax step is spent generating worlds. So each step generates only 64 new worlds, and the finished environments among the 1024 share them.</p>
       </div>
       <div class="kr">
         <span class="chip">Empirical analysis</span>
@@ -231,7 +231,7 @@
       <table>
         <thead><tr><th>Parameter</th><th class="num">Value</th><th>Note</th></tr></thead>
         <tbody>
-          <tr><td>Parallel environments × rollout</td><td class="num">1024 × 64</td><td>65,536 steps per update; 15,258 updates = 1e9 steps</td></tr>
+          <tr><td>Parallel environments × rollout</td><td class="num">1024 × 64</td><td>65,536 steps per update; 15,258 updates = 1B steps</td></tr>
           <tr><td>Learning rate (annealed)</td><td class="num">2e-4</td><td>Adam, gradient clip 1.0</td></tr>
           <tr><td>γ / GAE λ</td><td class="num">0.99 / 0.8</td><td></td></tr>
           <tr><td>Epochs × minibatches</td><td class="num">4 × 8</td><td>PPO-RNN minibatches whole sequences by environment</td></tr>
@@ -254,7 +254,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     <h2>Key Features</h2>
 
     <h3>1. Tech-tree environment and Describe, Explain, Plan and Select loop</h3>
-    <p>The planner proposes a plan, a parser turns it into sub-goals (<code>Mine cobblestone x6</code>), a selector picks the next one, and the controller acts. Repeated failures, or a sub-goal that takes too long, trigger a replan that includes the inventory and the error message. Every rule lives in one pure function, so the environment, the controller's prerequisite search and the rule-based planner all share it.</p>
+    <p>The planner proposes a plan, a parser turns it into subgoals (<code>Mine cobblestone x6</code>), a selector picks the next one, and the controller acts. Three failures in a row, or more than 50 steps on one subgoal, trigger a replan that includes the inventory and the error message (up to 5 replans). Every rule lives in one pure function, so the environment, the controller's prerequisite search and the rule-based planner all share it.</p>
     <div class="code-title">diffu_moe_vlm/core.py</div>
 <pre><code>def apply_action(inventory, verb, item):
     if obtain_method(item) != verb:
@@ -273,7 +273,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     return new_inv, True, ""</code></pre>
 
     <h3>2. Mixture-of-experts trunk</h3>
-    <p>Top-k noisy gating routes each observation embedding to two of four MLP experts. A Switch-style load-balancing loss (1.0 when balanced, E when collapsed) keeps experts in use, and per-layer expert load is logged during training. <code>model.trunk=mlp</code> gives the dense ablation.</p>
+    <p>Top-k noisy gating routes each observation embedding to two of four MLP experts. A Switch-style load-balancing loss (1.0 when balanced, E when collapsed) keeps experts in use, and per-layer expert load is logged during training. <code>model.trunk=mlp</code> switches to a dense trunk for comparison.</p>
     <div class="code-title">diffu_moe_vlm/nn/moe.py</div>
 <pre><code>probs = logits.softmax(dim=-1)                          # (B, E)
 top_vals, top_idx = probs.topk(self.top_k, dim=-1)       # (B, k)
@@ -297,8 +297,8 @@ pred = self.denoiser(x_t, t.float(), self.encoder(obs))
 return F.mse_loss(pred, x0 if self.prediction_type == "sample" else noise)</code></pre>
 
     <h3>4. Craftax trainer in JAX</h3>
-    <p>Environment stepping, GAE and PPO updates run inside <code>jax.lax.scan</code> under one <code>jit</code>. Finished environments draw from a small pool of freshly generated worlds instead of generating one each. Training advances in checkpointed chunks that save the full state (parameters, optimizer, environment states, RNG), so a re-run continues exactly where it stopped.</p>
-    <div class="code-title">diffu_moe_vlm/jax_rl/wrappers.py — optimistic resets</div>
+    <p>Environment stepping, GAE and PPO updates run inside <code>jax.lax.scan</code> under one <code>jit</code>. Finished environments take one of the 64 new worlds generated that step instead of generating their own. Training runs in chunks of 50 updates (default), and each chunk ends by saving the full state (parameters, optimizer, environment states, RNG), so a re-run continues exactly where it stopped.</p>
+    <div class="code-title">diffu_moe_vlm/jax_rl/wrappers.py — optimiztic resets</div>
 <pre><code>obs_re, state_re = jax.vmap(self._env.reset_env, in_axes=(0, None))(
     jax.random.split(key_reset, self.num_resets), params)   # num_envs / 16 worlds
 rank = jnp.cumsum(done) - 1                                  # distinct worlds for done envs
@@ -321,7 +321,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <div class="step"><div class="lbl">Symptom</div><div><p>Every benchmark task ended at step 999 with <code>success: false</code>, and the benchmark crashed after the first task.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The environment returned <code>np.random.randint</code> pixels and its action handler was a <code>pass</code>, so the inventory never changed. On top of that, the fallback planner matched <code>wooden_slab</code> inside its own prompt template and returned the slab plan for every task, plan text was split on a literal backslash-n, and the logger called an attribute that did not exist.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>Before adding any learning, a world where success is possible and can be measured.</p></div></div>
-      <div class="step"><div class="lbl">Solution</div><div><ul><li>Symbolic tech-tree environment with Gymnasium API, enforced tools and ingredients.</li><li>Quantity-aware rule-based planner; event-based sub-goal completion; replanning with inventory and error context.</li><li>Fixes to config keys, parsing, logging and data loading; package layout and tests.</li></ul></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><ul><li>Symbolic tech-tree environment with Gymnasium API, enforced tools and ingredients.</li><li>Quantity-aware rule-based planner; a subgoal completes when its item is obtained; replanning with inventory and error context.</li><li>Fixes to config keys, parsing, logging and data loading; package layout and tests.</li></ul></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>0/6 → 6/6 default tasks; 6/6 with 30% random action failures; 34 unit tests on the planner path.</p></div></div>
     </div>
 
@@ -331,33 +331,33 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <div class="step"><div class="lbl">Cause</div><div><p>With epsilon-prediction, the loss at high noise levels barely depends on recovering the clean one-hot chunk, so the sampler's early, decisive steps were barely conditioned.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>Observation-dependent action chunks for both full DDPM and strided DDIM sampling.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Predict the clean sample (x<sub>0</sub>) and derive the noise from it during sampling; keep epsilon-prediction as an option.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>40/40 exact matches after 400 training steps on the conditioning test (correct from step 100); diffusion BC on Crafter scores 3.56 against the 4.63 PPO teacher.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>40/40 exact matches after 400 training steps on the conditioning test (correct from step 100); diffusion BC on Crafter scores 3.56 against 4.63 for the PPO teacher.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 3: Results far below the reference charts</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>The Crafter PPO run had 0% EAT_PLANT and no iron tools, while the reference charts showed iron swords and diamonds.</p></div></div>
-      <div class="step"><div class="lbl">Cause</div><div><p>The reference runs are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps and 50k–95k steps/s on a GPU, and their x-axis counts PPO updates: 1e9 / (1024 × 64) ≈ 15,258. The local run was Crafter pixels at 1e5 steps, a different environment with 10,000× less data.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The reference runs are Craftax-Symbolic (symbolic observations, ~65 achievements), trained for 1B steps at 50k–95k steps/s on a GPU. Their x-axis counts PPO updates: 1B / (1024 × 64) ≈ 15,258. The local run was Crafter pixels for 100k steps: a different environment and 10,000× less data.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>Run the same environment and budget as the reference, with the published Craftax baseline settings, and compare the results with the reference curves.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Pure-JAX PPO / PPO-RNN on Craftax with the baseline configuration, plus <code>compare_craftax_run.py</code> and a reference file with 70 end-of-training ranges read off the charts.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>On CPU, the order in which early achievements are learned looks like the start of the reference curves (basic achievements first, then wood and stone tools). I compared them by eye, with one seed and 0.7% of the training budget, so this does not count as reproducing the reference. The 1e9-step run hasn't been done. It takes one command to start on a GPU; whether it reaches the reference numbers is unknown.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>On CPU, the order in which early achievements are learned looks like the start of the reference curves (basic achievements first, then wood and stone tools). I compared them by eye, with one seed and 0.7% of the training budget, so this does not count as reproducing the reference. The 1B-step run hasn't been done. It takes one command to start on a GPU; whether it reaches the reference numbers is unknown.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 4: Runs dying mid-training</h3>
-      <div class="step"><div class="lbl">Symptom</div><div><p>A 100-update CPU run was stopped by a session time limit at update ~32; 8 of the 10 reference runs also ended in a failed state.</p></div></div>
+      <div class="step"><div class="lbl">Symptom</div><div><p>A session time limit stopped a 100-update CPU run at about update 32. 8 of the 10 reference runs also ended in a failed state.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The whole training loop ran as one jitted scan with no state saved until the end.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>An interrupted run, once resumed, gives exactly the same results as one that was never interrupted.</p></div></div>
-      <div class="step"><div class="lbl">Solution</div><div><p>Split training into jitted chunks of N updates and save the complete runner state after each one; re-running the same command restores it. <code>max_updates_per_run</code> stops deliberately for time-limited jobs.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Split training into jitted chunks of N updates and save the complete runner state after each one. Re-running the same command restores it. For time-limited jobs, <code>max_updates_per_run</code> stops the run at a chosen point.</p></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>0 of 390 logged values differ between one uninterrupted scan and 5-update chunks resumed across processes; a unit test checks parameters are bit-identical.</p></div></div>
     </div>
 
     <div class="problem">
-      <h3>Problem 5: Curiosity reward (ICM, Intrinsic Curiosity Module) swamped the task</h3>
+      <h3>Problem 5: Curiosity bonus (ICM, Intrinsic Curiosity Module) swamped the task</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>In the reference ICM run, the intrinsic reward climbed to ~7.5 per step while the extrinsic reward stayed near 0, and even PLACE_TABLE dropped to 0%.</p></div></div>
-      <div class="step"><div class="lbl">Cause</div><div><p>The raw forward-model error was added straight onto a sparse task reward, and the agent ended up chasing novelty alone.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus with a fixed average size, small next to the task reward.</p></div></div>
-      <div class="step"><div class="lbl">Solution</div><div><p>Divide the error by its running mean (the mean of all errors seen so far) and scale by 0.01. Dividing by the standard deviation was tried first and left the bonus at ~12 per step, because the error's mean is much larger than its spread.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The raw forward-model error was added straight onto the sparse extrinsic (task) reward, and the agent ended up chasing novelty alone.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus with a fixed average size, small next to the extrinsic reward.</p></div></div>
+      <div class="step"><div class="lbl">Solution</div><div><p>Divide the error by its running mean (the mean of all errors seen so far) and scale by 0.01. I first divided by the standard deviation, which left the bonus at ~12 per step, because the error's mean is much larger than its spread.</p></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>The first batch averages exactly 0.01 per step. Later batches average 0.01 × (current mean error / all-time mean error), so the bonus shrinks as the forward model improves and grows when the agent reaches poorly predicted states; a single step can be arbitrarily large. The normalization sets the usual size of the bonus and nothing more. Whether it prevents runaway and helps exploration has not been tested with a controlled run yet (see <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
@@ -366,7 +366,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <h2>Empirical Analysis</h2>
     <div class="chart-card">
       <h3>Craftax-Symbolic-v1: episode return in the first millions of steps</h3>
-      <p class="sub">Baseline config (1024 envs × 64 steps, lr 2e-4), single seed, 4-core CPU. Reference runs reach ~26 (PPO) and ~37 (PPO-RNN) at 1e9 steps.</p>
+      <p class="sub">Baseline config (1024 envs × 64 steps, lr 2e-4), single seed, 4-core CPU. Reference runs reach ~26 (PPO) and ~37 (PPO-RNN) at 1B steps.</p>
       <div class="chart" id="chart-return"></div>
     </div>
     <div class="chart-card">
@@ -423,8 +423,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
         <thead><tr><th>Metric</th><th>Value</th><th>Meaning</th></tr></thead>
         <tbody>
           <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and the Describe, Explain, Plan and Select loop work end to end</td></tr>
-          <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO learns from pixels within 100k steps</td></tr>
-          <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>Baseline config learns on CPU in 6.55M steps</td></tr>
+          <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO reaches about 3× random from pixels within 100k steps</td></tr>
+          <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>The baseline config raises the return on CPU within 6.55M steps</td></tr>
           <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Interrupting a run does not change its results</td></tr>
           <tr><td><b>Automated tests</b></td><td>68 pass</td><td>Core, Crafter (PyTorch) and Craftax (JAX) paths</td></tr>
         </tbody>
@@ -446,9 +446,9 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
   <section id="experiment">
     <h2>Experiment Design</h2>
-    <p>Problem 5 fixed the curiosity bonus by dividing it by the running mean of the error. I haven't run a controlled comparison yet, so two questions are still open.</p>
+    <p>Problem 5 fixed the curiosity bonus by dividing it by the running mean of the error. I haven't tested that fix in a controlled comparison. The experiment answers two questions.</p>
     <ul>
-      <li><b>H1. Bounded bonus:</b> does the mean-normalized bonus stay at a steady size through training, while an unnormalized or std-normalized bonus takes over the reward?</li>
+      <li><b>H1. Bounded bonus:</b> does the mean-normalized bonus stay at a steady size through training, while an unnormalized or std-normalized bonus takes over the extrinsic reward?</li>
       <li><b>H2. Better exploration:</b> does mean-normalized ICM reach more kinds of achievements than PPO without curiosity, without lowering the extrinsic return?</li>
     </ul>
     <h3>Arms</h3>
@@ -458,7 +458,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
         <thead><tr><th>Arm</th><th>Bonus per step</th><th>Expectation</th></tr></thead>
         <tbody>
           <tr><td><code>ppo</code></td><td>none</td><td>baseline</td></tr>
-          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>takes over the reward when the raw error is large</td></tr>
+          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>takes over the extrinsic reward when the raw error is large</td></tr>
           <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>still too large: a squared error is mostly mean</td></tr>
           <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>current default; about 0.01 on average while the error distribution is stable</td></tr>
           <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>follows the error down as the forward model improves (decay 0.99 per update)</td></tr>
@@ -468,13 +468,13 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <p class="muted small">e is the ICM forward-model error of each transition.</p>
     <h3>What is measured</h3>
     <ul>
-      <li><b>Runaway:</b> the bonus share of the total |reward| (<code>icm/bonus_share</code>) and the mean bonus per step. A run counts as runaway if the share is still above one half over the last 10% of training, or if the bonus grew more than 2×. Early updates are left out: the extrinsic reward is close to zero there, so even a well-scaled bonus is most of the reward.</li>
+      <li><b>Runaway:</b> the bonus share of the total |reward| (<code>icm/bonus_share</code>) and the mean bonus per step. A run counts as runaway if the share is still above one half over the last 10% of training, or if the bonus grew more than 2×. The verdict ignores early updates: the extrinsic reward is close to zero there, so even a well-scaled bonus is most of the reward.</li>
       <li><b>Exploration:</b> achievement types reached at least once, the Craftax score (geometric mean of success rates), achievements per episode.</li>
       <li><b>Task performance:</b> episode return from the extrinsic reward only.</li>
     </ul>
     <h3>Decision rules</h3>
     <ul>
-      <li>Every arm is compared with <code>ppo</code> on the same seed. Runs shorter than 5·10⁷ steps get no verdict.</li>
+      <li>Every arm is compared with <code>ppo</code> on the same seed. Runs shorter than 50M steps get no verdict.</li>
       <li><b>H1 holds</b> if <code>icm_mean</code> never runs away on any seed while <code>icm_none</code> or <code>icm_std</code> does. If no control runs away either, the answer is "inconclusive".</li>
       <li><b>H2 holds</b> if, over at least 3 seeds, achievement types reached or the Craftax score beat <code>ppo</code> on every seed, and the extrinsic return is not lower on every seed.</li>
     </ul>
@@ -482,25 +482,25 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 <pre><code>python run_icm_ablation.py                      # GPU: 5 arms x 3 seeds x 1e9 steps
 python run_icm_ablation.py --steps 2e8 --arms ppo icm_mean icm_std   # quicker first look
 python run_icm_ablation.py --preset cpu-debug   # CPU: pipeline check only</code></pre>
-    <p>On one GPU that is 3–4 hours per run, about 50 hours for all 15. The tables and verdicts end up in <code>runs/icm_ablation/report.md</code>. The CPU preset trains a tiny network for 12 updates to check that the code runs end to end; its numbers say nothing about the hypotheses.</p>
+    <p>On one GPU that is 3–4 hours per run, about 50 hours for all 15. <code>analyze_icm_ablation.py</code> writes the tables and verdicts to <code>runs/icm_ablation/report.md</code>. The CPU preset trains a tiny network for 12 updates to check that the code runs end to end; its numbers say nothing about the hypotheses.</p>
     <div class="callout warn"><span class="icon">!</span><div>Status: the experiment code, unit tests and a CPU debug run are done. The GPU runs have not happened yet, so H1 and H2 are both open. Code: <a href="code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>.</div></div>
   </section>
 
   <section id="trials">
     <h2>Miscellaneous Trials &amp; Errors</h2>
-    <h4>1. Normalising curiosity by its standard deviation</h4>
+    <h4>1. Normalizing curiosity by its standard deviation</h4>
     <p class="ink-2">The first ICM fix divided the bonus by its running standard deviation. The bonus still averaged ~12 per step, because the error's mean is much larger than its spread. Dividing by the running mean brought the typical size into line.</p>
     <h4>2. CPU oversubscription</h4>
     <p class="ink-2">Running the test suite next to a Crafter PPO run dropped training from ~80 to 15 steps/s. Eight environment processes and two PyTorch thread pools were fighting over four cores. A <code>torch_threads</code> option now leaves cores for environment workers.</p>
     <h4>3. Reading the reference charts</h4>
-    <p class="ink-2">The first comparison read the W&amp;B "Step" axis as environment steps. It actually counts PPO updates. Working out what batch size turns 15k updates into 1e9 steps gave me the reference runs' batch size.</p>
+    <p class="ink-2">At first I read the W&amp;B "Step" axis as environment steps. It actually counts PPO updates. Working out what batch size turns 15k updates into 1B steps gave me the reference runs' batch size.</p>
   </section>
 
   <section id="future">
     <h2>Future Plans</h2>
     <h4>Full-scale reproduction</h4>
     <ul class="ink-2">
-      <li>Run the 1e9-step PPO and PPO-RNN comparison on a GPU (3–4 hours per run) over 2–3 seeds and check it with <code>compare_craftax_run.py</code>.</li>
+      <li>Run the 1B-step PPO and PPO-RNN comparison on a GPU (3–4 hours per run) over 2–3 seeds and check it with <code>compare_craftax_run.py</code>.</li>
       <li>Run the ICM normalization experiment above on a GPU to answer its two questions.</li>
     </ul>
     <h4>Models</h4>

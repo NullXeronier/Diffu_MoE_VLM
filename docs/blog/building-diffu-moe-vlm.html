@@ -58,7 +58,7 @@
 
   <section id="prereq">
     <h2>0. Before you read</h2>
-    <p>This note assumes neural networks, gradient descent and basic reinforcement-learning vocabulary (state, action, reward). Everything else is summarized below in one line each, linked to the original paper. Each method in the body is explained as <b>why</b> → formula → <b>intuition</b>.</p>
+    <p>You need neural networks, gradient descent and basic reinforcement-learning terms (state, action, reward). The tables below define everything else and link to the original papers. Every method in section 3 goes <b>why</b> → formula → <b>intuition</b>.</p>
     <h4>Prerequisite concepts</h4>
     <div class="table-wrap"><table class="glossary">
       <thead><tr><th>Concept</th><th>In one line</th><th>Source</th></tr></thead>
@@ -99,7 +99,7 @@
   <section id="overview">
     <h2>1. Overview</h2>
     <h4>The problem and what I did</h4>
-    <p>The goal was an agent for Minecraft-like worlds where an LLM plans and diffusion / mixture-of-experts policies act. The environment, though, returned random pixels and ignored every action, so nothing could be measured. This note covers how it became three pipelines with tests: a <b>planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels, and a <b>pure-JAX Craftax trainer</b> that uses the published Craftax PPO baseline settings (the reference runs' own config was not available) and, on CPU, resumes bit-for-bit after interruption.</p>
+    <p>The goal was an agent for Minecraft-like worlds where an LLM plans and diffusion / mixture-of-experts policies act. The environment, though, returned random pixels and ignored every action, so nothing could be measured. I rebuilt it as three pipelines with tests: a <b>planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels, and a <b>pure-JAX Craftax trainer</b> that uses the published Craftax PPO baseline settings (the reference runs' own config was not available) and, on CPU, resumes bit-for-bit after interruption.</p>
   </section>
 
   <section id="key-points">
@@ -107,7 +107,7 @@
     <p><b>Fix the world first.</b> With a Gymnasium tech tree that checks tools, ingredients and fuel, the default tasks went from 0/6 to 6/6. Replanning keeps them at 6/6 even when 30% of actions fail at random.</p>
     <p><b>Planning and control are measured apart.</b> With prerequisite gathering switched off, a plan that skips steps runs out of replans. Switch it on and the same plan succeeds.</p>
     <p><b>MoE PPO and diffusion cloning from pixels.</b> On Crafter, a CNN with a top-2-of-4 MoE reaches about 3× the random score in 100k CPU steps. A diffusion policy cloned from it gets close to its return.</p>
-    <p><b>Read the reference charts properly.</b> They show Craftax-Symbolic at 1e9 steps, not Crafter at 1e5, and their x-axis counts PPO updates. The JAX pipeline runs the same environment and budget with the Craftax baseline hyper-parameters; whether those match the reference runs is unknown.</p>
+    <p><b>Read the reference charts properly.</b> They show Craftax-Symbolic at 1B steps, not Crafter at 1e5, and their x-axis counts PPO updates. The JAX pipeline runs the same environment and budget with the Craftax baseline hyper-parameters; whether those match the reference runs is unknown.</p>
     <p><b>Determinism is tested.</b> A run split into checkpointed chunks across processes matches an uninterrupted run: 0 of 390 logged values differ.</p>
   </section>
 
@@ -185,19 +185,19 @@
     <ul>
       <li><b>Symbolic tech tree:</b> success on six default tasks, steps to success, replans.</li>
       <li><b>Crafter:</b> return and Crafter score over 20 episodes on fixed worlds.</li>
-      <li><b>Craftax-Symbolic-v1:</b> return, achievements per episode, success rate of every achievement; reference ranges from the 1e9-step W&amp;B runs.</li>
+      <li><b>Craftax-Symbolic-v1:</b> return, achievements per episode, success rate of every achievement; reference ranges from the 1B-step W&amp;B runs.</li>
     </ul>
     <h4>Main quantitative results</h4>
     <ul>
       <li><b>Planner:</b> 0/6 → 6/6 tasks (wooden slab 3 steps, diamond 34); 6/6 with 30% random action failures.</li>
-      <li><b>Crafter:</b> random 1.56 → MoE PPO 4.63 → diffusion BC 3.56 (score); returns 1.25 / 3.60 / 3.55. The random score matches the published ~1.6%.</li>
+      <li><b>Crafter:</b> score: random 1.56, MoE PPO 4.63, diffusion BC 3.56; returns 1.25 / 3.60 / 3.55. The random score matches the published ~1.6%.</li>
       <li><b>Diffusion conditioning:</b> clean-sample prediction gives 40/40 exact action-chunk matches; epsilon-prediction produced observation-blind chunks.</li>
       <li><b>Craftax (CPU, baseline config):</b> PPO return 1.49 → 6.66 in 6.55M steps; PPO-RNN 5.15 vs. PPO 5.47 at 3.28M steps. COLLECT_WOOD 97%, PLACE_TABLE 90%, MAKE_WOOD_PICKAXE 50% at 6.55M.</li>
       <li><b>Reproducibility:</b> 0 of 390 logged values differ between one uninterrupted run and checkpointed chunks across processes; 68 automated tests pass.</li>
     </ul>
     <div class="chart-card">
       <h3>Crafter score (higher is better)</h3>
-      <p class="sub">Geometric mean of 22 achievement success rates, 20 evaluation episodes on the same worlds. MoE PPO is about 3× random, with diffusion imitation behind it.</p>
+      <p class="sub">Geometric mean of 22 achievement success rates, 20 evaluation episodes on the same worlds. MoE PPO is about 3× random, with diffusion BC behind it.</p>
       <div class="chart" id="chart-crafter"></div>
     </div>
     <div class="chart-card">
@@ -212,7 +212,7 @@
     </div>
     <figure>
       <img src="../images/achievements_collect_diamond.png" alt="COLLECT_DIAMOND success rate over 15k updates in the reference runs" width="619" height="421">
-      <figcaption>Reference runs: rare achievements such as COLLECT_DIAMOND only rise late, which is why the 1e9-step budget matters.</figcaption>
+      <figcaption>Reference runs: rare achievements such as COLLECT_DIAMOND only rise late, which is why the 1B-step budget matters.</figcaption>
     </figure>
     <h4>Designed, not yet run: curiosity bonus normalization</h4>
     <p>I divided the bonus by its running mean (3.6) after seeing the reference ICM run collapse. I haven't checked yet whether that fix works. There are two questions:</p>
@@ -222,9 +222,9 @@
     </ul>
     <p>Five arms share the Craftax PPO baseline config and seeds: no curiosity (<code>ppo</code>), raw error (<code>icm_none</code>), divided by the std (<code>icm_std</code>), by the running mean (<code>icm_mean</code>) and by an exponential moving mean (<code>icm_ema</code>). The ICM arms also share \(\beta = 0.01\), so normalization is the only difference.</p>
     <div class="math-block">$$\text{share} = \frac{\sum |\beta\, e_t / \text{scale}|}{\sum |\beta\, e_t / \text{scale}| + \sum |r^{\text{ext}}_t|}$$</div>
-    <p>Runaway is judged by the share of the reward that is bonus. A run counts as runaway if the share is still above 0.5 over the last 10% of training, or if the bonus per step grew more than 2×. Early training is left out because the extrinsic reward is nearly zero there and even a well-scaled bonus dominates. Exploration is measured by the number of achievement types ever reached and by the Craftax score; task performance by the extrinsic-only return.</p>
-    <p>Each arm is compared with <code>ppo</code> on the same seed. H1 holds if <code>icm_mean</code> never runs away while <code>icm_none</code> or <code>icm_std</code> does. H2 holds if, over at least 3 seeds, achievement types or score beat <code>ppo</code> on every seed and the extrinsic return is not lower on every seed. Runs under 5·10⁷ steps get no verdict.</p>
-    <p>The code (<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>), unit tests and a CPU debug run are done. The GPU runs (5 arms × 3 seeds × 1e9 steps, about 50 hours) have not happened, so both questions are still open.</p>
+    <p>Runaway is judged by the bonus share of the reward. A run counts as runaway if the share is still above 0.5 over the last 10% of training, or if the bonus per step grew more than 2×. The verdict ignores early training because the extrinsic reward is nearly zero there and even a well-scaled bonus dominates. Exploration is the number of achievement types ever reached and the Craftax score. Task performance is the extrinsic-only return.</p>
+    <p>Each arm is compared with <code>ppo</code> on the same seed. H1 holds if <code>icm_mean</code> never runs away while <code>icm_none</code> or <code>icm_std</code> does. H2 holds if, over at least 3 seeds, achievement types or score beat <code>ppo</code> on every seed and the extrinsic return is not lower on every seed. Runs under 50M steps get no verdict.</p>
+    <p>The code (<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>), unit tests and a CPU debug run are done. The GPU runs (5 arms × 3 seeds × 1B steps, about 50 hours) have not happened, so both questions are still open.</p>
   </section>
 
   <section id="consideration">
@@ -232,7 +232,7 @@
     <h4>What worked</h4>
     <ul>
       <li>All the rules of the symbolic world are in one pure function that the environment, the controller and the rule-based planner all call. That makes the rule-based planner an exact upper bound to score LLM plans against.</li>
-      <li>With the JAX trainer, a 1e9-step run with the baseline settings is one command on one GPU. It checkpoints every chunk (50 updates by default), so a preempted run loses at most the updates since the last checkpoint. 8 of 10 reference runs had ended in a failed state.</li>
+      <li>With the JAX trainer, a 1B-step run with the baseline settings is one command on one GPU. It checkpoints every chunk (50 updates by default), so a preempted run loses at most the updates since the last checkpoint. 8 of 10 reference runs had ended in a failed state.</li>
       <li>Every failure in this note (dummy environment, diffusion that ignored its condition, misread charts, curiosity collapse) now has a test or a check in the code.</li>
     </ul>
     <h4>Limitations</h4>

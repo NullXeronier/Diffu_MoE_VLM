@@ -27,7 +27,7 @@
     <div class="kicker">Reproducibility report</div>
     <h1>Craftax reproducibility test</h1>
     <p class="ink-2">Goal: reproduce the reference W&amp;B runs (<code>Craftax-Symbolic-v1-1000M</code>, <code>Craftax-Symbolic-v1-PPO_RNN-1000M</code>, see <a href="craftax_reference.json">craftax_reference.json</a>) with <a href="code.html#f=train_craftax.py"><code>train_craftax.py</code></a>.</p>
-    <div class="callout warn"><span class="icon">!</span><div>Scope: the reference runs have <b>not</b> been reproduced. What was tested here is that training is deterministic and resumable on CPU and that early learning looks like the start of the reference curves. The 1e9-step comparison is still to be run, with Craftax baseline hyper-parameters because the reference runs' own config was not available.</div></div>
+    <div class="callout warn"><span class="icon">!</span><div>Scope: the reference runs have <b>not</b> been reproduced. What was tested here is that training is deterministic and resumable on CPU and that early learning looks like the start of the reference curves. The 1B-step comparison is still to be run, with Craftax baseline hyper-parameters because the reference runs' own config was not available.</div></div>
     <div class="stats">
       <div class="stat"><div class="label">Logged values differing after resume</div><div class="value">0 / 390</div><div class="delta good">bit-identical</div></div>
       <div class="stat"><div class="label">PPO return at 6.55M steps</div><div class="value">6.66</div><div class="delta">from 1.49</div></div>
@@ -40,7 +40,7 @@
     <div class="table-wrap"><table>
       <thead><tr><th>Check</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td>Unit: GAE vs. NumPy reference, running moments, optimistic resets (fresh distinct worlds for done envs), MoE balance loss, GRU state reset at episode boundaries</td><td>pass (<code>tests/test_jax_rl.py</code>)</td></tr>
+        <tr><td>Unit: GAE vs. NumPy reference, running moments, optimiztic resets (fresh distinct worlds for done envs), MoE balance loss, GRU state reset at episode boundaries</td><td>pass (<code>tests/test_jax_rl.py</code>)</td></tr>
         <tr><td>Determinism (CPU): same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ. GPU runs may not be bit-identical</td><td>pass</td></tr>
         <tr><td>Resume: 2 + save/load + 2 updates is bit-identical to 4 straight updates (metrics and params)</td><td>pass</td></tr>
         <tr><td>Real-scale determinism: baseline config (1024 envs × 64 steps), one uninterrupted <code>scan</code> vs. 5-update chunks with checkpoints, resumed across processes: 390 logged values at updates 5–30</td><td>0 differences</td></tr>
@@ -77,7 +77,7 @@
   </section>
   <section id="not-tested">
     <h2>Not tested here</h2>
-    <p>The end-of-training numbers (PPO return about 26–28, PPO-RNN about 37) need the full 1e9 steps: about 3–4 hours per run on one GPU (the reference runs) versus about 10 days on this CPU. To finish the test on a GPU:</p>
+    <p>The end-of-training numbers (PPO return about 26–28, PPO-RNN about 37) need the full 1B steps: about 3–4 hours per run on one GPU (the reference runs) versus about 10 days on this CPU. To finish the test on a GPU:</p>
     <div class="bibtex"><button class="copy-btn" type="button" data-target="gpu">Copy</button><pre id="gpu"><code>pip install -e &quot;.[jax]&quot; &amp;&amp; pip install -U &quot;jax[cuda12]&quot;
 python train_craftax.py output_dir=runs/ppo seed=0
 python train_craftax.py algo.rnn=true output_dir=runs/ppo_rnn seed=0

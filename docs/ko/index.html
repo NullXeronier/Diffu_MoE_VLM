@@ -41,13 +41,13 @@
 <main class="wrap">
   <figure>
     <img src="../images/achievements_make_iron.png" alt="Craftax-Symbolic-v1에서 15k PPO 업데이트 동안의 make_iron_sword, make_iron_pickaxe, make_iron_armour 업적 달성률" width="906" height="234">
-    <figcaption><span class="fig-num">Fig 1.</span> Craftax-Symbolic-v1 레퍼런스 런(GPU 1대, 환경 10억 스텝). 철 도구는 학습 후반에야 나온다. x축은 PPO 업데이트 횟수이고, 한 번에 환경 1024개 × 64스텝을 쓴다.</figcaption>
+    <figcaption><span class="fig-num">Fig 1.</span> Craftax-Symbolic-v1 레퍼런스 런(GPU 1대, 환경 10억 스텝). 철 도구는 학습 후반에야 나온다. x축은 PPO(Proximal Policy Optimization) 업데이트 횟수이고, 업데이트 한 번에 환경 1024개 × 64스텝을 쓴다.</figcaption>
   </figure>
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>출발점은 Minecraft류 세계용 Diffusion·Mixture-of-Experts·Vision-Language 에이전트라고 소개된 저장소였다. 막상 열어 보니 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시했다. 이 저장소를 테스트가 붙은 파이프라인 세 개로 다시 세웠다. 기호 테크 트리에서 계획하는 <b>Describe, Explain, Plan and Select 방식 LLM 플래너</b>, Crafter 픽셀로 학습하는 PyTorch <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하려고 만든 <b>순수 JAX Craftax 학습기</b>다.</p>
-    <p>여기서 주장하는 것은 많지 않다. 4코어 CPU에서 세 파이프라인 모두 실제로 학습하고, 같은 시드면 같은 결과가 나오며, 중간에 끊겨도 비트 단위로 똑같이 이어진다. 레퍼런스의 최종 수치를 맞추는지는 확인하지 않았다. GPU에서 10억 스텝을 돌려야 하고(명령 한 줄이면 된다), 레퍼런스 런의 하이퍼파라미터도 모른다.</p>
+    <p>출발점은 Minecraft류 세계용 Diffusion·Mixture-of-Experts(MoE)·Vision-Language 에이전트라고 소개된 저장소였다. 막상 열어 보니 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시했다. 이 저장소를 테스트가 붙은 파이프라인 세 개로 다시 세웠다. 기호 테크 트리에서 계획하는 <b>Describe, Explain, Plan and Select 방식 LLM(대규모 언어 모델) 플래너</b>, Crafter 픽셀로 학습하는 PyTorch <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하려고 만든 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>4코어 CPU에서 확인한 것은 세 가지다. 세 파이프라인 모두 학습이 되고, 같은 시드면 같은 결과가 나오고, 중간에 끊겨도 비트 단위로 똑같이 이어진다. 레퍼런스의 최종 수치를 맞추는지는 확인하지 않았다. 확인하려면 GPU에서 10억 스텝을 돌려야 하고(명령 한 줄), 레퍼런스 런의 하이퍼파라미터는 구하지 못했다.</p>
     <p>문제 진단부터 환경, 에이전트, 학습 인프라, 자동 테스트 68개, 이 페이지까지 모두 한 저장소에서 직접 만들었다.</p>
 
     <details class="toggle" id="abbreviations"><summary>이 페이지에 나오는 약어 21개 풀이</summary>
@@ -96,7 +96,7 @@
         <div class="k">측정 결과</div>
         <p>환경과 PPO를 한꺼번에 jit 컴파일하고 optimistic reset을 써서 4코어 CPU에서 <b>초당 약 1,200스텝</b>이 나왔다(레퍼런스 GPU 런은 5만~9.5만). 기본 설정으로 655만 스텝을 돌리자 PPO 리턴이 1.49에서 <b>6.66</b>이 됐다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">Craftax 스텝에서 시간을 가장 많이 잡아먹는 건 월드 생성이다. 환경마다 매번 새 월드를 만들지 말고, 몇 개만 만들어 두고 돌려써야 한다.</p>
+        <p class="learned">Craftax 스텝에서 시간을 가장 많이 잡아먹는 건 월드 생성이다. 그래서 스텝마다 새 월드를 64개만 만들고, 에피소드가 끝난 환경 1024개가 나눠 쓴다.</p>
       </div>
       <div class="kr">
         <span class="chip">Empirical analysis</span>
@@ -104,7 +104,7 @@
         <div class="k">측정 결과</div>
         <p>한 번에 끝까지 돌린 런과, 5업데이트마다 저장하고 다른 프로세스에서 이어 붙인 런을 비교했다. 기록된 값 <b>390개 중 다른 값은 0개</b>였다. CPU에서는 같은 시드로 다시 돌려도 PPO, PPO-RNN 모두 비트 단위로 같다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">이어서 학습할 수 있으면 런이 죽어도 같은 명령을 다시 치면 그만이다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</p>
+        <p class="learned">이어서 학습할 수 있으면 런이 죽어도 같은 명령만 다시 실행하면 된다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</p>
       </div>
     </div>
   </section>
@@ -254,7 +254,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     <h2>Key Features</h2>
 
     <h3>1. 테크 트리 환경과 Describe, Explain, Plan and Select 루프</h3>
-    <p>플래너가 계획을 세우면 파서가 하위 목표(<code>Mine cobblestone x6</code>)로 쪼개고, 셀렉터가 다음 목표를 고르면 컨트롤러가 움직인다. 실패가 거듭되거나 한 목표에 너무 오래 붙잡혀 있으면 인벤토리와 오류 메시지를 넣어 다시 계획한다. 규칙은 순수 함수 하나에 모아 두었다. 환경도, 컨트롤러의 선행 조건 탐색도, 규칙 기반 플래너도 이 함수 하나를 본다.</p>
+    <p>플래너가 계획을 세우면 파서가 하위 목표(<code>Mine cobblestone x6</code>)로 쪼개고, 셀렉터가 다음 목표를 고르면 컨트롤러가 움직인다. 3번 연속 실패하거나 한 목표에 50스텝 넘게 머물면, 인벤토리와 오류 메시지를 넣어 다시 계획한다(최대 5번). 규칙은 순수 함수 하나에 모아 두었다. 환경도, 컨트롤러의 선행 조건 탐색도, 규칙 기반 플래너도 이 함수 하나를 본다.</p>
     <div class="code-title">diffu_moe_vlm/core.py</div>
 <pre><code>def apply_action(inventory, verb, item):
     if obtain_method(item) != verb:
@@ -297,7 +297,7 @@ pred = self.denoiser(x_t, t.float(), self.encoder(obs))
 return F.mse_loss(pred, x0 if self.prediction_type == "sample" else noise)</code></pre>
 
     <h3>4. JAX Craftax 학습기</h3>
-    <p>환경 스텝, GAE, PPO 업데이트를 <code>jit</code> 하나 안에서 <code>jax.lax.scan</code>으로 돌린다. 에피소드가 끝난 환경은 월드를 새로 만들지 않고, 미리 만들어 둔 몇 개 중 하나를 받아 간다. 학습은 체크포인트 간격만큼 끊어서 진행하고, 끊을 때마다 파라미터·옵티마이저·환경 상태·난수 상태를 전부 저장한다. 그래서 다시 실행하면 멈춘 자리에서 그대로 이어진다.</p>
+    <p>환경 스텝, GAE, PPO 업데이트를 <code>jit</code> 하나 안에서 <code>jax.lax.scan</code>으로 돌린다. 에피소드가 끝난 환경은 월드를 새로 만들지 않고, 그 스텝에 미리 만든 새 월드 64개 중 하나를 받아 간다. 학습은 50업데이트(기본값)씩 끊어서 진행하고, 끊을 때마다 파라미터·옵티마이저·환경 상태·난수 상태를 전부 저장한다. 그래서 다시 실행하면 멈춘 자리에서 그대로 이어진다.</p>
     <div class="code-title">diffu_moe_vlm/jax_rl/wrappers.py — optimistic reset</div>
 <pre><code>obs_re, state_re = jax.vmap(self._env.reset_env, in_axes=(0, None))(
     jax.random.split(key_reset, self.num_resets), params)   # num_envs / 16개 월드
@@ -353,10 +353,10 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     </div>
 
     <div class="problem">
-      <h3>Problem 5: 태스크를 압도한 호기심 보상(ICM, Intrinsic Curiosity Module)</h3>
+      <h3>Problem 5: 태스크를 압도한 호기심 보너스(ICM, Intrinsic Curiosity Module)</h3>
       <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 intrinsic reward는 스텝당 7.5 안팎까지 올랐지만 extrinsic reward는 0 근처를 맴돌았다. PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>스케일을 맞추지 않은 forward 모델 오차를 드문드문 나오는 태스크 보상에 그대로 더했다. 에이전트는 새로운 상태만 쫓았다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>평균 크기가 일정하고 태스크 보상보다 작은 탐험 보너스.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>스케일을 맞추지 않은 forward 모델 오차를 드문드문 나오는 extrinsic reward(태스크 보상)에 그대로 더했다. 에이전트는 새로운 상태만 쫓았다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>평균 크기가 일정하고 extrinsic reward보다 작은 탐험 보너스.</p></div></div>
       <div class="step"><div class="lbl">해결</div><div><p>오차를 running mean(지금까지 본 모든 오차의 평균)으로 나누고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 오차의 평균이 퍼짐보다 훨씬 커서 보너스가 스텝당 12 안팎에 머물렀다.</p></div></div>
       <div class="step result"><div class="lbl">결과</div><div><p>첫 배치는 스텝당 평균이 정확히 0.01이다. 그 뒤 배치는 0.01 × (지금 평균 오차 / 지금까지의 평균 오차)라서, forward 모델이 좋아지면 줄고 잘 못 맞히는 새 상태에 가면 커진다. 스텝 하나하나에는 상한이 없다. 이 정규화로 정해지는 건 보너스의 평소 크기까지다. 늘 작다는 보장은 없다. 이 방식이 실제로 폭주를 막고 탐험을 늘리는지는 아직 대조 실험으로 확인하지 않았다(아래 <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
@@ -423,8 +423,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
         <thead><tr><th>지표</th><th>값</th><th>의미</th></tr></thead>
         <tbody>
           <tr><td><b>플래너 태스크</b></td><td>0/6 → 6/6</td><td>환경과 Describe, Explain, Plan and Select 루프가 처음부터 끝까지 돈다</td></tr>
-          <tr><td><b>Crafter 점수</b></td><td>1.56 → 4.63</td><td>MoE PPO가 픽셀만 보고 10만 스텝 안에 배운다</td></tr>
-          <tr><td><b>Craftax 리턴(PPO)</b></td><td>1.49 → 6.66</td><td>기본 설정으로 CPU 655만 스텝 동안 학습이 된다</td></tr>
+          <tr><td><b>Crafter 점수</b></td><td>1.56 → 4.63</td><td>MoE PPO가 픽셀만 보고 10만 스텝 안에 랜덤의 약 3배가 된다</td></tr>
+          <tr><td><b>Craftax 리턴(PPO)</b></td><td>1.49 → 6.66</td><td>기본 설정으로 CPU에서 655만 스텝 동안 리턴이 오른다</td></tr>
           <tr><td><b>이어서 학습 일치도</b></td><td>390개 중 차이 0</td><td>끊겼다 이어도 결과가 같다</td></tr>
           <tr><td><b>자동 테스트</b></td><td>68개 통과</td><td>기본, Crafter(PyTorch), Craftax(JAX) 경로</td></tr>
         </tbody>
@@ -446,10 +446,10 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
   <section id="experiment">
     <h2>Experiment Design</h2>
-    <p>Problem 5에서 호기심 보너스를 오차의 running mean으로 나눠 스케일을 맞췄다. 그런데 이 정규화가 보너스 폭주를 정말 막는지, 탐험을 정말 늘리는지는 대조 실험으로 확인한 적이 없다. 그래서 두 질문을 따로 세웠다.</p>
+    <p>Problem 5에서 호기심 보너스를 오차의 running mean으로 나눠 스케일을 맞췄다. 이 정규화가 보너스 폭주를 막는지, 탐험을 늘리는지는 대조 실험으로 확인하지 않았다. 실험으로 답할 질문은 두 가지다.</p>
     <ul>
       <li><b>H1. 폭주 억제:</b> running mean으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
-      <li><b>H2. 탐험 개선:</b> running mean 정규화를 쓴 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 도달하는가? 원래 보상(extrinsic reward)은 깎이지 않는가?</li>
+      <li><b>H2. 탐험 개선:</b> running mean 정규화를 쓴 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 도달하는가? 그러면서 extrinsic reward 리턴은 줄지 않는가?</li>
     </ul>
     <h3>조건</h3>
     <p>Craftax-Symbolic-v1 PPO 기본 설정과 시드는 모두 같다. ICM 조건끼리는 보너스 계수(0.01)도 같아서, 다른 점은 정규화 방식 하나뿐이다.</p>
@@ -458,8 +458,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
         <thead><tr><th>조건</th><th>스텝당 보너스</th><th>예상</th></tr></thead>
         <tbody>
           <tr><td><code>ppo</code></td><td>없음</td><td>기준선</td></tr>
-          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>원본 오차가 크면 보너스가 보상을 덮는다</td></tr>
-          <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>제곱 오차는 평균 성분이 커서 여전히 너무 크다</td></tr>
+          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>원본 오차가 크면 보너스가 extrinsic reward를 덮는다</td></tr>
+          <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>오차의 평균이 퍼짐보다 커서 여전히 너무 크다</td></tr>
           <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>현재 기본값. 오차 분포가 안정적이면 평균 0.01 근처</td></tr>
           <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>오차가 줄어드는 만큼 스케일도 따라간다(업데이트당 감쇠 0.99)</td></tr>
         </tbody>
@@ -482,14 +482,14 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 <pre><code>python run_icm_ablation.py                      # GPU: 조건 5개 × 시드 3개 × 10억 스텝
 python run_icm_ablation.py --steps 2e8 --arms ppo icm_mean icm_std   # 짧게 먼저 확인
 python run_icm_ablation.py --preset cpu-debug   # CPU: 파이프라인 확인용</code></pre>
-    <p>GPU 1대로 런당 3~4시간, 전체 15런이면 50시간 정도 걸린다. 결과는 <code>runs/icm_ablation/report.md</code>에 표와 판정으로 정리된다. CPU 프리셋은 작은 네트워크로 12업데이트만 돌려서 코드가 끝까지 도는지만 본다. 숫자는 가설과 아무 상관이 없다.</p>
+    <p>GPU 1대로 런당 3~4시간, 전체 15런이면 50시간 정도 걸린다. <code>analyze_icm_ablation.py</code>가 표와 판정을 <code>runs/icm_ablation/report.md</code>에 쓴다. CPU 프리셋은 작은 네트워크로 12업데이트만 돌려서 코드가 끝까지 도는지만 본다. 이 숫자로는 가설을 판단할 수 없다.</p>
     <div class="callout warn"><span class="icon">!</span><div>현재 상태: 실험 코드, 단위 테스트, CPU 디버그 실행까지 끝났다. GPU 실행은 아직이라 H1과 H2 모두 답이 없다. 코드는 <a href="code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>에서 볼 수 있다.</div></div>
   </section>
 
   <section id="trials">
     <h2>Miscellaneous Trials &amp; Errors</h2>
     <h4>1. 호기심 보상을 표준편차로 정규화한 시도</h4>
-    <p class="ink-2">처음 ICM을 고칠 때는 보너스를 누적 표준편차로 나눴다. 그래도 보너스는 스텝당 평균 12 안팎이었다. 오차의 평균이 퍼짐보다 훨씬 크기 때문이다. running mean으로 나누고 나서야 평소 크기가 맞았다.</p>
+    <p class="ink-2">처음 ICM을 고칠 때는 보너스를 지금까지의 표준편차(running std)로 나눴다. 그래도 보너스는 스텝당 평균 12 안팎이었다. 오차의 평균이 퍼짐보다 훨씬 크기 때문이다. running mean으로 나누고 나서야 평소 크기가 맞았다.</p>
     <h4>2. CPU 과다 할당</h4>
     <p class="ink-2">Crafter PPO를 학습시키는 동안 옆에서 테스트를 돌렸더니 학습 속도가 초당 80스텝 정도에서 15스텝으로 떨어졌다. 환경 프로세스 8개와 PyTorch 스레드 풀 2개가 코어 4개를 서로 차지하려 했다. 지금은 <code>torch_threads</code> 옵션으로 환경 워커가 쓸 코어를 비워 둔다.</p>
     <h4>3. 레퍼런스 그래프 읽기</h4>

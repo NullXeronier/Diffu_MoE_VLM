@@ -58,7 +58,7 @@
 
   <section id="prereq">
     <h2>0. 읽기 전에</h2>
-    <p>신경망, 경사하강법, 강화학습 기본 용어(상태·행동·보상)는 안다고 보고 쓴다. 나머지 개념은 아래 표에 한 줄씩 적었고 링크는 원 논문으로 간다. 본문에서는 방법마다 <b>왜</b> → 수식 → <b>직관</b> 순서로 설명한다.</p>
+    <p>신경망, 경사하강법, 강화학습 기본 용어(상태·행동·보상)를 알면 읽을 수 있다. 나머지 개념과 약어는 아래 표에 정리했고, 링크는 원 논문으로 간다. 3장의 방법은 모두 <b>왜</b> → 수식 → <b>직관</b> 순서다.</p>
     <h4>선행 개념</h4>
     <div class="table-wrap"><table class="glossary">
       <thead><tr><th>개념</th><th>한 줄 설명</th><th>출처</th></tr></thead>
@@ -99,7 +99,7 @@
   <section id="overview">
     <h2>1. Overview</h2>
     <h4>무엇이 문제였고 무엇을 했나</h4>
-    <p>목표는 Minecraft류 세계에서 LLM이 계획을 세우고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트였다. 그런데 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시해서, 어떤 결과도 잴 수가 없었다. 이 노트는 그 저장소를 테스트가 붙은 세 갈래 파이프라인으로 바꾼 과정이다. 기호 테크 트리에서 도는 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀로 배우는 <b>MoE·Diffusion 정책</b>, 공개된 Craftax PPO baseline 설정으로 학습하고(레퍼런스 런 자체의 설정은 구하지 못했다) CPU에서는 중간에 끊겨도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>목표는 Minecraft류 세계에서 LLM이 계획을 세우고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트였다. 그런데 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시해서, 어떤 결과도 잴 수가 없었다. 그 저장소를 테스트가 붙은 세 갈래 파이프라인으로 다시 만들었다. 기호 테크 트리에서 도는 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀로 배우는 <b>MoE·Diffusion 정책</b>, 공개된 Craftax PPO baseline 설정으로 학습하고(레퍼런스 런 자체의 설정은 구하지 못했다) CPU에서는 중간에 끊겨도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
   </section>
 
   <section id="key-points">
@@ -222,7 +222,7 @@
     </ul>
     <p>Craftax PPO 기본 설정과 시드를 고정하고 다섯 조건을 돌린다. 호기심 없음(<code>ppo</code>), 원본 오차(<code>icm_none</code>), 표준편차로 나눔(<code>icm_std</code>), running mean으로 나눔(<code>icm_mean</code>), EMA로 나눔(<code>icm_ema</code>)이다. ICM 조건끼리는 계수 \(\beta = 0.01\)도 같아서 정규화 방식 말고는 다른 게 없다.</p>
     <div class="math-block">$$\text{share} = \frac{\sum |\beta\, e_t / \text{scale}|}{\sum |\beta\, e_t / \text{scale}| + \sum |r^{\text{ext}}_t|}$$</div>
-    <p>보너스가 폭주했는지는 보상 중 보너스가 차지하는 비율(share)로 본다. 학습 마지막 10%에서도 이 비율이 0.5를 넘거나, 스텝당 보너스가 처음보다 2배 넘게 커졌으면 폭주로 친다. 학습 초반은 판정에서 뺀다. 그때는 extrinsic reward가 거의 0이라 제대로 스케일된 보너스도 비율이 높게 나온다. 탐험은 한 번이라도 도달한 업적 종류 수와 Craftax 점수로, 태스크 성능은 보너스를 뺀 extrinsic reward 리턴으로 잰다.</p>
+    <p>폭주 여부는 보상 중 보너스가 차지하는 비율(share)로 판단한다. 학습 마지막 10%에서도 이 비율이 0.5를 넘거나, 스텝당 보너스가 처음보다 2배 넘게 커졌으면 폭주로 친다. 판정에서 학습 초반은 뺀다. 그때는 extrinsic reward가 거의 0이라 제대로 스케일된 보너스도 비율이 높게 나온다. 탐험은 한 번이라도 도달한 업적 종류 수와 Craftax 점수로, 태스크 성능은 보너스를 뺀 extrinsic reward 리턴으로 잰다.</p>
     <p>판정은 같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. H1은 <code>icm_mean</code>이 어느 시드에서도 폭주하지 않고 <code>icm_none</code>이나 <code>icm_std</code>는 폭주해야 지지된다. H2는 시드 3개 이상에서 도달 업적 수나 점수가 모든 시드에서 <code>ppo</code>보다 높고, extrinsic reward가 모든 시드에서 낮아지지는 않아야 지지된다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</p>
     <p>실험 코드(<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>)와 단위 테스트, CPU 디버그 실행까지는 끝났다. GPU에서 조건 5개 × 시드 3개 × 10억 스텝을 돌리려면 50시간쯤 걸리는데, 아직 돌리지 못해서 H1과 H2 모두 답이 없다.</p>
   </section>

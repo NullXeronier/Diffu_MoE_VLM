@@ -9,7 +9,7 @@
     ppoRet: "PPO 리턴", rnnRet: "PPO-RNN 리턴", policy: "정책", score: "점수 (%)", retCol: "리턴",
     task: "태스크", stepCol: "스텝", scoreUnit: "% 점수", stepUnit: "스텝",
     ach: { collect_wood: "나무 채집", place_table: "작업대 설치", make_wood_pickaxe: "나무 곡괭이", eat_cow: "소 먹기" },
-    policies: { "Random": "랜덤", "PPO · CNN + MoE (100k steps)": "PPO · CNN + MoE (10만 스텝)", "Diffusion BC (from PPO demos)": "Diffusion BC (PPO 시연 학습)" }
+    policies: { "Random": "랜덤", "PPO · CNN + MoE (100k steps)": "PPO · CNN + MoE (10만 스텝)", "Diffusion BC (from PPO demos)": "Diffusion BC (PPO demonstration 학습)" }
   } : {
     steps: "env steps", ret: "episode return", rate: "success rate", stepsM: "Env steps (M)",
     ppoRet: "PPO return", rnnRet: "PPO-RNN return", policy: "Policy", score: "Score (%)", retCol: "Return",
