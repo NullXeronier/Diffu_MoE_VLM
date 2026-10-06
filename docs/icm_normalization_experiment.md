@@ -16,9 +16,9 @@ same `icm_reward_coef = 0.01` in every ICM arm, so the only difference is the no
 |---|---|---|
 | `ppo` | none | baseline |
 | `icm_none` | `0.01 · e` | runs away when the raw error is large |
-| `icm_std` | `0.01 · e / std(e)` | still too large: squared errors are mostly mean |
-| `icm_mean` | `0.01 · e / mean(e)` (running mean, default) | bounded, averages 0.01 |
-| `icm_ema` | `0.01 · e / EMA(e)` (decay 0.99 per update) | bounded and follows a shrinking error |
+| `icm_std` | `0.01 · e / std(e)` | still too large: the error's mean is much larger than its spread |
+| `icm_mean` | `0.01 · e / mean(e)` (running mean, default) | about 0.01 on average while the error distribution is stable; not bounded per step |
+| `icm_ema` | `0.01 · e / EMA(e)` (decay 0.99 per update) | follows a shrinking error; not bounded per step |
 
 `e` is the ICM forward-model error of each transition.
 

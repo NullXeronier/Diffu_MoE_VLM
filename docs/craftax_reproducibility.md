@@ -3,12 +3,17 @@
 Goal: reproduce the reference W&B runs (`Craftax-Symbolic-v1-1000M`, `Craftax-Symbolic-v1-PPO_RNN-1000M`,
 see `docs/craftax_reference.json`) with `train_craftax.py`.
 
+Status: the reference runs have **not** been reproduced yet. What is tested below is that training is
+deterministic and resumable on CPU and that early learning looks like the start of the reference
+curves. The reference runs' own hyper-parameters were not available, so the Craftax PPO baseline
+defaults are used.
+
 ## What was tested here (CPU, 4 cores, no GPU)
 
 | Check | Result |
 |---|---|
 | Unit: GAE vs. NumPy reference, running moments, optimistic resets (fresh distinct worlds for done envs), MoE balance loss, GRU state reset at episode boundaries | pass (`tests/test_jax_rl.py`) |
-| Determinism: same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ | pass |
+| Determinism (CPU): same seed gives bit-identical metrics (PPO and PPO-RNN); different seeds differ. GPU runs may not be bit-identical | pass |
 | Resume: 2 + save/load + 2 updates is bit-identical to 4 straight updates (metrics and params) | pass |
 | Real-scale determinism: baseline config (1024 envs x 64 steps), one uninterrupted `scan` vs. 5-update chunks with checkpoints, resumed across processes: 390 logged values at updates 5-30 | 0 differences |
 | Learning, PPO, 100 updates = 6.55M steps (0.66% of the reference budget) | return 1.49 -> 6.66, achievements/episode 2.4 -> 7.6 |
@@ -26,7 +31,7 @@ Throughput on this CPU: ~1,150-1,250 env steps/s (reference GPU runs: 50k-95k).
 | 50 (3.28M) | PPO-RNN | 5.15 | 6.05 | 95.8 | 84.1 | 19.3 | 18.4 | 4.2 |
 | 100 (6.55M) | PPO | 6.66 | 7.56 | 97.1 | 89.5 | 50.0 | 70.5 | 17.6 |
 
-This matches the start of the reference curves: the basic achievements (collect_wood, place_table,
+By eye, this looks like the start of the reference curves: the basic achievements (collect_wood, place_table,
 collect_sapling, place_plant) saturate first, wake_up starts near 100% and declines later, and the
 wood/stone tool chain follows. The reference PPO-RNN advantage appears over hundreds of millions of
 steps; at 3M steps the two are within single-seed noise. Raw logs: `docs/craftax_runs/*.jsonl`.
