@@ -157,7 +157,7 @@
     <h3>3.6 Curiosity bonus (ICM)</h3>
     <p class="why"><b>Why:</b> Crafter rewards are sparse, given only the first time an achievement is unlocked. A bonus for reaching hard-to-predict states keeps the agent exploring between rewards.</p>
     <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>Intuition:</b> \(e_t\) is ICM's next-state prediction error and \(\overline{e}\) its running mean. Dividing by the standard deviation at first left the error's large mean in place, so the bonus averaged about 12 and drowned out the extrinsic reward. Dividing by the running mean keeps \(e_t/\overline{e}\) near 1 on average, fixing the mean bonus at \(\beta\) so it stays a helper to the real reward.</p>
+    <p class="intuition"><b>Intuition:</b> \(e_t\) is ICM's next-state prediction error and \(\overline{e}\) its running mean. Dividing by the standard deviation at first left the error's large mean in place, so the bonus averaged about 12 and drowned out the extrinsic reward. Dividing by the running mean keeps \(e_t/\overline{e}\) near 1 on average, which pins the mean bonus at \(\beta\) and keeps it a helper to the real reward. Whether this actually prevents runaway and helps exploration is the subject of the experiment at the end of section 4.</p>
 
     <h3>3.7 Crafter score</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>
@@ -191,7 +191,7 @@
       <li><b>Crafter:</b> random 1.56 → MoE PPO 4.63 → diffusion BC 3.56 (score); returns 1.25 / 3.60 / 3.55. The random score matches the published ~1.6%.</li>
       <li><b>Diffusion conditioning:</b> clean-sample prediction gives 40/40 exact action-chunk matches; epsilon-prediction produced observation-blind chunks.</li>
       <li><b>Craftax (CPU, baseline config):</b> PPO return 1.49 → 6.66 in 6.55M steps; PPO-RNN 5.15 vs. PPO 5.47 at 3.28M steps. COLLECT_WOOD 97%, PLACE_TABLE 90%, MAKE_WOOD_PICKAXE 50% at 6.55M.</li>
-      <li><b>Reproducibility:</b> 0 of 390 logged values differ between one uninterrupted run and checkpointed chunks across processes; 58 automated tests pass.</li>
+      <li><b>Reproducibility:</b> 0 of 390 logged values differ between one uninterrupted run and checkpointed chunks across processes; 68 automated tests pass.</li>
     </ul>
     <div class="chart-card">
       <h3>Crafter score (higher is better)</h3>
@@ -212,6 +212,17 @@
       <img src="../images/achievements_collect_diamond.png" alt="COLLECT_DIAMOND success rate over 15k updates in the reference runs" width="619" height="421">
       <figcaption>Reference runs: rare achievements such as COLLECT_DIAMOND only rise late, which is why the 1e9-step budget matters.</figcaption>
     </figure>
+    <h4>Designed, not yet run: curiosity bonus normalization</h4>
+    <p>Dividing the bonus by its running mean (3.6) was a fix prompted by the collapsed reference ICM run. Whether the fix works has not been checked. Two questions:</p>
+    <ul>
+      <li><b>H1.</b> Does the mean-normalized bonus stay at a steady size, while an unnormalized or std-normalized bonus takes over the reward?</li>
+      <li><b>H2.</b> Does that ICM reach more kinds of achievements than PPO without curiosity, without lowering the extrinsic return?</li>
+    </ul>
+    <p>Five arms share the Craftax PPO baseline config and seeds: no curiosity (<code>ppo</code>), raw error (<code>icm_none</code>), divided by the std (<code>icm_std</code>), by the running mean (<code>icm_mean</code>) and by an exponential moving mean (<code>icm_ema</code>). The ICM arms also share \(\beta = 0.01\), so normalization is the only difference.</p>
+    <div class="math-block">$$\text{share} = \frac{\sum |\beta\, e_t / \text{scale}|}{\sum |\beta\, e_t / \text{scale}| + \sum |r^{\text{ext}}_t|}$$</div>
+    <p>Runaway is judged by the share of the reward that is bonus. A run counts as runaway if the share is still above 0.5 over the last 10% of training, or if the bonus per step grew more than 2×. Early training is left out because the extrinsic reward is nearly zero there and even a well-scaled bonus dominates. Exploration is measured by the number of achievement types ever reached and by the Craftax score; task performance by the extrinsic-only return.</p>
+    <p>Each arm is compared with <code>ppo</code> on the same seed. H1 holds if <code>icm_mean</code> never runs away while <code>icm_none</code> or <code>icm_std</code> does. H2 holds if, over at least 3 seeds, achievement types or score beat <code>ppo</code> on every seed and the extrinsic return is not lower on every seed. Runs under 5·10⁷ steps get no verdict.</p>
+    <p>The code (<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>), unit tests and a CPU debug run are done. The GPU runs (5 arms × 3 seeds × 1e9 steps, about 50 hours) have not happened, so both questions are still open.</p>
   </section>
 
   <section id="consideration">
@@ -228,6 +239,7 @@
       <li><b>Reference values:</b> ranges were read off chart images and are approximate; the reference runs' own hyper-parameters were not available, so the Craftax baseline defaults were used.</li>
       <li><b>Oracle planner:</b> the rule-based planner knows the recipes, so 6/6 is an upper bound, not an LLM result; LLM planning should be measured with prerequisite gathering off.</li>
       <li><b>Scope of modules:</b> the trajectory / IMU encoder is validated on synthetic motions only, and the diffusion policy exists only on the PyTorch path.</li>
+      <li><b>ICM effect:</b> mean normalization bounds the bonus size by construction, but whether it prevents runaway and improves exploration has not been tested with a controlled run (end of section 4).</li>
     </ul>
   </section>
 

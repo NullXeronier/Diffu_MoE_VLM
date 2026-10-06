@@ -41,14 +41,14 @@
 <main class="wrap">
   <figure>
     <img src="../images/achievements_make_iron.png" alt="Craftax-Symbolic-v1에서 15k PPO 업데이트 동안의 make_iron_sword, make_iron_pickaxe, make_iron_armour 업적 달성률" width="906" height="234">
-    <figcaption><span class="fig-num">Fig 1.</span> Craftax-Symbolic-v1 레퍼런스 런(GPU 1대, 환경 10억 스텝). 철 도구는 학습 후반에야 나타난다. x축은 1024개 환경 × 64스텝 단위의 PPO 업데이트 횟수다.</figcaption>
+    <figcaption><span class="fig-num">Fig 1.</span> Craftax-Symbolic-v1 레퍼런스 런(GPU 1대, 환경 10억 스텝). 철 도구는 학습 후반에야 나온다. x축은 PPO 업데이트 횟수이고, 한 번에 환경 1024개 × 64스텝을 쓴다.</figcaption>
   </figure>
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>이 프로젝트는 Minecraft류 세계를 위한 Diffusion·Mixture-of-Experts·Vision-Language 에이전트를 내세웠지만, 실제로는 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시하던 저장소에서 출발했다. 이를 테스트된 세 갈래 파이프라인으로 만들었다. 기호 기반 테크 트리 위의 <b>Describe, Explain, Plan and Select 방식 LLM 플래너</b>, PyTorch로 Crafter 픽셀을 학습하는 <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하기 위한 <b>순수 JAX Craftax 학습기</b>다.</p>
-    <p>최종 주장은 의도적으로 좁게 잡았다. 4코어 CPU에서 각 파이프라인이 실제로 학습하고, 결정론적으로 동작하며, 중단 후에도 비트 단위로 똑같이 이어서 학습한다. 레퍼런스의 학습 종료 수치를 맞추는 일은 GPU 실행이 필요하며, 이 구성은 그 실행을 명령어 한 줄로 줄여 둔다.</p>
-    <p>진단, 환경, 에이전트, 학습 인프라, 자동 테스트 58개, 그리고 이 페이지까지 한 저장소 안에서 처음부터 끝까지 구현했다.</p>
+    <p>출발점은 Minecraft류 세계용 Diffusion·Mixture-of-Experts·Vision-Language 에이전트라고 소개된 저장소였다. 막상 열어 보니 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시했다. 이 저장소를 테스트가 붙은 파이프라인 세 개로 다시 세웠다. 기호 테크 트리에서 계획하는 <b>Describe, Explain, Plan and Select 방식 LLM 플래너</b>, Crafter 픽셀로 학습하는 PyTorch <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런을 재현하려고 만든 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <p>여기서 주장하는 것은 많지 않다. 4코어 CPU에서 세 파이프라인 모두 실제로 학습하고, 같은 시드면 같은 결과가 나오며, 중간에 끊겨도 비트 단위로 똑같이 이어진다. 레퍼런스의 최종 수치까지 맞추려면 GPU로 돌려야 하는데, 그 실행은 명령어 한 줄이면 된다.</p>
+    <p>문제 진단부터 환경, 에이전트, 학습 인프라, 자동 테스트 68개, 이 페이지까지 모두 한 저장소에서 직접 만들었다.</p>
   </section>
 
   <section id="key-results">
@@ -58,49 +58,49 @@
         <span class="chip">Environment</span>
         <h3>기호 기반 테크 트리 세계</h3>
         <div class="k">측정 결과</div>
-        <p>랜덤 픽셀 환경을 도구·작업대·화로·연료 규칙이 실제로 적용되는 Gymnasium 테크 트리로 교체했다. 기본 태스크 성공이 <b>0/6에서 6/6</b>이 되었고(나무 반블록 3스텝, 다이아몬드 34스텝), <b>행동 30%가 무작위로 실패해도 재계획으로 6/6</b>을 유지했다.</p>
+        <p>랜덤 픽셀 환경을 걷어내고 도구·작업대·화로·연료 규칙이 실제로 돌아가는 Gymnasium 테크 트리를 넣었다. 기본 태스크 성공이 <b>0/6에서 6/6</b>으로 올랐고(나무 반블록 3스텝, 다이아몬드 34스텝), <b>행동 30%를 일부러 실패시켜도 재계획으로 6/6</b>을 지켰다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">세계가 행동에 반응하기 전까지는 에이전트를 평가할 수 없다. 어떤 실험이든 첫 테스트는 "스크립트 정책으로 풀 수 있는가"여야 한다.</p>
+        <p class="learned">세계가 행동에 반응하지 않으면 에이전트를 평가할 방법이 없다. 그래서 어떤 실험이든 "스크립트 정책으로 풀리는가"부터 확인한다.</p>
       </div>
       <div class="kr">
         <span class="chip">Planning</span>
         <h3>수량을 고려한 Describe, Explain, Plan and Select 루프</h3>
         <div class="k">측정 결과</div>
-        <p>단계를 빠뜨린 계획은 컨트롤러가 선택된 하위 목표만 실행할 때 <b>재계획 한도 5회</b>를 모두 쓰고 실패하고, 컨트롤러가 선행 재료를 스스로 모을 때는 성공한다. 이 비교 실험으로 계획 품질과 제어 품질을 분리해 측정할 수 있다.</p>
+        <p>단계를 빠뜨린 계획을 주면, 컨트롤러가 고른 하위 목표만 실행할 때는 <b>재계획 한도 5회</b>를 다 쓰고 실패한다. 컨트롤러가 선행 재료까지 알아서 모으게 하면 같은 계획이 성공한다. 이 차이로 계획 품질과 제어 품질을 따로 잴 수 있다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">"판자가 있다"와 "판자가 3개 있다"는 다르다. 하위 목표는 아이템이 이미 있을 때가 아니라 새로 얻었을 때 완료로 처리해야 한다.</p>
+        <p class="learned">"판자가 있다"와 "판자가 3개 있다"는 다른 상태다. 하위 목표는 아이템을 이미 갖고 있을 때가 아니라 새로 얻었을 때 끝난 것으로 봐야 한다.</p>
       </div>
       <div class="kr">
         <span class="chip">Algorithm</span>
         <h3>Crafter 픽셀 위의 MoE PPO</h3>
         <div class="k">측정 결과</div>
-        <p>CNN 인코더와 전문가 4개 중 2개를 고르는 MoE 몸통으로, CPU 10만 스텝 만에 Crafter 점수를 <b>1.56(랜덤)에서 4.63</b>으로(약 3배), 리턴을 1.25에서 3.60으로 올렸다.</p>
+        <p>CNN 인코더 뒤에 전문가 4개 중 2개를 고르는 MoE 몸통을 붙였다. CPU로 10만 스텝만 학습해도 Crafter 점수가 <b>1.56(랜덤)에서 4.63</b>으로 약 3배가 됐고, 리턴은 1.25에서 3.60으로 올랐다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">랜덤 기준선이 논문 수치(약 1.6%)와 일치하는지부터 확인하면, 학습 결과를 주장하기 전에 지표 코드를 검증할 수 있다.</p>
+        <p class="learned">랜덤 정책 점수가 논문 수치(약 1.6%)와 맞는지 먼저 보면, 학습 결과를 말하기 전에 지표 코드가 맞는지부터 확인할 수 있다.</p>
       </div>
       <div class="kr">
         <span class="chip">Training method</span>
         <h3>Diffusion 모방학습</h3>
         <div class="k">측정 결과</div>
-        <p>PPO 시연으로 학습한 Diffusion 정책이 점수 <b>3.56</b>, 리턴 3.55(교사 3.60)를 기록했다. 깨끗한 샘플을 직접 예측하도록 바꾸자 조건 테스트에서 행동 묶음이 <b>40/40</b> 정확히 일치했다.</p>
+        <p>PPO 시연으로 학습한 Diffusion 정책은 점수 <b>3.56</b>, 리턴 3.55를 냈다(교사는 3.60). 깨끗한 샘플을 직접 예측하게 바꾼 뒤로는 조건 테스트에서 행동 묶음이 <b>40/40</b> 모두 맞았다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">Diffusion 손실이 낮다고 조건을 사용한다는 뜻은 아니다. 원-핫 목표에서는 노이즈 예측(epsilon) 방식이 높은 노이즈 구간에서 깨끗한 샘플을 거의 제약하지 못한다.</p>
+        <p class="learned">Diffusion 손실이 낮아도 조건을 안 볼 수 있다. 목표가 원-핫이면 노이즈 예측(epsilon) 방식은 노이즈가 큰 구간에서 깨끗한 샘플을 거의 붙잡지 못한다.</p>
       </div>
       <div class="kr">
         <span class="chip">Infrastructure</span>
         <h3>JAX 기반 Craftax 학습</h3>
         <div class="k">측정 결과</div>
-        <p>환경과 PPO를 함께 jit 컴파일하고 optimistic reset을 적용해 4코어 CPU에서 <b>초당 약 1,200스텝</b>을 냈다(레퍼런스 GPU 런은 5만~9.5만). 기본 설정으로 655만 스텝 동안 PPO 리턴이 1.49에서 <b>6.66</b>으로 올랐다.</p>
+        <p>환경과 PPO를 한꺼번에 jit 컴파일하고 optimistic reset을 써서 4코어 CPU에서 <b>초당 약 1,200스텝</b>이 나왔다(레퍼런스 GPU 런은 5만~9.5만). 기본 설정으로 655만 스텝을 돌리자 PPO 리턴이 1.49에서 <b>6.66</b>이 됐다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">Craftax 스텝 비용의 대부분은 월드 생성이다. 모든 환경이 매번 리셋 비용을 내지 않도록 새 월드를 풀로 만들어 나눠 써야 한다.</p>
+        <p class="learned">Craftax 스텝에서 시간을 가장 많이 잡아먹는 건 월드 생성이다. 환경마다 매번 새 월드를 만들지 말고, 몇 개만 만들어 두고 돌려써야 한다.</p>
       </div>
       <div class="kr">
         <span class="chip">Empirical analysis</span>
         <h3>결정론과 이어서 학습</h3>
         <div class="k">측정 결과</div>
-        <p>한 번에 끝까지 학습한 결과와, 5업데이트마다 저장하고 다른 프로세스에서 이어 붙인 결과를 비교하니 기록된 값 <b>390개 중 차이 0개</b>였다. 같은 시드로 다시 돌리면 PPO, PPO-RNN 모두 비트 단위로 같다.</p>
+        <p>한 번에 끝까지 돌린 런과, 5업데이트마다 저장하고 다른 프로세스에서 이어 붙인 런을 비교했다. 기록된 값 <b>390개 중 다른 값은 0개</b>였다. 같은 시드로 다시 돌려도 PPO, PPO-RNN 모두 비트 단위로 같다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">이어서 학습할 수 있으면 "학습이 죽었다"가 "명령을 다시 실행하면 된다"로 바뀐다. 레퍼런스 런 10개 중 8개가 failed 상태로 끝났다.</p>
+        <p class="learned">이어서 학습할 수 있으면 런이 죽어도 같은 명령을 다시 치면 그만이다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</p>
       </div>
     </div>
   </section>
@@ -185,7 +185,7 @@
         <path class="arrow" d="M586 407 H612" marker-end="url(#arr)"/>
       </svg>
     </div>
-    <p class="muted" style="font-size:0.9rem;margin-top:8px"><span class="fig-num">Fig 2.</span> 하나의 저장소와 하나의 평가 언어(태스크, 업적, 성공률)를 공유하는 세 갈래 구성.</p>
+    <p class="muted" style="font-size:0.9rem;margin-top:8px"><span class="fig-num">Fig 2.</span> 세 갈래가 저장소 하나와 평가 기준(태스크, 업적, 성공률)을 함께 쓴다.</p>
 
     <h3>Tech Stack</h3>
     <div class="table-wrap">
@@ -193,13 +193,13 @@
         <thead><tr><th>분류</th><th>기술</th></tr></thead>
         <tbody>
           <tr><td><b>언어</b></td><td>Python 3.9+</td></tr>
-          <tr><td><b>계획</b></td><td>OpenAI 호환 엔드포인트를 통한 LLM(로컬 모델), 규칙 기반 폴백 플래너</td></tr>
+          <tr><td><b>계획</b></td><td>OpenAI 호환 엔드포인트로 붙이는 LLM(로컬 모델), 규칙 기반 폴백 플래너</td></tr>
           <tr><td><b>환경</b></td><td>Gymnasium(기호 테크 트리), Crafter, Craftax(JAX)</td></tr>
           <tr><td><b>딥러닝</b></td><td>PyTorch(Crafter 정책), JAX·Flax·Optax·Distrax(Craftax)</td></tr>
           <tr><td><b>모델</b></td><td>CNN·ViT 인코더, HuggingFace CLIP·SigLIP(선택), top-k MoE, DDPM Diffusion 정책, GRU, ICM, 궤적 트랜스포머</td></tr>
           <tr><td><b>설정</b></td><td>Hydra, OmegaConf</td></tr>
           <tr><td><b>모니터링</b></td><td>Weights &amp; Biases, JSONL 지표</td></tr>
-          <tr><td><b>테스트</b></td><td>pytest(58개), Playwright(이 사이트)</td></tr>
+          <tr><td><b>테스트</b></td><td>pytest(68개), Playwright(이 사이트)</td></tr>
         </tbody>
       </table>
     </div>
@@ -207,20 +207,20 @@
 
   <section id="environment">
     <h2>Training Environment</h2>
-    <p>같은 에이전트 구성을 난이도가 다른 세 환경에서 측정한다. 모두 태스크별·업적별 성공으로 결과를 보고하므로 환경 간 비교가 가능하다.</p>
+    <p>같은 에이전트 구성을 난이도가 다른 세 환경에서 잰다. 결과는 모두 태스크별·업적별 성공으로 보고해서 환경끼리 비교할 수 있다.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>환경</th><th>관측</th><th>행동</th><th>성공 신호</th></tr></thead>
         <tbody>
           <tr><td><b>기호 테크 트리</b></td><td>인벤토리 벡터(아이템 19종) + 자리표시 RGB</td><td>매크로 20개(채굴·제작·제련 + noop)</td><td>목표 아이템이 인벤토리에 들어옴</td></tr>
           <tr><td><b>Crafter</b></td><td>64 × 64 × 3 픽셀</td><td>이산 17개</td><td>업적 22개, 점수 = 성공률의 기하평균</td></tr>
-          <tr><td><b>Craftax-Symbolic-v1</b></td><td>8,268차원 기호 벡터</td><td>이산 43개</td><td>던전 층 전체에 걸친 업적 약 65개</td></tr>
+          <tr><td><b>Craftax-Symbolic-v1</b></td><td>8,268차원 기호 벡터</td><td>이산 43개</td><td>던전 여러 층에 걸친 업적 약 65개</td></tr>
         </tbody>
       </table>
     </div>
 
     <h3>테크 트리 규칙</h3>
-    <p>채굴에는 알맞은 도구가 필요하다(조약돌·석탄은 나무 곡괭이, 철은 돌 곡괭이, 다이아몬드는 철 곡괭이). 제작은 재료를 소모하고 경우에 따라 작업대가 필요하다. 제련에는 화로가 필요하고 석탄 1개를 소모한다. 목표 아이템이 인벤토리에 들어오면 태스크가 성공하고, <code>max_steps</code>를 넘으면 에피소드가 중단된다.</p>
+    <p>채굴하려면 맞는 도구가 있어야 한다(조약돌·석탄은 나무 곡괭이, 철은 돌 곡괭이, 다이아몬드는 철 곡괭이). 제작하면 재료가 줄고, 어떤 것은 작업대 앞에서만 만들 수 있다. 제련은 화로가 있어야 하고 석탄을 1개 쓴다. 목표 아이템이 인벤토리에 들어오면 성공이고, <code>max_steps</code>를 넘기면 에피소드가 끝난다.</p>
 
     <h3>Craftax PPO 설정</h3>
     <div class="table-wrap">
@@ -230,10 +230,10 @@
           <tr><td>병렬 환경 수 × 롤아웃 길이</td><td class="num">1024 × 64</td><td>업데이트당 65,536스텝, 15,258업데이트 = 10억 스텝</td></tr>
           <tr><td>학습률(선형 감소)</td><td class="num">2e-4</td><td>Adam, 그래디언트 클리핑 1.0</td></tr>
           <tr><td>γ / GAE λ</td><td class="num">0.99 / 0.8</td><td></td></tr>
-          <tr><td>에폭 × 미니배치</td><td class="num">4 × 8</td><td>PPO-RNN은 환경 단위로 시퀀스를 통째로 미니배치</td></tr>
+          <tr><td>에폭 × 미니배치</td><td class="num">4 × 8</td><td>PPO-RNN은 시퀀스를 자르지 않고 환경 단위로 미니배치를 나눔</td></tr>
           <tr><td>네트워크</td><td class="num">3 × 512 tanh</td><td>PPO-RNN: 512 임베딩 → GRU → 헤드</td></tr>
           <tr><td>Optimistic reset 비율</td><td class="num">16</td><td>환경 1024개에 스텝당 새 월드 64개</td></tr>
-          <tr><td>ICM 보너스 계수</td><td class="num">0.01</td><td>보너스를 먼저 이동평균으로 나눔</td></tr>
+          <tr><td>ICM 보너스 계수</td><td class="num">0.01</td><td>보너스를 먼저 누적 평균으로 나눔</td></tr>
         </tbody>
       </table>
     </div>
@@ -242,7 +242,7 @@
 <pre><code># Crafter 점수: 업적 성공률 s_i(%)의 기하평균
 score = exp(mean_i ln(1 + s_i)) - 1
 
-# ICM 보너스(스텝당): 희소한 태스크 보상을 압도하지 않도록 정규화
+# ICM 보너스(스텝당): 드문드문 나오는 태스크 보상을 덮지 않도록 정규화
 r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre>
   </section>
 
@@ -250,7 +250,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     <h2>Key Features</h2>
 
     <h3>1. 테크 트리 환경과 Describe, Explain, Plan and Select 루프</h3>
-    <p>플래너가 계획을 세우면 파서가 이를 하위 목표(<code>Mine cobblestone x6</code>)로 바꾸고, 셀렉터가 다음 목표를 고르고, 컨트롤러가 행동한다. 실패가 반복되거나 한 목표에 너무 오래 머물면 인벤토리와 오류 메시지를 담아 재계획한다. 모든 규칙을 하나의 순수 함수에 두어 환경, 컨트롤러의 선행 조건 탐색, 규칙 기반 플래너가 같은 규칙을 공유한다.</p>
+    <p>플래너가 계획을 세우면 파서가 하위 목표(<code>Mine cobblestone x6</code>)로 쪼개고, 셀렉터가 다음 목표를 고르면 컨트롤러가 움직인다. 실패가 거듭되거나 한 목표에 너무 오래 붙잡혀 있으면 인벤토리와 오류 메시지를 넣어 다시 계획한다. 규칙은 순수 함수 하나에 모아 두었다. 환경도, 컨트롤러의 선행 조건 탐색도, 규칙 기반 플래너도 이 함수 하나를 본다.</p>
     <div class="code-title">diffu_moe_vlm/core.py</div>
 <pre><code>def apply_action(inventory, verb, item):
     if obtain_method(item) != verb:
@@ -269,7 +269,7 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     return new_inv, True, ""</code></pre>
 
     <h3>2. Mixture-of-Experts 몸통</h3>
-    <p>노이즈를 더한 top-k 게이트가 각 관측 임베딩을 MLP 전문가 4개 중 2개로 보낸다. Switch Transformer 방식의 균형 손실(완전 균형이면 1, 한 전문가로 몰리면 E)이 전문가가 고르게 쓰이도록 하고, 층별 전문가 사용률을 학습 중에 기록한다. <code>model.trunk=mlp</code>로 일반(dense) 몸통과 비교할 수 있다.</p>
+    <p>노이즈를 섞은 top-k 게이트가 관측 임베딩마다 MLP 전문가 4개 중 2개를 고른다. Switch Transformer식 균형 손실(완전히 고르면 1, 한 전문가에 몰리면 E)로 전문가가 골고루 쓰이게 하고, 층마다 전문가 사용률을 학습하면서 남긴다. <code>model.trunk=mlp</code>로 바꾸면 일반(dense) 몸통과 비교할 수 있다.</p>
     <div class="code-title">diffu_moe_vlm/nn/moe.py</div>
 <pre><code>probs = logits.softmax(dim=-1)                          # (B, E)
 top_vals, top_idx = probs.topk(self.top_k, dim=-1)       # (B, k)
@@ -282,7 +282,7 @@ load = F.one_hot(top_idx[:, 0], self.num_experts).float().mean(0)
 aux_loss = self.num_experts * (load * probs.mean(0)).sum()</code></pre>
 
     <h3>3. 행동 묶음 위의 Diffusion 정책</h3>
-    <p>8스텝 행동 묶음을 [-1, 1]로 스케일한 원-핫 (H × A) 텐서로 표현한다. FiLM으로 조건을 받는 디노이저가 노이즈 섞인 묶음, Diffusion 단계, 이미지 임베딩으로부터 깨끗한 묶음을 예측한다. 실행할 때는 간격을 둔 DDIM 10단계로 묶음을 샘플링하고, 앞의 4개 행동만 실행한 뒤 다시 샘플링한다.</p>
+    <p>8스텝 행동 묶음은 [-1, 1]로 스케일한 원-핫 (H × A) 텐서다. 디노이저는 FiLM으로 조건을 받아, 노이즈 섞인 묶음과 Diffusion 단계, 이미지 임베딩을 보고 깨끗한 묶음을 맞힌다. 실행할 때는 DDIM 10단계로 묶음을 뽑고, 앞의 4개 행동만 쓴 다음 다시 뽑는다.</p>
     <div class="code-title">diffu_moe_vlm/nn/diffusion.py</div>
 <pre><code>x0 = self.encode_actions(actions)                     # one-hot * 2 - 1
 t = torch.randint(0, self.num_diffusion_steps, (x0.shape[0],))
@@ -293,7 +293,7 @@ pred = self.denoiser(x_t, t.float(), self.encoder(obs))
 return F.mse_loss(pred, x0 if self.prediction_type == "sample" else noise)</code></pre>
 
     <h3>4. JAX Craftax 학습기</h3>
-    <p>환경 스텝, GAE, PPO 업데이트를 하나의 <code>jit</code> 안에서 <code>jax.lax.scan</code>으로 돌린다. 끝난 환경은 매번 월드를 새로 만들지 않고, 소수의 새 월드 풀에서 하나를 받아 간다. 학습은 체크포인트 단위의 청크로 나아가며 파라미터, 옵티마이저, 환경 상태, 난수 상태를 모두 저장하므로, 다시 실행하면 멈춘 지점에서 정확히 이어진다.</p>
+    <p>환경 스텝, GAE, PPO 업데이트를 <code>jit</code> 하나 안에서 <code>jax.lax.scan</code>으로 돌린다. 에피소드가 끝난 환경은 월드를 새로 만들지 않고, 미리 만들어 둔 몇 개 중 하나를 받아 간다. 학습은 체크포인트 간격만큼 끊어서 진행하고, 끊을 때마다 파라미터·옵티마이저·환경 상태·난수 상태를 전부 저장한다. 그래서 다시 실행하면 멈춘 자리에서 그대로 이어진다.</p>
     <div class="code-title">diffu_moe_vlm/jax_rl/wrappers.py — optimistic reset</div>
 <pre><code>obs_re, state_re = jax.vmap(self._env.reset_env, in_axes=(0, None))(
     jax.random.split(key_reset, self.num_resets), params)   # num_envs / 16개 월드
@@ -314,47 +314,47 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
     <div class="problem">
       <h3>Problem 1: 절대 성공할 수 없는 에이전트</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>모든 벤치마크 태스크가 999스텝에서 <code>success: false</code>로 끝났고, 전체 벤치마크는 첫 태스크 뒤에 멈췄다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>환경이 <code>np.random.randint</code> 픽셀을 돌려주고 행동 처리 함수가 <code>pass</code>여서 인벤토리가 변하지 않았다. 여기에 폴백 플래너가 자기 프롬프트 템플릿 안의 <code>wooden_slab</code>에 매칭되어 모든 태스크에 나무 반블록 계획을 내놓았고, 계획 텍스트를 리터럴 백슬래시 n으로 나눴으며, 로거가 존재하지 않는 속성을 호출했다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>학습을 붙이기 전에 성공이 가능하고 측정 가능한 세계를 만든다.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><ul><li>도구와 재료 규칙이 적용되는 Gymnasium API 기반 기호 테크 트리 환경.</li><li>수량을 고려한 규칙 기반 플래너, 이벤트 기반 하위 목표 완료, 인벤토리와 오류 정보를 담은 재계획.</li><li>설정 키, 파싱, 로깅, 데이터 로딩 수정과 패키지 구조·테스트 정비.</li></ul></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>기본 태스크 0/6 → 6/6, 행동 30% 무작위 실패에서도 6/6, 플래너 경로 단위 테스트 34개.</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>벤치마크 태스크가 전부 999스텝에서 <code>success: false</code>로 끝났고, 벤치마크 전체는 첫 태스크를 넘기지 못하고 멈췄다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>환경은 <code>np.random.randint</code> 픽셀을 돌려줬고 행동 처리 함수는 <code>pass</code>뿐이라 인벤토리가 그대로였다. 게다가 폴백 플래너는 자기 프롬프트 템플릿 안의 <code>wooden_slab</code>을 매칭해서 어떤 태스크든 나무 반블록 계획을 냈다. 계획 텍스트는 리터럴 백슬래시 n으로 잘랐고, 로거는 없는 속성을 불렀다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>학습을 붙이기 전에, 성공할 수 있고 성공을 잴 수 있는 세계부터 만든다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><ul><li>도구·재료 규칙이 들어간 기호 테크 트리 환경(Gymnasium API).</li><li>수량을 따지는 규칙 기반 플래너, 아이템을 얻는 순간 끝나는 하위 목표, 인벤토리와 오류를 넣은 재계획.</li><li>설정 키·파싱·로깅·데이터 로딩 버그 수정, 패키지 구조와 테스트 정리.</li></ul></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>기본 태스크 0/6 → 6/6. 행동 30%를 무작위로 실패시켜도 6/6. 플래너 경로 단위 테스트 34개.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 2: 관측을 무시한 Diffusion 정책</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>학습 손실은 내려갔지만, 서로 다른 행동 묶음이 나와야 하는 어두운 이미지와 밝은 이미지에서 거의 같은 묶음이 샘플링됐다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>노이즈 예측(epsilon) 방식에서는 높은 노이즈 구간의 손실이 깨끗한 원-핫 묶음을 복원하는지에 거의 의존하지 않는다. 그래서 결과를 좌우하는 샘플링 초반 단계가 조건을 거의 반영하지 못했다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>전체 DDPM과 간격을 둔 DDIM 샘플링 모두에서 관측에 따라 달라지는 행동 묶음.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>깨끗한 샘플(x<sub>0</sub>)을 직접 예측하고, 샘플링 때 노이즈를 그로부터 계산한다. 노이즈 예측 방식은 옵션으로 남겼다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>조건 테스트에서 400스텝 학습 후 40/40 정확히 일치(100스텝부터 정답). Crafter Diffusion 모방학습 점수 3.56(PPO 교사 4.63).</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>학습 손실은 내려갔다. 그런데 어두운 이미지와 밝은 이미지에서 서로 다른 행동 묶음이 나와야 하는데도 거의 같은 묶음이 나왔다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>노이즈 예측(epsilon) 방식에서는 노이즈가 큰 구간의 손실이 깨끗한 원-핫 묶음을 되살렸는지와 거의 상관이 없다. 그래서 결과를 사실상 정하는 샘플링 초반 단계가 조건을 거의 보지 않았다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>전체 DDPM으로 뽑든 DDIM으로 건너뛰며 뽑든, 관측이 바뀌면 행동 묶음도 바뀌어야 한다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>깨끗한 샘플(x<sub>0</sub>)을 바로 예측하고, 샘플링할 때 노이즈는 거기서 거꾸로 계산한다. 노이즈 예측 방식은 옵션으로 남겨 두었다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>조건 테스트에서 400스텝 학습 뒤 40/40 일치(100스텝째부터 정답). Crafter Diffusion 모방학습 점수 3.56(PPO 교사 4.63).</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 3: 레퍼런스 그래프에 한참 못 미치는 결과</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>Crafter PPO 런은 EAT_PLANT 0%에 철 도구도 없었는데, 레퍼런스 그래프에는 철 칼과 다이아몬드까지 나왔다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>레퍼런스는 Craftax-Symbolic(기호 관측, 업적 약 65개)을 GPU에서 초당 5만~9.5만 스텝으로 10억 스텝 학습한 런이고, 그래프 x축은 PPO 업데이트 횟수다(10억 ÷ (1024 × 64) ≈ 15,258). 로컬 런은 Crafter 픽셀 10만 스텝으로, 환경도 다르고 데이터는 1만 분의 1이었다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>레퍼런스 설정을 그대로 실행하고 그 결과와 대조할 수 있는 파이프라인.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>기본 설정의 순수 JAX PPO·PPO-RNN Craftax 학습기와, 그래프에서 읽은 학습 종료 범위 70개를 담은 레퍼런스 파일 및 <code>compare_craftax_run.py</code>.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>CPU에서 초기 학습 순서가 레퍼런스와 일치한다(기본 업적이 먼저 포화되고 나무·돌 도구가 뒤따름). 10억 스텝 비교는 GPU 명령 한 줄만 남았다.</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>로컬 Crafter PPO 런은 EAT_PLANT가 0%였고 철 도구는 하나도 없었다. 레퍼런스 그래프에는 철 칼과 다이아몬드까지 있었다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>레퍼런스는 Craftax-Symbolic(기호 관측, 업적 약 65개)을 GPU에서 초당 5만~9.5만 스텝으로 10억 스텝 학습한 런이었다. 그래프 x축도 PPO 업데이트 횟수였다(10억 ÷ (1024 × 64) ≈ 15,258). 로컬 런은 Crafter 픽셀 10만 스텝이었으니 환경부터 달랐고 데이터는 1만 분의 1이었다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>레퍼런스 설정을 그대로 돌리고 결과를 레퍼런스와 맞대어 볼 수 있어야 한다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>기본 설정으로 도는 순수 JAX PPO·PPO-RNN Craftax 학습기를 만들었다. 그래프에서 읽어 낸 학습 종료 범위 70개는 레퍼런스 파일에 담고, <code>compare_craftax_run.py</code>로 비교한다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>CPU에서 본 초기 학습 순서가 레퍼런스와 같다(기본 업적이 먼저 차고 나무·돌 도구가 뒤를 잇는다). 10억 스텝 비교는 GPU에서 명령 한 줄만 돌리면 된다.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 4: 학습 도중 죽는 런</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>100업데이트짜리 CPU 런이 세션 시간 제한으로 약 32번째 업데이트에서 중단됐다. 레퍼런스 런도 10개 중 8개가 failed 상태로 끝났다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>학습 전체가 하나의 jit scan으로 돌아가서 끝날 때까지 아무 상태도 저장되지 않았다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>중단된 런을 이어서 학습해도 중단 없이 끝낸 런과 결과가 정확히 같아야 한다.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>학습을 N업데이트 단위의 jit 청크로 나누고 청크마다 전체 상태를 저장한다. 같은 명령을 다시 실행하면 그 상태에서 이어진다. 시간 제한이 있는 작업은 <code>max_updates_per_run</code>으로 의도적으로 멈춘다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>한 번에 끝낸 런과 5업데이트마다 프로세스를 바꿔 이어 붙인 런 사이에 기록된 값 390개 중 차이 0개. 단위 테스트로 파라미터가 비트 단위로 같은지도 확인한다.</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>100업데이트짜리 CPU 런이 세션 시간 제한에 걸려 32번째 업데이트쯤에서 끊겼다. 레퍼런스 런도 10개 중 8개가 failed로 끝났다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>학습 전체가 jit scan 하나로 돌아서, 끝나기 전에는 아무것도 저장되지 않았다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>끊긴 런을 이어서 돌려도, 끊기지 않은 런과 결과가 정확히 같아야 한다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>학습을 N업데이트짜리 jit 청크로 나누고, 청크가 끝날 때마다 전체 상태를 저장한다. 같은 명령을 다시 치면 저장된 상태에서 이어진다. 시간 제한이 있는 작업은 <code>max_updates_per_run</code>으로 미리 정한 지점에서 멈춘다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>한 번에 끝낸 런과 5업데이트마다 프로세스를 바꿔 이어 붙인 런을 비교하면 기록된 값 390개 중 다른 값이 0개다. 파라미터가 비트 단위로 같은지는 단위 테스트로도 확인한다.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 5: 태스크를 압도한 호기심 보상</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 내적 보상은 스텝당 약 7.5까지 오르는데 외적 보상은 0 근처에 머물렀고, PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>스케일을 조정하지 않은 forward 모델 오차를 희소한 태스크 보상에 그대로 더해서, 에이전트가 새로움만 최적화했다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>평균 기여도가 고정되어 있고 태스크 보상에 비해 작은 탐색 보너스.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>보너스를 이동평균으로 나눠 평균을 1로 맞추고 0.01을 곱한다. 처음에는 표준편차로 나눴지만, 제곱 오차는 대부분 평균 성분이라 평균이 약 12로 남았다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>정규화된 보너스는 스텝당 평균 0.01, 일반적인 에피소드 기준 약 5로, 수렴 시 20을 넘는 태스크 리턴보다 충분히 작다.</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 내적 보상은 스텝당 7.5 안팎까지 올랐지만 외적 보상은 0 근처를 맴돌았다. PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>스케일을 맞추지 않은 forward 모델 오차를 드문드문 나오는 태스크 보상에 그대로 더했다. 에이전트는 새로운 상태만 쫓았다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>평균 크기가 일정하고 태스크 보상보다 작은 탐험 보너스.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>보너스를 오차의 누적 평균으로 나눠 평균을 1로 맞추고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 제곱 오차는 거의 평균 성분이라 보너스 평균이 12 안팎에 머물렀다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>정규화한 보너스는 스텝당 평균 0.01, 보통 길이의 에피소드로 치면 5 정도다. 수렴하면 20을 넘는 태스크 리턴보다 한참 작다. 다만 이 방식이 실제로 폭주를 막고 탐험을 늘리는지는 아직 대조 실험으로 확인하지 않았다(아래 <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
 
@@ -367,7 +367,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     </div>
     <div class="chart-card">
       <h3>Craftax-Symbolic-v1: 첫 업적들(PPO)</h3>
-      <p class="sub">끝난 에피소드 기준 성공률. 레퍼런스 곡선처럼 기본 업적이 먼저 포화되고 나무·돌 도구 순서가 뒤따른다.</p>
+      <p class="sub">끝난 에피소드 기준 성공률. 레퍼런스 곡선과 마찬가지로 기본 업적이 먼저 차고, 나무·돌 도구가 차례로 뒤따른다.</p>
       <div class="chart" id="chart-ach"></div>
     </div>
 
@@ -387,11 +387,11 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       </table>
     </div>
     <h4>해석 범위</h4>
-    <p class="ink-2">레퍼런스 학습량의 0.3~0.7%에 해당하는 시드 1개짜리 런이다. 두 모델 모두 예상된 초기 업적을 예상된 순서로 학습한다는 것까지 보여 준다. 레퍼런스에서 PPO-RNN이 앞서는 차이는 수억 스텝에 걸쳐 벌어지므로 아직 보이지 않는다.</p>
+    <p class="ink-2">레퍼런스 학습량의 0.3~0.7%를 시드 1개로 돌린 결과다. 두 모델이 예상한 초기 업적을 예상한 순서대로 배운다는 데까지만 말할 수 있다. 레퍼런스에서 PPO-RNN이 앞서는 격차는 수억 스텝에 걸쳐 벌어지기 때문에 여기서는 아직 안 보인다.</p>
     <div class="grid-2">
       <figure>
         <img src="../images/achievements_collect_diamond.png" alt="레퍼런스 런의 15k 업데이트 동안 COLLECT_DIAMOND 성공률" width="619" height="421">
-        <figcaption><span class="fig-num">Fig 3.</span> 레퍼런스 런의 COLLECT_DIAMOND. 드물고, 늦게 나타나며, 변동이 크다.</figcaption>
+        <figcaption><span class="fig-num">Fig 3.</span> 레퍼런스 런의 COLLECT_DIAMOND. 드물게, 늦게 나오고 오르내림도 크다.</figcaption>
       </figure>
       <figure>
         <img src="../images/paper_achievements_heatmap.png" alt="원 논문의 업적별 성공률 히트맵" width="1684" height="735">
@@ -409,7 +409,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     </div>
     <div class="chart-card">
       <h3>플래너: 태스크별 해결 스텝 수</h3>
-      <p class="sub">규칙 기반 플래너, 기본 설정. 6개 태스크 모두 성공.</p>
+      <p class="sub">규칙 기반 플래너, 기본 설정. 6개 태스크를 모두 풀었다.</p>
       <div class="chart" id="chart-planner"></div>
     </div>
 
@@ -418,11 +418,11 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <table>
         <thead><tr><th>지표</th><th>값</th><th>의미</th></tr></thead>
         <tbody>
-          <tr><td><b>플래너 태스크</b></td><td>0/6 → 6/6</td><td>환경과 Describe, Explain, Plan and Select 루프가 처음부터 끝까지 동작함</td></tr>
-          <tr><td><b>Crafter 점수</b></td><td>1.56 → 4.63</td><td>MoE PPO가 10만 스텝 안에 픽셀로부터 학습함</td></tr>
-          <tr><td><b>Craftax 리턴(PPO)</b></td><td>1.49 → 6.66</td><td>기본 설정이 CPU 655만 스텝에서 학습함</td></tr>
-          <tr><td><b>이어서 학습 일치도</b></td><td>390개 중 차이 0</td><td>중단해도 결과가 바뀌지 않음</td></tr>
-          <tr><td><b>자동 테스트</b></td><td>58개 통과</td><td>기본, Crafter(PyTorch), Craftax(JAX) 경로</td></tr>
+          <tr><td><b>플래너 태스크</b></td><td>0/6 → 6/6</td><td>환경과 Describe, Explain, Plan and Select 루프가 처음부터 끝까지 돈다</td></tr>
+          <tr><td><b>Crafter 점수</b></td><td>1.56 → 4.63</td><td>MoE PPO가 픽셀만 보고 10만 스텝 안에 배운다</td></tr>
+          <tr><td><b>Craftax 리턴(PPO)</b></td><td>1.49 → 6.66</td><td>기본 설정으로 CPU 655만 스텝 동안 학습이 된다</td></tr>
+          <tr><td><b>이어서 학습 일치도</b></td><td>390개 중 차이 0</td><td>끊겼다 이어도 결과가 같다</td></tr>
+          <tr><td><b>자동 테스트</b></td><td>68개 통과</td><td>기본, Crafter(PyTorch), Craftax(JAX) 경로</td></tr>
         </tbody>
       </table>
     </div>
@@ -430,37 +430,80 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <h3>신체 신호: 3D 궤적</h3>
     <div class="grid-2">
       <div>
-        <p class="ink-2">트랜스포머 인코더가 여러 관절(양손과 머리)의 3D 궤적을 속도, 그리고 불규칙한 타임스탬프의 연속 시간 임베딩과 함께 임베딩한다. MoE 정책에 선택 입력으로 연결되며, 합성 동작 데이터에서는 150스텝 학습 후 4가지 동작을 90% 넘게 구분한다.</p>
+        <p class="ink-2">트랜스포머 인코더가 여러 관절(양손과 머리)의 3D 궤적을 임베딩한다. 속도와, 간격이 고르지 않은 타임스탬프의 연속 시간 임베딩도 같이 넣는다. MoE 정책에 선택 입력으로 붙일 수 있고, 합성 동작 데이터로 150스텝 학습하면 4가지 동작을 90% 넘게 가려낸다.</p>
         <p class="ink-2">데이터 형식: <code>positions (N,T,J,3)</code>, <code>timestamps (N,T)</code>, 선택 항목 <code>mask</code>, <code>labels</code>.</p>
       </div>
       <figure>
         <img src="../images/trajectory_3d.png" alt="왼손, 오른손, 머리의 3D 이동 궤적" width="794" height="839">
-        <figcaption><span class="fig-num">Fig 5.</span> 인코더 입력 설계에 사용한 손·머리 궤적 기록.</figcaption>
+        <figcaption><span class="fig-num">Fig 5.</span> 인코더 입력을 설계할 때 참고한 손·머리 궤적 기록.</figcaption>
       </figure>
     </div>
+  </section>
+
+  <section id="experiment">
+    <h2>Experiment Design</h2>
+    <p>Problem 5에서 호기심 보너스를 오차의 누적 평균으로 나눠 스케일을 맞췄다. 그런데 이 정규화가 보너스 폭주를 정말 막는지, 탐험을 정말 늘리는지는 대조 실험으로 확인한 적이 없다. 그래서 두 질문을 따로 세웠다.</p>
+    <ul>
+      <li><b>H1. 폭주 억제:</b> 누적 평균으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
+      <li><b>H2. 탐험 개선:</b> 누적 평균 정규화를 쓴 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 도달하는가? 원래 보상(외부 보상)은 깎이지 않는가?</li>
+    </ul>
+    <h3>조건</h3>
+    <p>Craftax-Symbolic-v1 PPO 기본 설정과 시드는 모두 같다. ICM 조건끼리는 보너스 계수(0.01)도 같아서, 다른 점은 정규화 방식 하나뿐이다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>조건</th><th>스텝당 보너스</th><th>예상</th></tr></thead>
+        <tbody>
+          <tr><td><code>ppo</code></td><td>없음</td><td>기준선</td></tr>
+          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>원본 오차가 크면 보너스가 보상을 덮는다</td></tr>
+          <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>제곱 오차는 평균 성분이 커서 여전히 너무 크다</td></tr>
+          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>현재 기본값. 평균 0.01에 머문다</td></tr>
+          <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>오차가 줄어드는 만큼 스케일도 따라간다(업데이트당 감쇠 0.99)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small">e는 전이마다 계산한 ICM forward 모델 오차다.</p>
+    <h3>측정하는 것</h3>
+    <ul>
+      <li><b>폭주:</b> 전체 보상 크기 중 보너스가 차지하는 비율(<code>icm/bonus_share</code>)과 스텝당 보너스 평균. 학습 마지막 10% 구간에서도 비율이 절반을 넘거나, 보너스가 처음보다 2배 넘게 커지면 폭주로 본다. 초반 구간은 판정에서 뺀다. 그때는 외부 보상이 0에 가까워서 제대로 스케일된 보너스도 비율이 높게 나온다.</li>
+      <li><b>탐험:</b> 학습 중 한 번이라도 도달한 업적 종류 수, Craftax 점수(업적 성공률의 기하평균), 에피소드당 업적 수.</li>
+      <li><b>태스크 성능:</b> 외부 보상만으로 센 에피소드 리턴. 보너스가 섞이지 않은 값으로 비교한다.</li>
+    </ul>
+    <h3>판정 기준</h3>
+    <ul>
+      <li>같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</li>
+      <li><b>H1 지지:</b> <code>icm_mean</code>은 어느 시드에서도 폭주하지 않고, <code>icm_none</code>이나 <code>icm_std</code>는 폭주한다. 대조군도 폭주하지 않으면 판단을 보류한다.</li>
+      <li><b>H2 지지:</b> 시드 3개 이상에서, 도달한 업적 종류나 Craftax 점수가 모든 시드에서 <code>ppo</code>보다 높다. 동시에 외부 보상 리턴이 모든 시드에서 낮아지지는 않아야 한다.</li>
+    </ul>
+    <h3>실행</h3>
+<pre><code>python run_icm_ablation.py                      # GPU: 조건 5개 × 시드 3개 × 10억 스텝
+python run_icm_ablation.py --steps 2e8 --arms ppo icm_mean icm_std   # 짧게 먼저 확인
+python run_icm_ablation.py --preset cpu-debug   # CPU: 파이프라인 확인용</code></pre>
+    <p>GPU 1대로 런당 3~4시간, 전체 15런이면 50시간 정도 걸린다. 결과는 <code>runs/icm_ablation/report.md</code>에 표와 판정으로 정리된다. CPU 프리셋은 작은 네트워크로 12업데이트만 돌려서 코드가 끝까지 도는지만 본다. 숫자는 가설과 아무 상관이 없다.</p>
+    <div class="callout warn"><span class="icon">!</span><div>현재 상태: 실험 코드, 단위 테스트, CPU 디버그 실행까지 끝났다. GPU 실행은 아직이라 H1과 H2 모두 답이 없다. 코드는 <a href="code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>에서 볼 수 있다.</div></div>
   </section>
 
   <section id="trials">
     <h2>Miscellaneous Trials &amp; Errors</h2>
     <h4>1. 호기심 보상을 표준편차로 정규화한 시도</h4>
-    <p class="ink-2">첫 ICM 수정은 보너스를 이동 표준편차로 나눴다. 그래도 보너스가 스텝당 평균 약 12였다. 제곱 예측 오차는 분산이 아니라 대부분 평균 성분이기 때문이다. 이동평균으로 나누자 스케일이 맞았다.</p>
+    <p class="ink-2">처음 ICM을 고칠 때는 보너스를 누적 표준편차로 나눴다. 그래도 보너스는 스텝당 평균 12 안팎이었다. 제곱 예측 오차는 분산보다 평균 쪽이 훨씬 크기 때문이다. 누적 평균으로 나누고 나서야 스케일이 맞았다.</p>
     <h4>2. CPU 과다 할당</h4>
-    <p class="ink-2">Crafter PPO 학습 옆에서 테스트를 돌리자 학습 속도가 초당 약 80스텝에서 15스텝으로 떨어졌다. 환경 프로세스 8개와 PyTorch 스레드 풀 2개가 코어 4개를 두고 경쟁했다. 이제 <code>torch_threads</code> 옵션으로 환경 워커 몫의 코어를 남긴다.</p>
+    <p class="ink-2">Crafter PPO를 학습시키는 동안 옆에서 테스트를 돌렸더니 학습 속도가 초당 80스텝 정도에서 15스텝으로 떨어졌다. 환경 프로세스 8개와 PyTorch 스레드 풀 2개가 코어 4개를 서로 차지하려 했다. 지금은 <code>torch_threads</code> 옵션으로 환경 워커가 쓸 코어를 비워 둔다.</p>
     <h4>3. 레퍼런스 그래프 읽기</h4>
-    <p class="ink-2">처음에는 W&amp;B의 "Step" 축을 환경 스텝으로 읽었다. 실제로는 PPO 업데이트 횟수였고, 15k 업데이트를 10억 스텝에 맞춰 보면서 레퍼런스 런의 배치 크기를 알아냈다.</p>
+    <p class="ink-2">처음에는 W&amp;B의 "Step" 축을 환경 스텝인 줄 알았다. 알고 보니 PPO 업데이트 횟수였다. 15k 업데이트가 10억 스텝이 되려면 배치가 얼마여야 하는지 거꾸로 계산해서 레퍼런스 런의 배치 크기를 알아냈다.</p>
   </section>
 
   <section id="future">
     <h2>Future Plans</h2>
     <h4>전체 규모 재현</h4>
     <ul class="ink-2">
-      <li>GPU에서 10억 스텝 PPO·PPO-RNN 비교(런당 3~4시간)를 시드 2~3개로 돌리고 <code>compare_craftax_run.py</code>로 확인한다.</li>
+      <li>GPU에서 10억 스텝 PPO·PPO-RNN 비교(런당 3~4시간)를 시드 2~3개로 돌리고 <code>compare_craftax_run.py</code>로 맞춰 본다.</li>
+      <li>아래 ICM 정규화 실험을 GPU에서 돌려 두 질문에 답을 낸다.</li>
     </ul>
     <h4>모델</h4>
     <ul class="ink-2">
-      <li>Diffusion 정책을 JAX 경로로 옮기고, 대규모에서 MoE와 일반(dense) 몸통을 비교한다.</li>
-      <li>학습된 정책을 Describe, Explain, Plan and Select 플래너 아래의 하위 스킬로 사용한다.</li>
-      <li>실제 IMU 기록을 궤적 형식으로 연결한다.</li>
+      <li>Diffusion 정책을 JAX 쪽으로 옮기고, 큰 규모에서 MoE와 일반(dense) 몸통을 비교한다.</li>
+      <li>학습된 정책을 Describe, Explain, Plan and Select 플래너 밑에 하위 스킬로 붙인다.</li>
+      <li>실제 IMU 기록을 궤적 형식으로 바꿔 넣는다.</li>
     </ul>
   </section>
 </main>

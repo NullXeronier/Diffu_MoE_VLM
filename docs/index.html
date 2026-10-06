@@ -47,8 +47,8 @@
   <section id="overview">
     <h2>Overview</h2>
     <p>This project started from a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds, but whose environment returned random pixels and ignored every action. It became three tested pipelines: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
-    <p>The final claim is intentionally narrow. On a 4-core CPU the pipelines learn, are deterministic, and resume bit-for-bit after interruption. Matching the reference end-of-training numbers needs the GPU run that this setup reduces to one command.</p>
-    <p>Everything was built end-to-end in one repository: the audit, environments, agents, training infrastructure, 58 automated tests and this page.</p>
+    <p>What this page claims is modest. On a 4-core CPU all three pipelines learn, give the same result for the same seed, and pick up bit-for-bit after an interruption. Matching the reference end-of-training numbers takes a GPU run, which is one command here.</p>
+    <p>The audit, environments, agents, training infrastructure, 68 automated tests and this page all live in one repository.</p>
   </section>
 
   <section id="key-results">
@@ -199,7 +199,7 @@
           <tr><td><b>Models</b></td><td>CNN / ViT encoders, HuggingFace CLIP / SigLIP (optional), top-k MoE, DDPM diffusion policy, GRU, ICM, trajectory transformer</td></tr>
           <tr><td><b>Configuration</b></td><td>Hydra, OmegaConf</td></tr>
           <tr><td><b>Monitoring</b></td><td>Weights &amp; Biases, JSONL metrics</td></tr>
-          <tr><td><b>Testing</b></td><td>pytest (58 tests), Playwright (this site)</td></tr>
+          <tr><td><b>Testing</b></td><td>pytest (68 tests), Playwright (this site)</td></tr>
         </tbody>
       </table>
     </div>
@@ -233,7 +233,7 @@
           <tr><td>Epochs × minibatches</td><td class="num">4 × 8</td><td>PPO-RNN minibatches whole sequences by environment</td></tr>
           <tr><td>Network</td><td class="num">3 × 512 tanh</td><td>PPO-RNN: 512 embedding → GRU → heads</td></tr>
           <tr><td>Optimistic reset ratio</td><td class="num">16</td><td>64 fresh worlds per step for 1024 envs</td></tr>
-          <tr><td>ICM bonus scale</td><td class="num">0.01</td><td>Bonus divided by its running mean first</td></tr>
+          <tr><td>ICM bonus scale</td><td class="num">0.01</td><td>Bonus divided by the running mean of the error first</td></tr>
         </tbody>
       </table>
     </div>
@@ -354,7 +354,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <div class="step"><div class="lbl">Cause</div><div><p>An unscaled forward-model error was added to a sparse task reward, so the agent optimised novelty only.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus whose average contribution is fixed and small relative to task rewards.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Divide the bonus by its running mean (so it averages 1) and scale it by 0.01. Dividing by the standard deviation was tried first and left a mean of ~12, because a squared error is mostly mean.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>The normalized bonus averages 0.01 per step, about 5 per typical episode against a task return above 20 at convergence.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>The normalized bonus averages 0.01 per step, about 5 per typical episode against a task return above 20 at convergence. Whether this actually prevents runaway and helps exploration has not been tested with a controlled run yet (see <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
 
@@ -422,7 +422,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
           <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO learns from pixels within 100k steps</td></tr>
           <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>Baseline config learns on CPU in 6.55M steps</td></tr>
           <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Runs can be interrupted without changing results</td></tr>
-          <tr><td><b>Automated tests</b></td><td>58 pass</td><td>Core, Crafter (PyTorch) and Craftax (JAX) paths</td></tr>
+          <tr><td><b>Automated tests</b></td><td>68 pass</td><td>Core, Crafter (PyTorch) and Craftax (JAX) paths</td></tr>
         </tbody>
       </table>
     </div>
@@ -440,6 +440,48 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     </div>
   </section>
 
+  <section id="experiment">
+    <h2>Experiment Design</h2>
+    <p>Problem 5 fixed the curiosity bonus by dividing it by the running mean of the error. Nobody has yet checked, with a controlled run, whether that actually stops the bonus from running away or actually helps exploration. So there are two separate questions.</p>
+    <ul>
+      <li><b>H1. Bounded bonus:</b> does the mean-normalized bonus stay at a steady size through training, while an unnormalized or std-normalized bonus takes over the reward?</li>
+      <li><b>H2. Better exploration:</b> does mean-normalized ICM reach more kinds of achievements than PPO without curiosity, without lowering the extrinsic return?</li>
+    </ul>
+    <h3>Arms</h3>
+    <p>Same Craftax-Symbolic-v1 PPO baseline config and seeds everywhere. The ICM arms also share the bonus coefficient (0.01), so normalization is the only difference.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Arm</th><th>Bonus per step</th><th>Expectation</th></tr></thead>
+        <tbody>
+          <tr><td><code>ppo</code></td><td>none</td><td>baseline</td></tr>
+          <tr><td><code>icm_none</code></td><td>0.01 · e</td><td>takes over the reward when the raw error is large</td></tr>
+          <tr><td><code>icm_std</code></td><td>0.01 · e / std(e)</td><td>still too large: a squared error is mostly mean</td></tr>
+          <tr><td><code>icm_mean</code></td><td>0.01 · e / mean(e)</td><td>current default; averages 0.01</td></tr>
+          <tr><td><code>icm_ema</code></td><td>0.01 · e / EMA(e)</td><td>follows the error down as the forward model improves (decay 0.99 per update)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small">e is the ICM forward-model error of each transition.</p>
+    <h3>What is measured</h3>
+    <ul>
+      <li><b>Runaway:</b> the bonus share of the total |reward| (<code>icm/bonus_share</code>) and the mean bonus per step. A run counts as runaway if the share is still above one half over the last 10% of training, or if the bonus grew more than 2×. Early updates are left out: the extrinsic reward is close to zero there, so even a well-scaled bonus is most of the reward.</li>
+      <li><b>Exploration:</b> achievement types reached at least once, the Craftax score (geometric mean of success rates), achievements per episode.</li>
+      <li><b>Task performance:</b> episode return from the extrinsic reward only.</li>
+    </ul>
+    <h3>Decision rules</h3>
+    <ul>
+      <li>Every arm is compared with <code>ppo</code> on the same seed. Runs shorter than 5·10⁷ steps get no verdict.</li>
+      <li><b>H1 holds</b> if <code>icm_mean</code> never runs away on any seed while <code>icm_none</code> or <code>icm_std</code> does. If no control runs away either, the answer is "inconclusive".</li>
+      <li><b>H2 holds</b> if, over at least 3 seeds, achievement types reached or the Craftax score beat <code>ppo</code> on every seed, and the extrinsic return is not lower on every seed.</li>
+    </ul>
+    <h3>Running it</h3>
+<pre><code>python run_icm_ablation.py                      # GPU: 5 arms x 3 seeds x 1e9 steps
+python run_icm_ablation.py --steps 2e8 --arms ppo icm_mean icm_std   # quicker first look
+python run_icm_ablation.py --preset cpu-debug   # CPU: pipeline check only</code></pre>
+    <p>On one GPU that is 3–4 hours per run, about 50 hours for all 15. The tables and verdicts end up in <code>runs/icm_ablation/report.md</code>. The CPU preset trains a tiny network for 12 updates to check that the code runs end to end; its numbers say nothing about the hypotheses.</p>
+    <div class="callout warn"><span class="icon">!</span><div>Status: the experiment code, unit tests and a CPU debug run are done. The GPU runs have not happened yet, so H1 and H2 are both open. Code: <a href="code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>.</div></div>
+  </section>
+
   <section id="trials">
     <h2>Miscellaneous Trials &amp; Errors</h2>
     <h4>1. Normalising curiosity by its standard deviation</h4>
@@ -455,6 +497,7 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <h4>Full-scale reproduction</h4>
     <ul class="ink-2">
       <li>Run the 1e9-step PPO and PPO-RNN comparison on a GPU (3–4 hours per run) over 2–3 seeds and check it with <code>compare_craftax_run.py</code>.</li>
+      <li>Run the ICM normalization experiment below on a GPU to answer its two questions.</li>
     </ul>
     <h4>Models</h4>
     <ul class="ink-2">

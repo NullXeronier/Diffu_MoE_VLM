@@ -31,7 +31,7 @@
   <section>
     <div class="kicker">연구 노트</div>
     <h1>오픈월드에서 계획하고 제작하는 법을 배우기</h1>
-    <p class="lead">동작하지 않던 프로토타입에서 테스트된 계획, MoE·Diffusion 정책, 재현 가능한 Craftax 학습까지.</p>
+    <p class="lead">돌아가지도 않던 프로토타입을, 테스트가 붙은 계획 루프와 MoE·Diffusion 정책, 재현되는 Craftax 학습으로 고쳐 온 기록.</p>
     <div class="props">
       <div class="pk">Project</div><div>Diffu-MoE-VLM</div>
       <div class="pk">Author</div><div>NullXeronier</div>
@@ -58,22 +58,22 @@
 
   <section id="prereq">
     <h2>0. 읽기 전에</h2>
-    <p>이 노트는 신경망과 경사하강법, 강화학습의 기본 용어(상태·행동·보상)를 안다고 가정한다. 나머지 개념은 아래에 한 줄씩 정리했고, 각 줄의 링크는 원 논문이다. 본문의 각 방법은 <b>왜</b> → 수식 → <b>직관</b> 순서로 설명한다.</p>
+    <p>신경망, 경사하강법, 강화학습 기본 용어(상태·행동·보상)는 안다고 보고 쓴다. 나머지 개념은 아래 표에 한 줄씩 적었고 링크는 원 논문으로 간다. 본문에서는 방법마다 <b>왜</b> → 수식 → <b>직관</b> 순서로 설명한다.</p>
     <h4>선행 개념</h4>
     <div class="table-wrap"><table class="glossary">
       <thead><tr><th>개념</th><th>한 줄 설명</th><th>출처</th></tr></thead>
       <tbody>
-        <tr><td>MDP · 정책 · 리턴</td><td>상태를 보고 행동을 고르는 함수가 정책 \(\pi\), 보상의 할인 합이 리턴이다. 이 노트의 모든 학습은 기대 리턴을 키우는 것이 목표다.</td><td><a href="http://incompleteideas.net/book/the-book-2nd.html">Sutton &amp; Barto</a></td></tr>
-        <tr><td>PPO</td><td>정책이 한 번에 너무 많이 바뀌지 않도록 업데이트 크기를 잘라내는 정책 경사 알고리즘.</td><td><a href="https://arxiv.org/abs/1707.06347">Schulman+ 2017</a></td></tr>
-        <tr><td>GAE</td><td>행동이 평균보다 얼마나 좋았는지(이점)를 여러 스텝의 TD 오차를 섞어 추정한다.</td><td><a href="https://arxiv.org/abs/1506.02438">Schulman+ 2015</a></td></tr>
-        <tr><td>Describe, Explain, Plan and Select</td><td>LLM이 계획을 쓰고, 실패하면 실패 설명을 받아 계획을 고치는 Minecraft 에이전트 구조.</td><td><a href="https://arxiv.org/abs/2302.01560">Wang+ 2023</a></td></tr>
-        <tr><td>Mixture of Experts</td><td>여러 '전문가' 네트워크 중 게이트가 입력마다 고른 일부의 출력만 섞는다.</td><td><a href="https://arxiv.org/abs/1701.06538">Shazeer+ 2017</a>, <a href="https://arxiv.org/abs/2101.03961">Fedus+ 2021</a></td></tr>
-        <tr><td>Diffusion (DDPM · DDIM)</td><td>데이터에 노이즈를 점점 더하는 과정을 거꾸로 학습해 노이즈에서 샘플을 만든다. DDIM은 더 적은 단계로 샘플링한다.</td><td><a href="https://arxiv.org/abs/2006.11239">Ho+ 2020</a>, <a href="https://arxiv.org/abs/2010.02502">Song+ 2020</a></td></tr>
-        <tr><td>Diffusion Policy</td><td>이미지 대신 행동 시퀀스를 생성하는 diffusion 모방학습.</td><td><a href="https://arxiv.org/abs/2303.04137">Chi+ 2023</a></td></tr>
-        <tr><td>ICM</td><td>다음 상태 예측이 틀린 만큼 '호기심' 보상을 줘서 탐험을 돕는다.</td><td><a href="https://arxiv.org/abs/1705.05363">Pathak+ 2017</a></td></tr>
+        <tr><td>MDP · 정책 · 리턴</td><td>상태를 보고 행동을 고르는 함수가 정책 \(\pi\)이고, 보상을 할인해 더한 값이 리턴이다. 이 노트의 학습은 전부 기대 리턴을 키우려는 것이다.</td><td><a href="http://incompleteideas.net/book/the-book-2nd.html">Sutton &amp; Barto</a></td></tr>
+        <tr><td>PPO</td><td>정책이 한 번에 너무 크게 바뀌지 않게 업데이트 폭을 잘라 내는 정책 경사 알고리즘.</td><td><a href="https://arxiv.org/abs/1707.06347">Schulman+ 2017</a></td></tr>
+        <tr><td>GAE</td><td>어떤 행동이 평소보다 얼마나 나았는지(이점)를 여러 스텝의 TD 오차를 섞어서 추정한다.</td><td><a href="https://arxiv.org/abs/1506.02438">Schulman+ 2015</a></td></tr>
+        <tr><td>Describe, Explain, Plan and Select</td><td>LLM이 계획을 쓰고, 실행이 실패하면 왜 실패했는지 설명을 받아 계획을 고치는 Minecraft 에이전트 구조.</td><td><a href="https://arxiv.org/abs/2302.01560">Wang+ 2023</a></td></tr>
+        <tr><td>Mixture of Experts</td><td>'전문가' 네트워크 여러 개를 두고, 입력마다 게이트가 고른 몇 개의 출력만 섞는다.</td><td><a href="https://arxiv.org/abs/1701.06538">Shazeer+ 2017</a>, <a href="https://arxiv.org/abs/2101.03961">Fedus+ 2021</a></td></tr>
+        <tr><td>Diffusion (DDPM · DDIM)</td><td>데이터에 노이즈를 조금씩 더하는 과정을 거꾸로 배워서, 노이즈에서 샘플을 만든다. DDIM은 더 적은 단계로 뽑는다.</td><td><a href="https://arxiv.org/abs/2006.11239">Ho+ 2020</a>, <a href="https://arxiv.org/abs/2010.02502">Song+ 2020</a></td></tr>
+        <tr><td>Diffusion Policy</td><td>이미지 대신 행동 시퀀스를 만들어 내는 diffusion 모방학습.</td><td><a href="https://arxiv.org/abs/2303.04137">Chi+ 2023</a></td></tr>
+        <tr><td>ICM</td><td>다음 상태를 틀리게 예측한 만큼 '호기심' 보상을 줘서 탐험을 부추긴다.</td><td><a href="https://arxiv.org/abs/1705.05363">Pathak+ 2017</a></td></tr>
         <tr><td>Crafter</td><td>2D Minecraft풍 벤치마크. 64×64 픽셀, 행동 17개, 업적 22개.</td><td><a href="https://arxiv.org/abs/2109.06780">Hafner 2021</a></td></tr>
-        <tr><td>Craftax</td><td>Crafter를 JAX로 다시 만들고 확장한 벤치마크. GPU에서 수십억 스텝을 학습한다.</td><td><a href="https://arxiv.org/abs/2402.16801">Matthews+ 2024</a></td></tr>
-        <tr><td>JAX <code>jit</code></td><td>파이썬 함수를 한 번 컴파일해 CPU/GPU에서 통째로 실행한다. 환경까지 컴파일하면 파이썬 오버헤드가 사라진다.</td><td><a href="https://jax.readthedocs.io/">JAX 문서</a></td></tr>
+        <tr><td>Craftax</td><td>Crafter를 JAX로 다시 짜고 내용을 늘린 벤치마크. GPU에서 수십억 스텝을 학습할 수 있다.</td><td><a href="https://arxiv.org/abs/2402.16801">Matthews+ 2024</a></td></tr>
+        <tr><td>JAX <code>jit</code></td><td>파이썬 함수를 한 번 컴파일해 CPU/GPU에서 통째로 돌린다. 환경까지 같이 컴파일하면 파이썬 오버헤드가 없어진다.</td><td><a href="https://jax.readthedocs.io/">JAX 문서</a></td></tr>
       </tbody>
     </table></div>
     <h4>기호표</h4>
@@ -96,111 +96,111 @@
 
   <section id="overview">
     <h2>1. Overview</h2>
-    <h4>핵심 문제 및 기여</h4>
-    <p>이 프로젝트는 Minecraft류 세계에서 LLM이 계획하고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트를 목표로 했지만, 환경이 랜덤 픽셀을 돌려주고 모든 행동을 무시해서 어떤 결과도 측정할 수 없었다. 이 노트는 그것이 테스트된 세 갈래 파이프라인이 된 과정을 정리한다. 기호 기반 테크 트리 위의 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀 위의 <b>MoE·Diffusion 정책</b>, 그리고 10억 스텝 레퍼런스 런과 같은 설정으로 학습하며 중단 후에도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
+    <h4>무엇이 문제였고 무엇을 했나</h4>
+    <p>목표는 Minecraft류 세계에서 LLM이 계획을 세우고 Diffusion·Mixture-of-Experts 정책이 실행하는 에이전트였다. 그런데 환경은 랜덤 픽셀만 돌려주고 행동은 전부 무시해서, 어떤 결과도 잴 수가 없었다. 이 노트는 그 저장소를 테스트가 붙은 세 갈래 파이프라인으로 바꾼 과정이다. 기호 테크 트리에서 도는 <b>Describe, Explain, Plan and Select 방식 플래너</b>, Crafter 픽셀로 배우는 <b>MoE·Diffusion 정책</b>, 10억 스텝 레퍼런스 런과 같은 설정으로 학습하고 중간에 끊겨도 비트 단위로 똑같이 이어지는 <b>순수 JAX Craftax 학습기</b>다.</p>
   </section>
 
   <section id="key-points">
     <h2>2. Key points</h2>
-    <p><b>푸는 에이전트보다 풀 수 있는 세계가 먼저:</b> 도구·재료·연료 규칙이 적용되는 Gymnasium 테크 트리로 기본 태스크 성공이 0/6에서 6/6이 되었고, 행동 30%가 무작위로 실패해도 재계획으로 6/6을 유지한다.</p>
-    <p><b>계획 품질과 제어 품질의 분리 측정:</b> 선행 재료 수집을 끄면 단계를 빠뜨린 계획은 재계획 한도를 모두 쓰고 실패하고, 켜면 같은 계획이 성공한다.</p>
-    <p><b>픽셀로부터의 MoE PPO와 Diffusion 모방학습:</b> Crafter에서 CNN과 전문가 4개 중 2개를 고르는 MoE 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배에 도달하고, 이를 모방한 Diffusion 정책이 교사의 리턴에 거의 근접한다.</p>
-    <p><b>레퍼런스를 올바르게 읽기:</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과이고, x축은 PPO 업데이트 횟수다. JAX 파이프라인은 바로 그 설정을 실행한다.</p>
-    <p><b>테스트로 보장하는 결정론:</b> 체크포인트 청크로 나눠 여러 프로세스에서 이어 붙인 런이 중단 없이 끝낸 런을 재현하며, 기록된 값 390개 중 차이가 0개다.</p>
+    <p><b>에이전트보다 풀 수 있는 세계가 먼저다.</b> 도구·재료·연료 규칙이 들어간 Gymnasium 테크 트리를 만들자 기본 태스크 성공이 0/6에서 6/6이 됐다. 행동 30%를 무작위로 실패시켜도 재계획으로 6/6을 지킨다.</p>
+    <p><b>계획과 제어를 따로 잰다.</b> 선행 재료 수집을 끄면 단계를 빠뜨린 계획은 재계획 한도를 다 쓰고 실패한다. 켜면 같은 계획이 성공한다.</p>
+    <p><b>픽셀만 보고 배우는 MoE PPO와 Diffusion 모방학습.</b> Crafter에서 CNN에 전문가 4개 중 2개를 고르는 MoE를 붙인 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배가 됐다. 이 정책을 흉내 낸 Diffusion 정책은 교사 리턴에 거의 따라붙는다.</p>
+    <p><b>레퍼런스부터 제대로 읽는다.</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과였고, x축은 PPO 업데이트 횟수였다. JAX 파이프라인은 그 설정을 그대로 돌린다.</p>
+    <p><b>결정론은 테스트로 확인한다.</b> 체크포인트 청크로 나눠 여러 프로세스에서 이어 붙인 런이 한 번에 끝낸 런과 같다. 기록된 값 390개 중 다른 값은 0개다.</p>
   </section>
 
   <section id="methodology">
     <h2>3. Methodology</h2>
 
     <h3>3.1 테크 트리 환경</h3>
-    <p class="why"><b>왜:</b> 플래너가 맞는 계획을 썼는지 판정하려면 행동의 결과가 규칙대로 정해지는 세계가 필요하다. 픽셀 없이 규칙만 있는 세계는 빠르고 결정론적이라 제어 실력과 상관없이 계획 품질만 잴 수 있다.</p>
-    <p>기호 세계는 인벤토리 \(s \in \mathbb{N}^{19}\)와 매크로 행동 \(a = (\text{verb}, \text{item})\), \(\text{verb} \in \{\text{mine}, \text{craft}, \text{smelt}\}\) 위의 MDP다. 행동은 필요한 도구를 갖고 재료가 충분할 때만 성공하고, 재료는 소모되며 도구는 남는다. 목표 아이템이 인벤토리에 들어오면 태스크가 성공한다.</p>
+    <p class="why"><b>왜:</b> 플래너가 맞는 계획을 썼는지 가리려면 행동 결과가 규칙대로 정해지는 세계가 있어야 한다. 픽셀 없이 규칙만 있는 세계는 빠르고 늘 같은 결과를 내서, 제어 실력과 상관없이 계획만 따로 잴 수 있다.</p>
+    <p>기호 세계는 인벤토리 \(s \in \mathbb{N}^{19}\)와 매크로 행동 \(a = (\text{verb}, \text{item})\), \(\text{verb} \in \{\text{mine}, \text{craft}, \text{smelt}\}\) 위의 MDP다. 행동은 필요한 도구가 있고 재료가 넉넉할 때만 성공한다. 재료는 쓰면 줄고 도구는 남는다. 목표 아이템이 인벤토리에 들어오면 태스크 성공이다.</p>
     <figure>
       <div class="card diagram lg" role="img" aria-label="다이아몬드까지의 테크 트리 경로: 나무, 판자, 막대기와 작업대, 나무 곡괭이, 조약돌, 돌 곡괭이, 철광석, 철 주괴, 철 곡괭이, 다이아몬드"><svg viewBox="0 0 560 250" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-tree" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box" x="6" y="10" width="124" height="54" rx="8"/><text class="t" x="68" y="34" text-anchor="middle">나무</text><text class="s" x="68" y="52" text-anchor="middle">채굴 · 맨손</text><rect class="box" x="148" y="10" width="124" height="54" rx="8"/><text class="t" x="210" y="34" text-anchor="middle">판자</text><text class="s" x="210" y="52" text-anchor="middle">제작 · 나무 1 → 4</text><rect class="box" x="290" y="10" width="124" height="54" rx="8"/><text class="t" x="352" y="34" text-anchor="middle">막대기·작업대</text><text class="s" x="352" y="52" text-anchor="middle">제작 · 판자</text><rect class="box" x="432" y="10" width="124" height="54" rx="8"/><text class="t" x="494" y="34" text-anchor="middle">나무 곡괭이</text><text class="s" x="494" y="52" text-anchor="middle">제작 · 작업대 필요</text><rect class="box" x="432" y="100" width="124" height="54" rx="8"/><text class="t" x="494" y="124" text-anchor="middle">조약돌</text><text class="s" x="494" y="142" text-anchor="middle">채굴 · 나무 곡괭이</text><rect class="box" x="290" y="100" width="124" height="54" rx="8"/><text class="t" x="352" y="124" text-anchor="middle">돌 곡괭이</text><text class="s" x="352" y="142" text-anchor="middle">제작 · 조약돌 3</text><rect class="box" x="148" y="100" width="124" height="54" rx="8"/><text class="t" x="210" y="124" text-anchor="middle">철광석</text><text class="s" x="210" y="142" text-anchor="middle">채굴 · 돌 곡괭이</text><rect class="box" x="6" y="100" width="124" height="54" rx="8"/><text class="t" x="68" y="124" text-anchor="middle">철 주괴</text><text class="s" x="68" y="142" text-anchor="middle">제련 · 화로+석탄</text><rect class="box" x="6" y="190" width="124" height="54" rx="8"/><text class="t" x="68" y="214" text-anchor="middle">철 곡괭이</text><text class="s" x="68" y="232" text-anchor="middle">제작 · 철 주괴 3</text><rect class="box accent" x="148" y="190" width="124" height="54" rx="8"/><text class="t" x="210" y="214" text-anchor="middle">다이아몬드</text><text class="s" x="210" y="232" text-anchor="middle">채굴 · 철 곡괭이</text><path class="arrow" d="M130 37 H144" marker-end="url(#a-tree)"/><path class="arrow" d="M272 37 H286" marker-end="url(#a-tree)"/><path class="arrow" d="M414 37 H428" marker-end="url(#a-tree)"/><path class="arrow" d="M494 64 V96" marker-end="url(#a-tree)"/><path class="arrow" d="M432 127 H418" marker-end="url(#a-tree)"/><path class="arrow" d="M290 127 H276" marker-end="url(#a-tree)"/><path class="arrow" d="M148 127 H134" marker-end="url(#a-tree)"/><path class="arrow" d="M68 154 V186" marker-end="url(#a-tree)"/><path class="arrow" d="M130 217 H144" marker-end="url(#a-tree)"/><text class="s" x="300" y="212">도구는 남고, 재료는 소모된다</text><text class="s" x="300" y="232">기본 태스크 중 가장 긴 경로: 34스텝</text></svg></div>
-      <figcaption><span class="fig-num">그림 1.</span> 다이아몬드까지의 경로. 각 상자의 아래 줄은 얻는 방법과 필요한 도구·재료다. 한 단계라도 빠지면 다음 행동은 실패한다.</figcaption>
+      <figcaption><span class="fig-num">그림 1.</span> 다이아몬드까지 가는 길. 상자 아래 줄은 얻는 방법과 필요한 도구·재료다. 한 단계만 빠져도 다음 행동은 실패한다.</figcaption>
     </figure>
 
     <h3>3.2 Describe, Explain, Plan and Select 루프</h3>
-    <p class="why"><b>왜:</b> LLM은 한 번에 완벽한 계획을 쓰지 못한다. Describe, Explain, Plan and Select 방식은 실패 이유를 설명해 돌려주면 LLM이 계획을 고칠 수 있다는 아이디어로, 계획 오류를 실행 도중에 회복하게 한다.</p>
-    <p>플래너(LLM 또는 수량을 고려하는 규칙 기반 폴백)가 계획을 내면, 파서가 이를 순서 있는 하위 목표 인스턴스 목록으로 바꾼다(<code>Mine cobblestone x6</code>은 6개가 된다). 셀렉터가 다음 대기 인스턴스를 고르고 컨트롤러가 행동한다. 인스턴스는 해당 아이템 수가 늘어날 때 완료된다.</p>
+    <p class="why"><b>왜:</b> LLM은 한 번에 완벽한 계획을 쓰지 못한다. Describe, Explain, Plan and Select 방식은 실패한 이유를 설명해서 돌려주면 LLM이 계획을 고칠 수 있다는 생각에서 나왔다. 덕분에 계획이 틀려도 실행하는 도중에 바로잡을 수 있다.</p>
+    <p>플래너(LLM, 또는 수량까지 따지는 규칙 기반 폴백)가 계획을 내면 파서가 순서 있는 하위 목표 인스턴스 목록으로 바꾼다(<code>Mine cobblestone x6</code>은 6개가 된다). 셀렉터가 다음 차례 인스턴스를 고르면 컨트롤러가 움직인다. 인스턴스는 해당 아이템 수가 늘어나는 순간 끝난다.</p>
     <figure>
       <div class="card diagram lg" role="img" aria-label="Describe, Explain, Plan and Select 루프: 플래너, 파서, 셀렉터, 컨트롤러, 테크 트리 환경을 거쳐 실패 시 재계획으로 돌아가는 순환"><svg viewBox="0 0 560 206" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-deps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box accent" x="10" y="10" width="160" height="56" rx="8"/><text class="t" x="90" y="34" text-anchor="middle">플래너</text><text class="s" x="90" y="52" text-anchor="middle">LLM 또는 규칙 기반</text><rect class="box" x="200" y="10" width="160" height="56" rx="8"/><text class="t" x="280" y="34" text-anchor="middle">파서</text><text class="s" x="280" y="52" text-anchor="middle">x6 → 인스턴스 6개</text><rect class="box" x="390" y="10" width="160" height="56" rx="8"/><text class="t" x="470" y="34" text-anchor="middle">셀렉터</text><text class="s" x="470" y="52" text-anchor="middle">다음 대기 하위 목표</text><rect class="box" x="390" y="140" width="160" height="56" rx="8"/><text class="t" x="470" y="164" text-anchor="middle">컨트롤러</text><text class="s" x="470" y="182" text-anchor="middle">선행 재료 수집</text><rect class="box" x="200" y="140" width="160" height="56" rx="8"/><text class="t" x="280" y="164" text-anchor="middle">테크 트리 환경</text><text class="s" x="280" y="182" text-anchor="middle">도구·재료 규칙 검사</text><rect class="box" x="10" y="140" width="160" height="56" rx="8"/><text class="t" x="90" y="164" text-anchor="middle">재계획 판단</text><text class="s" x="90" y="182" text-anchor="middle">인벤토리·오류 전달</text><path class="arrow" d="M170 38 H196" marker-end="url(#a-deps)"/><path class="arrow" d="M360 38 H386" marker-end="url(#a-deps)"/><path class="arrow" d="M470 66 V136" marker-end="url(#a-deps)"/><path class="arrow" d="M390 168 H364" marker-end="url(#a-deps)"/><path class="arrow" d="M200 168 H174" marker-end="url(#a-deps)"/><path class="arrow dash" d="M90 140 V70" marker-end="url(#a-deps)"/><text class="s" x="100" y="100">연속 실패 3회 또는</text><text class="s" x="100" y="116">한 목표에 50스텝 초과 → 재계획</text></svg></div>
-      <figcaption><span class="fig-num">그림 2.</span> Describe, Explain, Plan and Select 루프. 점선은 재계획 경로로, 현재 인벤토리와 오류 메시지가 다음 계획 프롬프트에 들어간다.</figcaption>
+      <figcaption><span class="fig-num">그림 2.</span> Describe, Explain, Plan and Select 루프. 점선이 재계획 경로이고, 이때 현재 인벤토리와 오류 메시지가 다음 계획 프롬프트에 들어간다.</figcaption>
     </figure>
 
     <h3>3.3 PPO와 GAE</h3>
-    <p class="why"><b>왜:</b> 정책 경사는 업데이트가 조금만 커도 정책이 무너질 수 있다. PPO는 같은 배치로 여러 번 업데이트하면서도 정책이 옛 정책에서 너무 멀어지지 않게 막는 가장 널리 쓰이는 기준선이고, 레퍼런스 Craftax 런도 PPO다.</p>
+    <p class="why"><b>왜:</b> 정책 경사는 업데이트가 조금만 커져도 정책이 무너지기 쉽다. PPO는 같은 배치로 여러 번 업데이트하면서도 정책이 옛 정책에서 너무 멀어지지 않게 막는다. 가장 흔히 쓰는 기준선이고, 레퍼런스 Craftax 런도 PPO다.</p>
     <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\hat{A}_t,\ \operatorname{clip}\big(\rho_t(\theta), 1-\epsilon_{\text{clip}}, 1+\epsilon_{\text{clip}}\big)\hat{A}_t\right)\right],\quad \rho_t(\theta) = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
     <div class="math-block">$$\hat{A}_t = \sum_{l\ge 0} (\gamma\lambda)^l \delta_{t+l},\qquad \delta_t = r_t + \gamma V(s_{t+1})(1-d_t) - V(s_t)$$</div>
-    <p class="intuition"><b>직관:</b> 이점 \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. 다만 확률비 \(\rho_t\)가 \(1\pm\epsilon_{\text{clip}}\) 밖으로 나가면 더 밀어도 목적함수가 늘지 않으므로, 한 번의 업데이트로 정책이 크게 바뀌지 않는다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이고, \(\lambda\)는 한 스텝만 보고 추정할지(\(\lambda=0\), 분산 작고 편향 큼) 끝까지 보고 추정할지(\(\lambda=1\), 반대)를 정한다.</p>
+    <p class="intuition"><b>직관:</b> 이점 \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. 그런데 확률비 \(\rho_t\)가 \(1\pm\epsilon_{\text{clip}}\) 밖으로 나가면 더 밀어붙여도 목적함수가 늘지 않는다. 그래서 업데이트 한 번에 정책이 크게 바뀌지 않는다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이고, \(\lambda\)는 한 스텝만 보고 추정할지(\(\lambda=0\), 분산 작고 편향 큼) 끝까지 보고 추정할지(\(\lambda=1\), 반대)를 정한다.</p>
 
     <h3>3.4 Mixture of Experts</h3>
-    <p class="why"><b>왜:</b> Crafter의 행동은 나무 채집, 전투, 제작처럼 성격이 다르다. 입력마다 다른 전문가가 담당하게 하면 같은 계산량으로 용량을 키우거나 스킬별 분화를 기대할 수 있다. 다만 이 프로젝트에서 전문가 분화 자체는 아직 측정하지 않았다.</p>
-    <p>게이트가 \(p = \operatorname{softmax}(W_g x + \xi)\)를 만들고, 확률이 가장 큰 전문가 \(k=2\)개를 다시 정규화한 가중치로 섞는다. 균형 손실은 전문가들이 고르게 쓰이도록 한다.</p>
+    <p class="why"><b>왜:</b> Crafter에서 하는 일은 나무 채집, 전투, 제작처럼 성격이 제각각이다. 입력에 따라 다른 전문가가 맡게 하면 같은 계산량으로 용량을 늘리거나, 전문가마다 다른 스킬을 맡게 될 수도 있다. 다만 전문가가 실제로 나뉘는지는 아직 재 보지 않았다.</p>
+    <p>게이트가 \(p = \operatorname{softmax}(W_g x + \xi)\)를 내면, 확률이 가장 큰 전문가 \(k=2\)개를 골라 가중치를 다시 정규화해서 섞는다. 균형 손실은 전문가가 골고루 쓰이게 한다.</p>
     <div class="math-block">$$y = \sum_{i \in \text{top-}k(p)} \frac{p_i}{\sum_{j\in\text{top-}k} p_j} E_i(x),\qquad L_{\text{aux}} = E \sum_{i=1}^{E} f_i\, \bar{p}_i$$</div>
-    <p class="intuition"><b>직관:</b> \(f_i\)는 전문가 \(i\)로 1순위 라우팅된 입력의 비율, \(\bar{p}_i\)는 평균 게이트 확률이다. 모두 고르게 쓰이면 \(L_{\text{aux}} = 1\), 한 전문가에 몰리면 \(E\)가 된다. 이 손실이 없으면 처음에 조금 앞선 전문가만 계속 학습되고 나머지는 쓰이지 않는다. 노이즈 \(\xi\)는 학습 초기에 다른 전문가도 시도해 보게 한다.</p>
+    <p class="intuition"><b>직관:</b> \(f_i\)는 전문가 \(i\)로 1순위 라우팅된 입력의 비율, \(\bar{p}_i\)는 평균 게이트 확률이다. 모두 고르게 쓰이면 \(L_{\text{aux}} = 1\), 한 전문가에 몰리면 \(E\)다. 이 손실이 없으면 처음에 조금 앞서 나간 전문가만 계속 학습되고 나머지는 놀게 된다. 노이즈 \(\xi\)는 학습 초반에 다른 전문가도 한 번씩 써 보게 만든다.</p>
     <figure>
       <div class="card diagram lg" role="img" aria-label="MoE 라우팅: 게이트가 전문가 4개에 확률을 매기고 상위 2개(E1, E3)의 출력을 확률 비율로 섞는다"><svg viewBox="0 0 560 216" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-moe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box" x="10" y="80" width="100" height="56" rx="8"/><text class="t" x="60" y="104" text-anchor="middle">입력 특징 x</text><text class="s" x="60" y="122" text-anchor="middle">CNN 출력</text><rect class="box accent" x="130" y="80" width="110" height="56" rx="8"/><text class="t" x="185" y="104" text-anchor="middle">게이트</text><text class="s" x="185" y="122" text-anchor="middle">softmax+노이즈</text><path class="arrow" d="M110 108 H126" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="14" width="115" height="34" rx="8"/><text class="t" x="327.5" y="36" text-anchor="middle">E1 · p=0.45</text></g><path class="arrow" d="M240 108 L266 31" marker-end="url(#a-moe)"/><path class="arrow" d="M385 31 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="62" width="115" height="34" rx="8"/><text class="t" x="327.5" y="84" text-anchor="middle">E2 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 79" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="110" width="115" height="34" rx="8"/><text class="t" x="327.5" y="132" text-anchor="middle">E3 · p=0.35</text></g><path class="arrow" d="M240 108 L266 127" marker-end="url(#a-moe)"/><path class="arrow" d="M385 127 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="158" width="115" height="34" rx="8"/><text class="t" x="327.5" y="180" text-anchor="middle">E4 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 175" marker-end="url(#a-moe)"/><rect class="box" x="410" y="80" width="140" height="56" rx="8"/><text class="t" x="480" y="104" text-anchor="middle">가중 합 y</text><text class="s" x="480" y="122" text-anchor="middle">0.56·E1 + 0.44·E3</text><text class="s" x="327" y="208" text-anchor="middle">상위 2개만 선택 (점선은 버려짐)</text></svg></div>
-      <figcaption><span class="fig-num">그림 3.</span> 확률 예시. 상위 2개(0.45, 0.35)를 합이 1이 되도록 다시 나누면 0.56과 0.44가 된다. 현재 구현은 단순함을 위해 전문가 4개를 모두 계산한 뒤 상위 2개의 출력만 섞는다.</figcaption>
+      <figcaption><span class="fig-num">그림 3.</span> 확률 예시. 상위 2개(0.45, 0.35)를 합이 1이 되게 다시 나누면 0.56과 0.44다. 지금 구현은 코드를 단순하게 두려고 전문가 4개를 다 계산한 뒤 상위 2개의 출력만 섞는다.</figcaption>
     </figure>
 
     <h3>3.5 Diffusion 정책</h3>
-    <p class="why"><b>왜:</b> 같은 상황에서도 좋은 행동은 여러 가지일 수 있다(장애물을 왼쪽으로 돌아가도, 오른쪽으로 돌아가도 된다). 정답들의 평균을 내는 회귀형 모방학습은 그 중간, 즉 장애물에 부딪히는 행동을 낼 수 있다. Diffusion은 행동 분포 전체를 학습해 그중 하나를 고르고, 행동을 묶음으로 만들어 짧은 시간 동안 일관된 움직임을 낸다.</p>
-    <p>길이 \(H = 8\)의 행동 묶음을 \([-1, 1]\)로 스케일한 원-핫 벡터로 표현하고, 디노이저 \(f_\theta\)가 노이즈 섞인 묶음에서 깨끗한 묶음 \(x_0\)를 예측한다.</p>
+    <p class="why"><b>왜:</b> 같은 상황에서도 좋은 행동이 여럿일 수 있다. 장애물을 왼쪽으로 돌아가도 되고 오른쪽으로 돌아가도 된다. 정답들의 평균을 내는 회귀형 모방학습은 그 한가운데, 즉 장애물로 곧장 들이받는 행동을 낼 수 있다. Diffusion은 행동 분포 전체를 배워서 그중 하나를 고른다. 행동을 묶음으로 만들기 때문에 짧은 구간 동안 움직임도 흐트러지지 않는다.</p>
+    <p>길이 \(H = 8\)인 행동 묶음을 \([-1, 1]\)로 스케일한 원-핫 벡터로 나타낸다. 디노이저 \(f_\theta\)는 노이즈 섞인 묶음을 보고 깨끗한 묶음 \(x_0\)를 맞힌다.</p>
     <div class="math-block">$$\mathcal{L} = \mathbb{E}_{t,\epsilon}\left\| f_\theta\!\left(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\ t,\ \phi(o)\right) - x_0 \right\|^2$$</div>
-    <p class="intuition"><b>직관:</b> 학습 때는 정답 묶음에 노이즈를 섞어 놓고 원래 묶음을 맞히게 한다. 노이즈가 많을수록(\(\bar\alpha_t\)가 작을수록) 관측 \(\phi(o)\)를 보지 않고는 맞힐 수 없다. 처음 구현한 노이즈 \(\epsilon\) 예측 방식은 실험에서 관측과 무관한 묶음을 냈고, \(x_0\)를 직접 예측하게 바꾸자 행동 묶음이 40/40 일치했다. 노이즈 맞히기는 관측 없이도 상당 부분 풀리지만 정답 묶음 맞히기는 그렇지 않기 때문으로 해석한다.</p>
+    <p class="intuition"><b>직관:</b> 학습할 때는 정답 묶음에 노이즈를 섞어 놓고 원래 묶음을 맞히게 한다. 노이즈가 많을수록(\(\bar\alpha_t\)가 작을수록) 관측 \(\phi(o)\)를 안 보고는 맞힐 수 없다. 처음에 짠 노이즈 \(\epsilon\) 예측 방식은 실험에서 관측과 상관없는 묶음을 냈다. \(x_0\)를 바로 예측하게 바꾸자 행동 묶음이 40/40 맞았다. 노이즈는 관측 없이도 꽤 맞힐 수 있지만 정답 묶음은 그렇지 않아서 생긴 차이라고 본다.</p>
     <figure>
       <div class="card diagram lg" role="img" aria-label="Diffusion 행동 묶음: 노이즈 8칸을 관측을 조건으로 10단계 디노이즈해 행동 8개를 만들고 앞 4개만 실행한다"><svg viewBox="0 0 560 196" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-diff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect x="100" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.55"/><rect class="box accent" x="100" y="112" width="40" height="40" rx="6"/><text class="t" x="120" y="137" text-anchor="middle">→</text><rect x="144" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.2"/><rect class="box accent" x="144" y="112" width="40" height="40" rx="6"/><text class="t" x="164" y="137" text-anchor="middle">→</text><rect x="188" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.7"/><rect class="box accent" x="188" y="112" width="40" height="40" rx="6"/><text class="t" x="208" y="137" text-anchor="middle">↑</text><rect x="232" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.35"/><rect class="box accent" x="232" y="112" width="40" height="40" rx="6"/><text class="t" x="252" y="137" text-anchor="middle">채집</text><rect x="276" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.15"/><rect class="box" x="276" y="112" width="40" height="40" rx="6"/><text class="t" x="296" y="137" text-anchor="middle">↑</text><rect x="320" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.6"/><rect class="box" x="320" y="112" width="40" height="40" rx="6"/><text class="t" x="340" y="137" text-anchor="middle">←</text><rect x="364" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.3"/><rect class="box" x="364" y="112" width="40" height="40" rx="6"/><text class="t" x="384" y="137" text-anchor="middle">채집</text><rect x="408" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.5"/><rect class="box" x="408" y="112" width="40" height="40" rx="6"/><text class="t" x="428" y="137" text-anchor="middle">→</text><text class="t" x="10" y="41">노이즈 x<tspan baseline-shift="sub" font-size="10">T</tspan></text><text class="t" x="10" y="137">행동 x<tspan baseline-shift="sub" font-size="10">0</tspan></text><text class="s" x="458" y="41">무작위 시작</text><text class="s" x="458" y="137">H = 8</text><path class="arrow" d="M274 62 V106" marker-end="url(#a-diff)"/><text class="s" x="286" y="80">f<tspan baseline-shift="sub" font-size="9">θ</tspan>로 10단계 디노이즈 (DDIM)</text><text class="s" x="286" y="96">조건: 현재 관측 φ(o)</text><path class="arrow" d="M100 166 H272"/><path class="arrow dash" d="M276 166 H448"/><text class="s" x="186" y="184" text-anchor="middle">앞 4개 실행</text><text class="s" x="362" y="184" text-anchor="middle">버리고 다시 샘플링</text></svg></div>
-      <figcaption><span class="fig-num">그림 4.</span> 샘플링. DDIM 10단계로 노이즈에서 행동 8개를 만들고, 앞 4개만 실행한 뒤 새 관측으로 다시 샘플링한다(receding horizon).</figcaption>
+      <figcaption><span class="fig-num">그림 4.</span> 샘플링. DDIM 10단계로 노이즈에서 행동 8개를 만들고, 앞 4개만 실행한 다음 새 관측으로 다시 뽑는다(receding horizon).</figcaption>
     </figure>
 
     <h3>3.6 호기심 보너스 (ICM)</h3>
-    <p class="why"><b>왜:</b> Crafter의 보상은 업적을 처음 달성할 때만 나오는 희소 보상이다. 예측하기 어려운 상태로 갈 때 보너스를 주면 보상이 없는 구간에서도 탐험이 이어진다.</p>
+    <p class="why"><b>왜:</b> Crafter 보상은 업적을 처음 달성할 때만 나와서 드물다. 예측하기 어려운 상태로 갈 때 보너스를 주면 보상이 없는 구간에서도 계속 돌아다닌다.</p>
     <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM의 다음 상태 예측 오차, \(\overline{e}\)는 그 이동평균이다. 처음에는 표준편차로 나눴는데, 오차의 평균이 크게 남아 보너스 평균이 약 12가 되어 외부 보상을 덮어 버렸다. 이동평균으로 나누면 \(e_t/\overline{e}\)의 평균이 항상 약 1이라 보너스 평균이 \(\beta\)로 고정되고, 외부 보상의 보조 역할에 머문다.</p>
+    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}\)는 그 누적 평균이다. 처음에는 표준편차로 나눴는데, 오차의 평균 성분이 그대로 남아서 보너스 평균이 12 안팎이 됐고 외부 보상을 덮어 버렸다. 누적 평균으로 나누면 \(e_t/\overline{e}\)의 평균이 늘 1 근처라 보너스 평균이 \(\beta\)에 묶인다. 그러면 보너스는 외부 보상을 거드는 정도에 그친다. 이 정규화가 정말 폭주를 막고 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
 
     <h3>3.7 Crafter 점수</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>
-    <p class="intuition"><b>직관:</b> \(s_i\)는 업적 \(i\)의 성공률(%)이다. 산술평균은 쉬운 업적 몇 개만 잘해도 높게 나오지만, 로그를 씌운 기하평균은 0%에 가까운 업적을 조금 올리는 것을 크게 반영한다. 여러 업적을 고르게 푸는 에이전트가 높은 점수를 받는다.</p>
+    <p class="intuition"><b>직관:</b> \(s_i\)는 업적 \(i\)의 성공률(%)이다. 산술평균은 쉬운 업적 몇 개만 잘해도 높게 나온다. 로그를 씌운 기하평균은 0%에 가까운 업적을 조금만 올려도 점수가 크게 오른다. 그래서 여러 업적을 고르게 푸는 에이전트가 점수를 많이 받는다.</p>
 
     <h3>3.8 학습 파이프라인과 체크포인트</h3>
-    <p class="why"><b>왜:</b> 레퍼런스 결과는 10억 스텝 학습이다. 그 규모를 돌리려면 환경까지 GPU에서 컴파일해 실행해야 하고, 몇 시간짜리 런이 중간에 끊겨도 같은 결과로 이어져야 한다.</p>
-    <p>Crafter 정책은 멀티프로세스 환경과 PyTorch를 사용한다. Craftax는 환경, GAE, PPO를 하나의 <code>jax.jit</code> 안에서 업데이트당 환경 1024개 × 64스텝으로 돌린다.</p>
+    <p class="why"><b>왜:</b> 레퍼런스 결과는 10억 스텝을 학습한 것이다. 그만큼 돌리려면 환경까지 GPU에서 컴파일해 돌려야 하고, 몇 시간짜리 런이 중간에 끊겨도 같은 결과로 이어져야 한다.</p>
+    <p>Crafter 정책은 멀티프로세스 환경과 PyTorch로 학습한다. Craftax는 환경, GAE, PPO를 <code>jax.jit</code> 하나 안에서 돌리고, 업데이트마다 환경 1024개 × 64스텝을 쓴다.</p>
     <ul>
-      <li><b>Optimistic reset:</b> 끝난 환경마다 새 월드를 생성하지 않고, 스텝마다 새 월드 64개(1024 ÷ 16)만 만들어 끝난 환경들이 나눠 쓴다. 월드 생성이 Craftax 스텝에서 가장 비싼 부분이라 이렇게 하면 훨씬 빠르다.</li>
-      <li><b>x축 읽기:</b> 업데이트 1회는 1024 × 64 = 65,536 환경 스텝이다. 10억 스텝은 약 15,258 업데이트이므로, 레퍼런스 그래프의 x축 "15k"는 1.5만 스텝이 아니라 10억 스텝을 뜻한다.</li>
-      <li><b>체크포인트:</b> 몇 업데이트마다 학습 상태 전체를 저장하고, 다음 프로세스가 불러와 이어서 학습한다.</li>
+      <li><b>Optimistic reset:</b> 에피소드가 끝난 환경마다 새 월드를 만들지 않는다. 스텝마다 새 월드를 64개(1024 ÷ 16)만 만들고 끝난 환경들이 나눠 쓴다. Craftax 스텝에서 가장 오래 걸리는 게 월드 생성이라 이렇게 하면 훨씬 빠르다.</li>
+      <li><b>x축 읽기:</b> 업데이트 1회가 1024 × 64 = 65,536 환경 스텝이다. 10억 스텝이면 약 15,258 업데이트다. 그러니 레퍼런스 그래프 x축의 "15k"는 1.5만 스텝이 아니라 10억 스텝이다.</li>
+      <li><b>체크포인트:</b> 몇 업데이트마다 학습 상태를 통째로 저장하고, 다음 프로세스가 그걸 불러와 이어서 학습한다.</li>
     </ul>
     <figure>
       <div class="card diagram lg" role="img" aria-label="체크포인트 청크: 중단 없는 런과 세 프로세스로 나눠 이어 붙인 런이 같은 결과를 낸다"><svg viewBox="0 0 560 168" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-ckpt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><text class="t" x="10" y="40">중단 없는 런</text><text class="t" x="10" y="100">청크 + 재시작</text><rect class="box" x="160" y="20" width="388" height="30" rx="6"/><text class="s" x="354" y="40" text-anchor="middle">업데이트 0 → N, 프로세스 1개</text><rect class="box accent" x="160" y="80" width="124" height="30" rx="6"/><text class="s" x="222" y="100" text-anchor="middle">프로세스 1</text><rect class="box accent" x="292" y="80" width="124" height="30" rx="6"/><text class="s" x="354" y="100" text-anchor="middle">프로세스 2</text><rect class="box accent" x="424" y="80" width="124" height="30" rx="6"/><text class="s" x="486" y="100" text-anchor="middle">프로세스 3</text><text class="s" x="288" y="72" text-anchor="middle">저장 → 복원</text><text class="s" x="420" y="72" text-anchor="middle">저장 → 복원</text><text class="s" x="354" y="140" text-anchor="middle">PRNG 키·파라미터·옵티마이저·환경 상태를 모두 저장</text><text class="s" x="354" y="158" text-anchor="middle">→ 기록 값 390개 중 차이 0개</text></svg></div>
-      <figcaption><span class="fig-num">그림 5.</span> 무작위성의 출처(PRNG 키)까지 저장하기 때문에, 이어 붙인 런이 한 번에 끝낸 런과 비트 단위로 같다.</figcaption>
+      <figcaption><span class="fig-num">그림 5.</span> 난수의 출처(PRNG 키)까지 저장하니까 이어 붙인 런이 한 번에 끝낸 런과 비트 단위로 같다.</figcaption>
     </figure>
   </section>
 
   <section id="results">
     <h2>4. Experimental Results</h2>
-    <h4>평가 환경 및 지표</h4>
+    <h4>무엇으로 평가했나</h4>
     <ul>
-      <li><b>기호 테크 트리:</b> 기본 태스크 6개의 성공 여부, 성공까지의 스텝 수, 재계획 횟수.</li>
+      <li><b>기호 테크 트리:</b> 기본 태스크 6개의 성공 여부, 성공할 때까지 걸린 스텝, 재계획 횟수.</li>
       <li><b>Crafter:</b> 고정된 월드에서 에피소드 20개의 리턴과 Crafter 점수.</li>
-      <li><b>Craftax-Symbolic-v1:</b> 리턴, 에피소드당 업적 수, 모든 업적의 성공률. 레퍼런스 범위는 10억 스텝 W&amp;B 런에서 가져왔다.</li>
+      <li><b>Craftax-Symbolic-v1:</b> 리턴, 에피소드당 업적 수, 업적별 성공률. 레퍼런스 범위는 10억 스텝 W&amp;B 런에서 읽어 왔다.</li>
     </ul>
-    <h4>주요 정량적 결과</h4>
+    <h4>숫자로 본 결과</h4>
     <ul>
-      <li><b>플래너:</b> 태스크 0/6 → 6/6(나무 반블록 3스텝, 다이아몬드 34스텝). 행동 30% 무작위 실패에서도 6/6.</li>
-      <li><b>Crafter:</b> 점수 랜덤 1.56 → MoE PPO 4.63 → Diffusion 모방학습 3.56, 리턴 1.25 / 3.60 / 3.55. 랜덤 점수가 논문 수치(약 1.6%)와 일치한다.</li>
-      <li><b>Diffusion 조건 반영:</b> 깨끗한 샘플 예측으로 행동 묶음 40/40 정확히 일치. 노이즈 예측 방식은 관측과 무관한 묶음을 냈다.</li>
+      <li><b>플래너:</b> 태스크 0/6 → 6/6(나무 반블록 3스텝, 다이아몬드 34스텝). 행동 30%를 무작위로 실패시켜도 6/6.</li>
+      <li><b>Crafter:</b> 점수 랜덤 1.56 → MoE PPO 4.63 → Diffusion 모방학습 3.56, 리턴 1.25 / 3.60 / 3.55. 랜덤 점수는 논문 수치(약 1.6%)와 맞는다.</li>
+      <li><b>Diffusion 조건 반영:</b> 깨끗한 샘플을 예측하게 바꾼 뒤 행동 묶음 40/40 일치. 노이즈 예측 방식은 관측과 상관없는 묶음을 냈다.</li>
       <li><b>Craftax(CPU, 기본 설정):</b> PPO 리턴 655만 스텝 동안 1.49 → 6.66. 328만 스텝에서 PPO-RNN 5.15, PPO 5.47. 655만 스텝에서 COLLECT_WOOD 97%, PLACE_TABLE 90%, MAKE_WOOD_PICKAXE 50%.</li>
-      <li><b>재현성:</b> 중단 없이 끝낸 런과 프로세스를 바꿔 이어 붙인 체크포인트 청크 사이에 기록된 값 390개 중 차이 0개. 자동 테스트 58개 통과.</li>
+      <li><b>재현성:</b> 한 번에 끝낸 런과, 프로세스를 바꿔 가며 체크포인트 청크를 이어 붙인 런을 비교하면 기록된 값 390개 중 다른 값이 0개. 자동 테스트 68개 통과.</li>
     </ul>
     <div class="chart-card">
       <h3>Crafter 점수 (높을수록 좋음)</h3>
-      <p class="sub">업적 22개 성공률의 기하평균, 같은 월드에서 평가 에피소드 20개. MoE PPO는 랜덤의 약 3배이고, Diffusion 모방학습이 그 뒤를 따른다.</p>
+      <p class="sub">업적 22개 성공률의 기하평균, 같은 월드에서 평가 에피소드 20개. MoE PPO가 랜덤의 약 3배이고 Diffusion 모방학습이 그다음이다.</p>
       <div class="chart" id="chart-crafter"></div>
     </div>
     <div class="chart-card">
       <h3>플래너: 태스크별 해결 스텝 수</h3>
-      <p class="sub">규칙 기반 플래너, 6개 태스크 모두 성공. 테크 트리 경로가 길수록 스텝이 늘어난다(그림 1).</p>
+      <p class="sub">규칙 기반 플래너가 6개 태스크를 모두 풀었다. 테크 트리 경로가 길수록 스텝도 늘어난다(그림 1).</p>
       <div class="chart" id="chart-planner"></div>
     </div>
     <div class="chart-card">
@@ -210,31 +210,43 @@
     </div>
     <figure>
       <img src="../../images/achievements_collect_diamond.png" alt="레퍼런스 런의 15k 업데이트 동안 COLLECT_DIAMOND 성공률" width="619" height="421">
-      <figcaption>레퍼런스 런: COLLECT_DIAMOND 같은 드문 업적은 늦게야 오른다. 10억 스텝이 필요한 이유다.</figcaption>
+      <figcaption>레퍼런스 런: COLLECT_DIAMOND 같은 드문 업적은 한참 뒤에야 오른다. 10억 스텝이나 돌리는 이유다.</figcaption>
     </figure>
+    <h4>설계까지 마친 실험: 호기심 보너스 정규화</h4>
+    <p>3.6에서 보너스를 누적 평균으로 나눈 것은 레퍼런스 ICM 런이 무너진 것을 보고 내린 처방이었다. 그 처방이 실제로 통하는지는 아직 확인하지 않았다. 질문은 두 가지다.</p>
+    <ul>
+      <li><b>H1.</b> 누적 평균으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
+      <li><b>H2.</b> 그렇게 정규화한 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 닿는가? 외부 보상은 깎이지 않는가?</li>
+    </ul>
+    <p>Craftax PPO 기본 설정과 시드를 고정하고 다섯 조건을 돌린다. 호기심 없음(<code>ppo</code>), 원본 오차(<code>icm_none</code>), 표준편차로 나눔(<code>icm_std</code>), 누적 평균으로 나눔(<code>icm_mean</code>), 지수 이동평균으로 나눔(<code>icm_ema</code>)이다. ICM 조건끼리는 계수 \(\beta = 0.01\)도 같아서 정규화 방식 말고는 다른 게 없다.</p>
+    <div class="math-block">$$\text{share} = \frac{\sum |\beta\, e_t / \text{scale}|}{\sum |\beta\, e_t / \text{scale}| + \sum |r^{\text{ext}}_t|}$$</div>
+    <p>보너스가 폭주했는지는 보상 중 보너스가 차지하는 비율(share)로 본다. 학습 마지막 10%에서도 이 비율이 0.5를 넘거나, 스텝당 보너스가 처음보다 2배 넘게 커졌으면 폭주로 친다. 학습 초반은 판정에서 뺀다. 그때는 외부 보상이 거의 0이라 제대로 스케일된 보너스도 비율이 높게 나온다. 탐험은 한 번이라도 도달한 업적 종류 수와 Craftax 점수로, 태스크 성능은 보너스를 뺀 외부 보상 리턴으로 잰다.</p>
+    <p>판정은 같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. H1은 <code>icm_mean</code>이 어느 시드에서도 폭주하지 않고 <code>icm_none</code>이나 <code>icm_std</code>는 폭주해야 지지된다. H2는 시드 3개 이상에서 도달 업적 수나 점수가 모든 시드에서 <code>ppo</code>보다 높고, 외부 보상이 모든 시드에서 낮아지지는 않아야 지지된다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</p>
+    <p>실험 코드(<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>)와 단위 테스트, CPU 디버그 실행까지는 끝났다. GPU에서 조건 5개 × 시드 3개 × 10억 스텝을 돌리려면 50시간쯤 걸리는데, 아직 돌리지 못해서 H1과 H2 모두 답이 없다.</p>
   </section>
 
   <section id="consideration">
     <h2>5. In-depth Consideration</h2>
-    <h4>기술적 의의 및 장점</h4>
+    <h4>잘 된 점</h4>
     <ul>
-      <li>기호 세계의 모든 규칙이 환경, 컨트롤러, 규칙 기반 플래너가 공유하는 하나의 순수 함수에 있다. 그래서 플래너 기준선이 정확한 상한이 되고, LLM 계획을 그에 대어 채점할 수 있다.</li>
-      <li>JAX 학습기는 레퍼런스 설정을 GPU 1대에서 명령 한 줄로 만들고, 청크 단위 체크포인트는 중단을 무해하게 만든다. 레퍼런스 런은 10개 중 8개가 failed 상태로 끝났다.</li>
-      <li>이 노트의 모든 실패(가짜 환경, 조건을 무시한 Diffusion, 잘못 읽은 그래프, 호기심 보상 붕괴)를 테스트나 명시적인 검사로 바꿨다.</li>
+      <li>기호 세계의 규칙은 전부 순수 함수 하나에 있고, 환경과 컨트롤러와 규칙 기반 플래너가 이 함수를 같이 쓴다. 그래서 규칙 기반 플래너가 정확한 상한이 되고, LLM 계획을 거기에 대 보며 채점할 수 있다.</li>
+      <li>JAX 학습기로 레퍼런스 설정을 GPU 1대에서 명령 한 줄로 돌릴 수 있다. 청크마다 체크포인트를 남기니 런이 끊겨도 잃는 게 없다. 레퍼런스 런은 10개 중 8개가 failed로 끝났다.</li>
+      <li>이 노트에 나온 실패(가짜 환경, 조건을 무시한 Diffusion, 잘못 읽은 그래프, 호기심 보상 붕괴)는 하나도 빠짐없이 테스트나 검사 코드로 남겼다.</li>
     </ul>
-    <h4>한계점 및 비판적 고찰</h4>
+    <h4>한계</h4>
     <ul>
-      <li><b>규모:</b> Craftax 결과는 레퍼런스 학습량의 0.3~0.7%를 시드 1개로 측정한 것이다. 학습 종료 시점 비교(PPO 약 26, PPO-RNN 약 37)는 아직 실행하지 않았다.</li>
-      <li><b>레퍼런스 값:</b> 범위는 그래프 이미지에서 읽은 근사치다. 레퍼런스 런의 실제 하이퍼파라미터를 구하지 못해 Craftax baseline 기본값을 사용했다.</li>
-      <li><b>오라클 플래너:</b> 규칙 기반 플래너는 레시피를 모두 알기 때문에 6/6은 LLM 결과가 아니라 상한이다. LLM 계획은 선행 재료 수집을 끈 상태로 측정해야 한다.</li>
-      <li><b>모듈 범위:</b> 궤적·IMU 인코더는 합성 동작에서만 검증했고, Diffusion 정책은 PyTorch 경로에만 있다.</li>
+      <li><b>규모:</b> Craftax 결과는 레퍼런스 학습량의 0.3~0.7%를 시드 1개로 돌린 것이다. 학습이 끝난 시점끼리의 비교(PPO 약 26, PPO-RNN 약 37)는 아직 못 했다.</li>
+      <li><b>레퍼런스 값:</b> 범위는 그래프 이미지에서 눈으로 읽은 근사치다. 레퍼런스 런의 실제 하이퍼파라미터를 못 구해서 Craftax baseline 기본값을 썼다.</li>
+      <li><b>오라클 플래너:</b> 규칙 기반 플래너는 레시피를 전부 알고 있다. 그러니 6/6은 LLM의 성적이 아니라 상한이다. LLM 계획은 선행 재료 수집을 끄고 재야 한다.</li>
+      <li><b>모듈 범위:</b> 궤적·IMU 인코더는 합성 동작으로만 검증했고, Diffusion 정책은 PyTorch 쪽에만 있다.</li>
+      <li><b>ICM 효과:</b> 누적 평균 정규화가 보너스를 일정한 크기로 묶는 것까지는 식으로 보장된다. 하지만 폭주를 정말 막는지, 탐험이 실제로 늘어나는지는 아직 대조 실험을 돌리지 않았다(4장 끝).</li>
     </ul>
   </section>
 
   <section id="easy">
     <h2>6. Easy Explanation</h2>
     <div class="analogy">
-      <p>누군가에게 코스 요리를 가르친다고 생각해 보자. 먼저 불이 실제로 켜지고 재료가 실제로 줄어드는 주방이 있어야 한다. 원래 프로젝트는 가전제품이 그림으로 그려진 주방이라 어떤 레시피도 성공할 수 없었다. 그다음 레시피북(플래너)을 주고 손기술(학습된 정책)을 익히게 한다. 마지막으로 전문 셰프와 비교하려면 같은 메뉴를 같은 시간 동안 만들어야 한다. 레퍼런스 결과는 다른 주방에서 훨씬 오래 연습한 결과였다. 정확한 조리 일지(체크포인트)를 남겨 두면 정전이 나도 처음부터 다시 시작할 필요가 없다.</p>
+      <p>누군가에게 코스 요리를 가르친다고 해 보자. 우선 불이 진짜로 켜지고 재료가 진짜로 줄어드는 주방이 있어야 한다. 원래 프로젝트의 주방은 가전제품을 그림으로 그려 놓은 곳이라 어떤 레시피로도 요리가 안 됐다. 주방을 고친 다음에 레시피북(플래너)을 주고 손기술(학습된 정책)을 익히게 한다. 전문 셰프와 실력을 견주려면 같은 메뉴를 같은 시간만큼 연습해야 한다. 레퍼런스 결과는 다른 주방에서 훨씬 오래 연습한 결과였다. 조리 일지(체크포인트)를 꼼꼼히 남겨 두면 정전이 나도 처음부터 다시 할 필요가 없다.</p>
     </div>
     <h4>개념별로 보면</h4>
     <div class="table-wrap"><table class="glossary">
@@ -254,11 +266,11 @@
 
   <section id="gamedev">
     <h2>7. In Game Development</h2>
-    <p><b>제작 시스템의 자동 클리어 가능성 검증:</b> 수량을 고려하는 플래너는 어떤 아이템이든 얻기까지의 정확한 행동 순서를 계산한다. 레시피나 드롭률을 바꿨을 때 얻을 수 없는 아이템이 생기는지, 플레이어에게 몇 스텝이 필요한지를 플레이테스트 전에 확인할 수 있다.</p>
-    <p><b>스텝 수 기반 난이도 곡선:</b> 아이템까지의 스텝 수(예제 트리에서 나무 반블록 3, 다이아몬드 34)는 진행 속도를 직접 나타내는 자동화 가능한 지표로, 밸런스 패치마다 추적할 수 있다.</p>
-    <p><b>하이브리드 NPC:</b> 플래너가 목표를 고르고 학습된 스킬이나 스크립트가 실행하면, 계획이 텍스트로 남아 NPC 행동을 설명할 수 있으면서 저수준 제어는 견고하게 유지된다. 실패 시 재계획으로 막힌 경로나 부족한 자원에 대응한다.</p>
-    <p><b>대규모 자동 플레이테스트:</b> JAX 파이프라인은 GPU 1대에서 초당 수만 게임 스텝을 돌리고, 결정론적이며 이어서 실행 가능한 런 덕분에 에이전트 기반 회귀 테스트를 빌드마다 똑같이 반복할 수 있다.</p>
-    <p><b>프레임 예산 안의 모델 용량:</b> 전문가 4개 중 2개를 고르는 MoE는 입력마다 전문가 2개만 섞는다. 희소 디스패치를 적용하면(현재 구현은 단순함을 위해 모든 전문가를 계산한다) 실시간 프레임 예산 안에서 더 큰 용량의 NPC 정책을 쓸 수 있다.</p>
+    <p><b>제작 시스템이 끝까지 풀리는지 자동으로 확인:</b> 수량까지 따지는 플래너는 어떤 아이템이든 얻기까지 필요한 행동 순서를 정확히 뽑아낸다. 레시피나 드롭률을 바꿨을 때 못 얻게 되는 아이템이 생기는지, 플레이어가 몇 스텝을 들여야 하는지를 플레이테스트 전에 알 수 있다.</p>
+    <p><b>스텝 수로 보는 난이도 곡선:</b> 아이템까지 걸리는 스텝 수(예제 트리에서 나무 반블록 3, 다이아몬드 34)는 진행 속도를 그대로 보여 준다. 자동으로 뽑을 수 있으니 밸런스 패치 때마다 비교하기 좋다.</p>
+    <p><b>하이브리드 NPC:</b> 목표는 플래너가 고르고 실행은 학습된 스킬이나 스크립트가 맡는다. 계획이 글로 남으니 NPC가 왜 그렇게 움직였는지 설명할 수 있고, 저수준 제어는 그대로 튼튼하다. 길이 막히거나 자원이 모자라면 재계획으로 돌아간다.</p>
+    <p><b>대규모 자동 플레이테스트:</b> JAX 파이프라인은 GPU 1대로 초당 수만 게임 스텝을 돌린다. 런이 결정론적이고 끊겨도 이어지니, 에이전트로 돌리는 회귀 테스트를 빌드마다 똑같이 반복할 수 있다.</p>
+    <p><b>프레임 예산 안에서 모델 키우기:</b> 전문가 4개 중 2개를 고르는 MoE는 입력마다 전문가 2개만 섞는다. 고른 전문가만 계산하도록 바꾸면(지금 구현은 단순하게 두려고 전부 계산한다) 실시간 프레임 예산 안에서 더 큰 NPC 정책을 돌릴 수 있다.</p>
     <p><a href="../">← 프로젝트 페이지로 돌아가기</a></p>
   </section>
   <section id="references">
