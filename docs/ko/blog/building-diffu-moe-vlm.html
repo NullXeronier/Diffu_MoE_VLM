@@ -76,6 +76,8 @@
         <tr><td>JAX <code>jit</code></td><td>파이썬 함수를 한 번 컴파일해 CPU/GPU에서 통째로 돌린다. 환경까지 같이 컴파일하면 파이썬 오버헤드가 없어진다.</td><td><a href="https://jax.readthedocs.io/">JAX 문서</a></td></tr>
       </tbody>
     </table></div>
+    <h4>약어</h4>
+    <div class="table-wrap"><table class="glossary"><thead><tr><th>약어</th><th>풀이</th><th>뜻</th></tr></thead><tbody><tr><td>LLM</td><td>Large Language Model</td><td>글을 생성하는 대규모 언어 모델. 여기서는 계획을 쓴다.</td></tr><tr><td>VLM</td><td>Vision-Language Model</td><td>이미지와 글을 함께 다루는 모델. 프로젝트 이름에 들어 있는 원래 목표.</td></tr><tr><td>RL</td><td>Reinforcement Learning</td><td>보상을 받아 가며 행동을 배우는 학습.</td></tr><tr><td>MDP</td><td>Markov Decision Process</td><td>상태·행동·보상·전이로 정의한 순차 의사결정 문제.</td></tr><tr><td>PPO</td><td>Proximal Policy Optimization</td><td>업데이트 폭을 잘라 새 정책이 옛 정책에서 멀어지지 않게 하는 강화학습 알고리즘.</td></tr><tr><td>PPO-RNN</td><td>PPO with a Recurrent Neural Network</td><td>정책에 GRU 기억을 넣은 PPO.</td></tr><tr><td>GAE</td><td>Generalized Advantage Estimation</td><td>여러 스텝의 TD 오차를 섞어 advantage를 추정하는 방법.</td></tr><tr><td>TD</td><td>Temporal Difference</td><td>이어지는 두 예측의 차이로 배우는 방식. TD 오차가 δ다.</td></tr><tr><td>MoE</td><td>Mixture of Experts</td><td>expert 네트워크 여러 개 중 게이트가 입력마다 고른 몇 개의 출력만 섞는 구조.</td></tr><tr><td>ICM</td><td>Intrinsic Curiosity Module</td><td>다음 상태를 예측하고, 틀린 만큼 호기심 보너스를 주는 모듈.</td></tr><tr><td>DDPM</td><td>Denoising Diffusion Probabilistic Model</td><td>노이즈를 한 단계씩 걷어 내며 샘플을 만드는 diffusion 모델.</td></tr><tr><td>DDIM</td><td>Denoising Diffusion Implicit Model</td><td>DDPM을 훨씬 적은 단계로 샘플링하는 방법.</td></tr><tr><td>EMA</td><td>Exponential Moving Average</td><td>최근 값에 무게를 더 주는 이동평균.</td></tr><tr><td>CNN</td><td>Convolutional Neural Network</td><td>합성곱으로 이미지를 읽는 신경망.</td></tr><tr><td>CLIP</td><td>Contrastive Language-Image Pre-training</td><td>짝이 맞는 이미지와 글이 가까워지도록 사전학습한 인코더.</td></tr><tr><td>jit</td><td>just-in-time compilation</td><td>처음 호출할 때 함수를 컴파일해 두고 그 뒤로는 컴파일된 코드로 돌린다.</td></tr><tr><td>XLA</td><td>Accelerated Linear Algebra</td><td>JAX가 CPU/GPU 코드를 만들 때 쓰는 컴파일러.</td></tr><tr><td>PRNG</td><td>Pseudo-Random Number Generator</td><td>시드로 정해지는 난수 생성기. JAX에서는 키로 주고받는다.</td></tr><tr><td>IMU</td><td>Inertial Measurement Unit</td><td>가속도와 각속도를 재는 센서.</td></tr><tr><td>W&amp;B</td><td>Weights &amp; Biases</td><td>학습 지표를 기록하고 그래프로 보여 주는 서비스.</td></tr></tbody></table></div>
     <h4>기호표</h4>
     <div class="table-wrap"><table class="glossary">
       <thead><tr><th>기호</th><th>의미</th></tr></thead>
@@ -128,7 +130,7 @@
       <figcaption><span class="fig-num">그림 2.</span> Describe, Explain, Plan and Select 루프. 점선이 재계획 경로이고, 이때 현재 인벤토리와 오류 메시지가 다음 계획 프롬프트에 들어간다.</figcaption>
     </figure>
 
-    <h3>3.3 PPO와 GAE</h3>
+    <h3>3.3 PPO(Proximal Policy Optimization)와 GAE(Generalized Advantage Estimation)</h3>
     <p class="why"><b>왜:</b> 정책 경사는 업데이트가 조금만 커져도 정책이 무너지기 쉽다. PPO는 같은 배치로 여러 번 업데이트하면서도 정책이 옛 정책에서 너무 멀어지지 않게 막는다. 가장 흔히 쓰는 기준선이고, 레퍼런스 Craftax 런도 PPO다.</p>
     <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\hat{A}_t,\ \operatorname{clip}\big(\rho_t(\theta), 1-\epsilon_{\text{clip}}, 1+\epsilon_{\text{clip}}\big)\hat{A}_t\right)\right],\quad \rho_t(\theta) = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
     <div class="math-block">$$\delta_t = r_t + \gamma (1-d_t)\, V(s_{t+1}) - V(s_t),\qquad \hat{A}_t = \delta_t + \gamma\lambda\,(1-d_t)\,\hat{A}_{t+1},\qquad \hat{A}_T = 0$$</div>
@@ -154,10 +156,10 @@
       <figcaption><span class="fig-num">그림 4.</span> 샘플링. DDIM 10단계로 노이즈에서 행동 8개를 만들고, 앞 4개만 실행한 다음 새 관측으로 다시 뽑는다(receding horizon).</figcaption>
     </figure>
 
-    <h3>3.6 호기심 보너스 (ICM)</h3>
+    <h3>3.6 호기심 보너스: ICM(Intrinsic Curiosity Module)</h3>
     <p class="why"><b>왜:</b> Crafter 보상은 업적을 처음 달성할 때만 나와서 드물다. 예측하기 어려운 상태로 갈 때 보너스를 주면 보상이 없는 구간에서도 계속 돌아다닌다.</p>
     <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}_k},\qquad \overline{e}_k = \text{mean of all errors up to update } k,\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}_k\)는 지금 배치까지 본 모든 오차의 평균(running mean)이다. 처음에는 표준편차로 나눴는데, 오차의 평균이 퍼짐보다 훨씬 커서 내 실행에서 보너스가 스텝당 12 안팎이 됐고 extrinsic reward를 덮어 버렸다. running mean으로 나누면 스케일은 맞지만, 평균적으로만, 그리고 오차 분포가 바뀌지 않는 동안만 그렇다. 첫 배치는 평균이 정확히 \(\beta\)다. 그 뒤로는 배치 평균이 \(\beta\) × (지금 평균 오차 / 지금까지의 평균 오차)가 된다. forward 모델이 좋아지면 \(\beta\)보다 작아지고, 모델이 못 맞히는 새 상태에 들어가면 커진다. 스텝 하나하나에는 상한이 아예 없다. 즉 이 정규화는 보너스의 보통 크기를 정해 줄 뿐, 작게 머문다고 보장하지는 않는다. 실제로 폭주를 막는지, 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
+    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}_k\)는 지금 배치까지 본 모든 오차의 평균(running mean)이다. 처음에는 표준편차로 나눴는데, 오차의 평균이 퍼짐보다 훨씬 커서 내 실행에서 보너스가 스텝당 12 안팎이 됐고 extrinsic reward를 덮어 버렸다. running mean으로 나누면 스케일이 맞기는 한다. 하지만 평균으로 봤을 때 이야기이고, 오차 분포가 그대로일 때만 그렇다. 첫 배치는 평균이 정확히 \(\beta\)다. 그 뒤로는 배치 평균이 \(\beta\) × (지금 평균 오차 / 지금까지의 평균 오차)가 된다. forward 모델이 좋아지면 \(\beta\)보다 작아지고, 모델이 못 맞히는 새 상태에 들어가면 커진다. 스텝 하나하나에는 상한이 아예 없다. 그러니 이 정규화로 정해지는 건 보너스의 평소 크기까지다. 보너스가 늘 작게 머문다는 보장은 없다. 실제로 폭주를 막는지, 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
 
     <h3>3.7 Crafter 점수</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>

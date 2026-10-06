@@ -79,6 +79,11 @@ pytest -q                                               # test suite</code></pre
     <div class="code-viewer" id="code-viewer" data-default="diffu_moe_vlm/core.py"></div>
     <p class="muted small">스냅샷은 <code>python tools/build_code_snapshot.py</code>로 다시 만든다.</p>
   </section>
+  <section>
+    <details class="toggle" id="abbreviations"><summary>이 페이지에 나오는 약어 15개 풀이</summary>
+    <div class="table-wrap"><table class="glossary"><thead><tr><th>약어</th><th>풀이</th><th>뜻</th></tr></thead><tbody><tr><td>LLM</td><td>Large Language Model</td><td>글을 생성하는 대규모 언어 모델. 여기서는 계획을 쓴다.</td></tr><tr><td>VLM</td><td>Vision-Language Model</td><td>이미지와 글을 함께 다루는 모델. 프로젝트 이름에 들어 있는 원래 목표.</td></tr><tr><td>PPO</td><td>Proximal Policy Optimization</td><td>업데이트 폭을 잘라 새 정책이 옛 정책에서 멀어지지 않게 하는 강화학습 알고리즘.</td></tr><tr><td>PPO-RNN</td><td>PPO with a Recurrent Neural Network</td><td>정책에 GRU 기억을 넣은 PPO.</td></tr><tr><td>GAE</td><td>Generalized Advantage Estimation</td><td>여러 스텝의 TD 오차를 섞어 advantage를 추정하는 방법.</td></tr><tr><td>MoE</td><td>Mixture of Experts</td><td>expert 네트워크 여러 개 중 게이트가 입력마다 고른 몇 개의 출력만 섞는 구조.</td></tr><tr><td>ICM</td><td>Intrinsic Curiosity Module</td><td>다음 상태를 예측하고, 틀린 만큼 호기심 보너스를 주는 모듈.</td></tr><tr><td>DDIM</td><td>Denoising Diffusion Implicit Model</td><td>DDPM을 훨씬 적은 단계로 샘플링하는 방법.</td></tr><tr><td>CNN</td><td>Convolutional Neural Network</td><td>합성곱으로 이미지를 읽는 신경망.</td></tr><tr><td>ViT</td><td>Vision Transformer</td><td>이미지를 패치로 잘라 트랜스포머로 읽는 모델.</td></tr><tr><td>CLIP</td><td>Contrastive Language-Image Pre-training</td><td>짝이 맞는 이미지와 글이 가까워지도록 사전학습한 인코더.</td></tr><tr><td>SigLIP</td><td>Sigmoid Loss for Language-Image Pre-training</td><td>CLIP의 손실을 sigmoid로 바꾼 변형.</td></tr><tr><td>jit</td><td>just-in-time compilation</td><td>처음 호출할 때 함수를 컴파일해 두고 그 뒤로는 컴파일된 코드로 돌린다.</td></tr><tr><td>IMU</td><td>Inertial Measurement Unit</td><td>가속도와 각속도를 재는 센서.</td></tr><tr><td>W&amp;B</td><td>Weights &amp; Biases</td><td>학습 지표를 기록하고 그래프로 보여 주는 서비스.</td></tr></tbody></table></div>
+    </details>
+  </section>
 </main>
 <footer><div class="wrap">Diffu-MoE-VLM · 연구 프로토타입 · <a class="lang-switch" href="../code.html" hreflang="en" lang="en">English</a></div></footer>
 <script src="../assets/site.js"></script>

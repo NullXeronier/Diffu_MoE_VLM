@@ -86,6 +86,11 @@ python compare_craftax_run.py runs/ppo_rnn/metrics.jsonl --ref ppo_rnn</code></p
     <p>A run is reproduced when <a href="code.html#f=compare_craftax_run.py"><code>compare_craftax_run.py</code></a> reports the return, length, achievements per episode and per-achievement rates inside the reference ranges. The ranges are read off chart images and are approximate, so use 2–3 seeds. If a run is interrupted, re-run the same command to resume.</p>
     <div class="callout warn"><span class="icon">!</span><div>Hyper-parameters follow the Craftax PPO baselines (1024 envs, 64 steps, lr 2e-4, γ 0.99, λ 0.8, 3×512 tanh MLP / GRU-512). The reference runs' own config was not available, so confirm these against it if possible.</div></div>
   </section>
+  <section>
+    <details class="toggle" id="abbreviations"><summary>Abbreviations on this page (8)</summary>
+    <div class="table-wrap"><table class="glossary"><thead><tr><th>Abbr.</th><th>Stands for</th><th>Meaning</th></tr></thead><tbody><tr><td>VLM</td><td>Vision-Language Model</td><td>Model that takes both images and text; part of the project&#x27;s name and original goal.</td></tr><tr><td>PPO</td><td>Proximal Policy Optimization</td><td>RL algorithm that clips each update to keep the new policy close to the old one.</td></tr><tr><td>PPO-RNN</td><td>PPO with a Recurrent Neural Network</td><td>PPO whose policy has GRU memory.</td></tr><tr><td>GAE</td><td>Generalized Advantage Estimation</td><td>Estimates the advantage by mixing TD errors over several steps.</td></tr><tr><td>MoE</td><td>Mixture of Experts</td><td>Several expert networks; a gate picks a few per input and mixes their outputs.</td></tr><tr><td>MLP</td><td>Multi-Layer Perceptron</td><td>Stack of fully connected layers.</td></tr><tr><td>GRU</td><td>Gated Recurrent Unit</td><td>Recurrent cell that uses gates to decide what to remember.</td></tr><tr><td>W&amp;B</td><td>Weights &amp; Biases</td><td>Service for logging and plotting training metrics.</td></tr></tbody></table></div>
+    </details>
+  </section>
 </main>
 <footer><div class="wrap">Diffu-MoE-VLM · research prototype · <a class="lang-switch" href="ko/reproducibility.html" hreflang="ko" lang="ko">한국어</a></div></footer>
 <script src="assets/data.js"></script>

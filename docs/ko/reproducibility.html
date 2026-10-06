@@ -86,6 +86,11 @@ python compare_craftax_run.py runs/ppo_rnn/metrics.jsonl --ref ppo_rnn</code></p
     <p><a href="code.html#f=compare_craftax_run.py"><code>compare_craftax_run.py</code></a>가 리턴, 길이, 에피소드당 업적, 업적별 성공률이 모두 레퍼런스 범위 안이라고 하면 재현된 것으로 본다. 범위는 차트 이미지에서 읽은 근사치라 시드는 2–3개 쓴다. 런이 끊기면 같은 명령을 다시 치면 이어서 학습한다.</p>
     <div class="callout warn"><span class="icon">!</span><div>하이퍼파라미터는 Craftax PPO baseline을 따랐다(환경 1024개, 64스텝, lr 2e-4, γ 0.99, λ 0.8, 3×512 tanh MLP / GRU-512). 레퍼런스 런의 실제 설정은 구하지 못했다. 구할 수 있다면 그것과 맞춰 봐야 한다.</div></div>
   </section>
+  <section>
+    <details class="toggle" id="abbreviations"><summary>이 페이지에 나오는 약어 8개 풀이</summary>
+    <div class="table-wrap"><table class="glossary"><thead><tr><th>약어</th><th>풀이</th><th>뜻</th></tr></thead><tbody><tr><td>VLM</td><td>Vision-Language Model</td><td>이미지와 글을 함께 다루는 모델. 프로젝트 이름에 들어 있는 원래 목표.</td></tr><tr><td>PPO</td><td>Proximal Policy Optimization</td><td>업데이트 폭을 잘라 새 정책이 옛 정책에서 멀어지지 않게 하는 강화학습 알고리즘.</td></tr><tr><td>PPO-RNN</td><td>PPO with a Recurrent Neural Network</td><td>정책에 GRU 기억을 넣은 PPO.</td></tr><tr><td>GAE</td><td>Generalized Advantage Estimation</td><td>여러 스텝의 TD 오차를 섞어 advantage를 추정하는 방법.</td></tr><tr><td>MoE</td><td>Mixture of Experts</td><td>expert 네트워크 여러 개 중 게이트가 입력마다 고른 몇 개의 출력만 섞는 구조.</td></tr><tr><td>MLP</td><td>Multi-Layer Perceptron</td><td>완전연결층을 쌓은 기본 신경망.</td></tr><tr><td>GRU</td><td>Gated Recurrent Unit</td><td>게이트로 무엇을 기억할지 정하는 순환 신경망 셀.</td></tr><tr><td>W&amp;B</td><td>Weights &amp; Biases</td><td>학습 지표를 기록하고 그래프로 보여 주는 서비스.</td></tr></tbody></table></div>
+    </details>
+  </section>
 </main>
 <footer><div class="wrap">Diffu-MoE-VLM · 연구 프로토타입 · <a class="lang-switch" href="../reproducibility.html" hreflang="en" lang="en">English</a></div></footer>
 <script src="../assets/data.js"></script>
