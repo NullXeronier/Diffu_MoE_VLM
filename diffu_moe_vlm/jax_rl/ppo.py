@@ -7,13 +7,15 @@ training loop under `jax.lax.scan`, so it can be jitted end to end. Options:
     moe   top-k mixture-of-experts hidden layers (+ load-balancing loss)
     icm   Intrinsic Curiosity Module bonus: icm_reward_coef * error / scale, where
           `icm_normalize` picks the scale (see ICM_NORMALIZERS):
-            mean  running mean of the forward-model error (default), so the
-                  normalized bonus averages 1 and cannot swamp the sparse
-                  extrinsic reward
+            mean  running mean of all forward-model errors so far (default).
+                  The first batch averages exactly 1; later batches average
+                  (current mean error / all-time mean error), and single steps
+                  are unbounded. It sets the typical scale, not a hard limit
             ema   exponential moving mean (`icm_ema_decay` per update), which
                   follows the error as the forward model improves
-            std   running standard deviation. Not enough on its own: squared
-                  errors are mostly mean, so the bonus stays ~10x too large
+            std   running standard deviation. Not enough on its own: the
+                  error's mean is much larger than its spread, so the bonus
+                  stays ~10x too large
             none  raw error; the unscaled bonus is what made the reference ICM
                   run collapse to ~0 extrinsic reward
           The icm/* metrics track the raw error, the bonus and its share of the
