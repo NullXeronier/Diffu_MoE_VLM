@@ -39,7 +39,7 @@
     <div class="table-wrap"><table>
       <thead><tr><th>확인 항목</th><th>결과</th></tr></thead>
       <tbody>
-        <tr><td>단위 테스트: GAE를 NumPy 구현과 대조, running moments, optimistic reset(끝난 환경마다 서로 다른 새 월드), MoE 균형 손실, 에피소드가 바뀔 때 GRU 상태 초기화</td><td>통과 (<code>tests/test_jax_rl.py</code>)</td></tr>
+        <tr><td>단위 테스트: GAE를 NumPy 구현과 대조, running moments, optimistic reset(끝난 환경마다 서로 다른 새 월드), MoE load-balancing loss, 에피소드가 바뀔 때 GRU 상태 초기화</td><td>통과 (<code>tests/test_jax_rl.py</code>)</td></tr>
         <tr><td>결정론: 시드가 같으면 지표가 비트 단위로 같고(PPO, PPO-RNN) 시드가 다르면 달라진다</td><td>통과</td></tr>
         <tr><td>재개: 2업데이트 → 저장·복원 → 2업데이트가 4업데이트를 한 번에 돌린 것과 비트 단위로 같다(지표, 파라미터)</td><td>통과</td></tr>
         <tr><td>실제 규모 결정론: 기본 설정(환경 1024 × 64스텝)에서 <code>scan</code> 한 번으로 끝낸 런과, 5업데이트마다 체크포인트를 남기고 프로세스를 바꿔 이어 붙인 런을 비교. 업데이트 5–30에서 기록한 값 390개</td><td>차이 0개</td></tr>

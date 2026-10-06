@@ -65,9 +65,9 @@
       <tbody>
         <tr><td>MDP · 정책 · 리턴</td><td>상태를 보고 행동을 고르는 함수가 정책 \(\pi\)이고, 보상을 할인해 더한 값이 리턴이다. 이 노트의 학습은 전부 기대 리턴을 키우려는 것이다.</td><td><a href="http://incompleteideas.net/book/the-book-2nd.html">Sutton &amp; Barto</a></td></tr>
         <tr><td>PPO</td><td>정책이 한 번에 너무 크게 바뀌지 않게 업데이트 폭을 잘라 내는 정책 경사 알고리즘.</td><td><a href="https://arxiv.org/abs/1707.06347">Schulman+ 2017</a></td></tr>
-        <tr><td>GAE</td><td>어떤 행동이 평소보다 얼마나 나았는지(이점)를 여러 스텝의 TD 오차를 섞어서 추정한다.</td><td><a href="https://arxiv.org/abs/1506.02438">Schulman+ 2015</a></td></tr>
+        <tr><td>GAE</td><td>어떤 행동이 평소보다 얼마나 나았는지(advantage)를 여러 스텝의 TD 오차를 섞어서 추정한다.</td><td><a href="https://arxiv.org/abs/1506.02438">Schulman+ 2015</a></td></tr>
         <tr><td>Describe, Explain, Plan and Select</td><td>LLM이 계획을 쓰고, 실행이 실패하면 왜 실패했는지 설명을 받아 계획을 고치는 Minecraft 에이전트 구조.</td><td><a href="https://arxiv.org/abs/2302.01560">Wang+ 2023</a></td></tr>
-        <tr><td>Mixture of Experts</td><td>'전문가' 네트워크 여러 개를 두고, 입력마다 게이트가 고른 몇 개의 출력만 섞는다.</td><td><a href="https://arxiv.org/abs/1701.06538">Shazeer+ 2017</a>, <a href="https://arxiv.org/abs/2101.03961">Fedus+ 2021</a></td></tr>
+        <tr><td>Mixture of Experts</td><td>'expert' 네트워크 여러 개를 두고, 입력마다 게이트가 고른 몇 개의 출력만 섞는다.</td><td><a href="https://arxiv.org/abs/1701.06538">Shazeer+ 2017</a>, <a href="https://arxiv.org/abs/2101.03961">Fedus+ 2021</a></td></tr>
         <tr><td>Diffusion (DDPM · DDIM)</td><td>데이터에 노이즈를 조금씩 더하는 과정을 거꾸로 배워서, 노이즈에서 샘플을 만든다. DDIM은 더 적은 단계로 뽑는다.</td><td><a href="https://arxiv.org/abs/2006.11239">Ho+ 2020</a>, <a href="https://arxiv.org/abs/2010.02502">Song+ 2020</a></td></tr>
         <tr><td>Diffusion Policy</td><td>이미지 대신 행동 시퀀스를 만들어 내는 diffusion 모방학습.</td><td><a href="https://arxiv.org/abs/2303.04137">Chi+ 2023</a></td></tr>
         <tr><td>ICM</td><td>다음 상태를 틀리게 예측한 만큼 '호기심' 보상을 줘서 탐험을 부추긴다.</td><td><a href="https://arxiv.org/abs/1705.05363">Pathak+ 2017</a></td></tr>
@@ -84,10 +84,10 @@
         <tr><td>\(d_t\)</td><td>에피소드 종료 여부(끝나면 1)</td></tr>
         <tr><td>\(\gamma,\ \lambda\)</td><td>할인율, GAE 계수 (Craftax 0.99 / 0.8, Crafter 0.95 / 0.65)</td></tr>
         <tr><td>\(V(s)\)</td><td>가치 함수: 상태 \(s\)에서 기대되는 리턴</td></tr>
-        <tr><td>\(\rho_t(\theta),\ \hat{A}_t\)</td><td>새 정책과 옛 정책의 확률비, 이점 추정치</td></tr>
+        <tr><td>\(\rho_t(\theta),\ \hat{A}_t\)</td><td>새 정책과 옛 정책의 probability ratio, advantage 추정치</td></tr>
         <tr><td>\(\epsilon_{\text{clip}}\)</td><td>PPO 클립 범위 (0.2)</td></tr>
-        <tr><td>\(E,\ k,\ \xi\)</td><td>전문가 수(4), 고르는 전문가 수(2), 게이트 노이즈</td></tr>
-        <tr><td>\(x_0,\ \epsilon,\ \bar\alpha_t\)</td><td>깨끗한 행동 묶음, 가우시안 노이즈, 노이즈 단계 \(t\)에서 남은 신호 비율</td></tr>
+        <tr><td>\(E,\ k,\ \xi\)</td><td>expert 수(4), 고르는 expert 수(2), 게이트 노이즈</td></tr>
+        <tr><td>\(x_0,\ \epsilon,\ \bar\alpha_t\)</td><td>clean action chunk, 가우시안 노이즈, 노이즈 단계 \(t\)에서 남은 신호 비율</td></tr>
         <tr><td>\(\phi(o)\)</td><td>관측 \(o\)를 인코더에 통과시킨 특징</td></tr>
         <tr><td>\(\beta\)</td><td>호기심 보너스 크기 (0.01)</td></tr>
       </tbody>
@@ -104,7 +104,7 @@
     <h2>2. Key points</h2>
     <p><b>에이전트보다 풀 수 있는 세계가 먼저다.</b> 도구·재료·연료 규칙이 들어간 Gymnasium 테크 트리를 만들자 기본 태스크 성공이 0/6에서 6/6이 됐다. 행동 30%를 무작위로 실패시켜도 재계획으로 6/6을 지킨다.</p>
     <p><b>계획과 제어를 따로 잰다.</b> 선행 재료 수집을 끄면 단계를 빠뜨린 계획은 재계획 한도를 다 쓰고 실패한다. 켜면 같은 계획이 성공한다.</p>
-    <p><b>픽셀만 보고 배우는 MoE PPO와 Diffusion 모방학습.</b> Crafter에서 CNN에 전문가 4개 중 2개를 고르는 MoE를 붙인 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배가 됐다. 이 정책을 흉내 낸 Diffusion 정책은 교사 리턴에 거의 따라붙는다.</p>
+    <p><b>픽셀만 보고 배우는 MoE PPO와 Diffusion 모방학습.</b> Crafter에서 CNN에 expert 4개 중 2개를 고르는 MoE를 붙인 정책이 CPU 10만 스텝 만에 랜덤 점수의 약 3배가 됐다. 이 정책을 흉내 낸 Diffusion 정책은 teacher 리턴에 거의 따라붙는다.</p>
     <p><b>레퍼런스부터 제대로 읽는다.</b> 레퍼런스 그래프는 Crafter 10만 스텝이 아니라 Craftax-Symbolic 10억 스텝 결과였고, x축은 PPO 업데이트 횟수였다. JAX 파이프라인은 그 설정을 그대로 돌린다.</p>
     <p><b>결정론은 테스트로 확인한다.</b> 체크포인트 청크로 나눠 여러 프로세스에서 이어 붙인 런이 한 번에 끝낸 런과 같다. 기록된 값 390개 중 다른 값은 0개다.</p>
   </section>
@@ -132,32 +132,32 @@
     <p class="why"><b>왜:</b> 정책 경사는 업데이트가 조금만 커져도 정책이 무너지기 쉽다. PPO는 같은 배치로 여러 번 업데이트하면서도 정책이 옛 정책에서 너무 멀어지지 않게 막는다. 가장 흔히 쓰는 기준선이고, 레퍼런스 Craftax 런도 PPO다.</p>
     <div class="math-block">$$L^{\text{CLIP}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\hat{A}_t,\ \operatorname{clip}\big(\rho_t(\theta), 1-\epsilon_{\text{clip}}, 1+\epsilon_{\text{clip}}\big)\hat{A}_t\right)\right],\quad \rho_t(\theta) = \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)}$$</div>
     <div class="math-block">$$\hat{A}_t = \sum_{l\ge 0} (\gamma\lambda)^l \delta_{t+l},\qquad \delta_t = r_t + \gamma V(s_{t+1})(1-d_t) - V(s_t)$$</div>
-    <p class="intuition"><b>직관:</b> 이점 \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. 그런데 확률비 \(\rho_t\)가 \(1\pm\epsilon_{\text{clip}}\) 밖으로 나가면 더 밀어붙여도 목적함수가 늘지 않는다. 그래서 업데이트 한 번에 정책이 크게 바뀌지 않는다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이고, \(\lambda\)는 한 스텝만 보고 추정할지(\(\lambda=0\), 분산 작고 편향 큼) 끝까지 보고 추정할지(\(\lambda=1\), 반대)를 정한다.</p>
+    <p class="intuition"><b>직관:</b> advantage \(\hat{A}_t\)가 양수인 행동은 확률을 올리고 음수면 내린다. 그런데 probability ratio \(\rho_t\)가 \(1\pm\epsilon_{\text{clip}}\) 밖으로 나가면 더 밀어붙여도 목적함수가 늘지 않는다. 그래서 업데이트 한 번에 정책이 크게 바뀌지 않는다. \(\delta_t\)는 "실제로 받은 것 − 기대했던 것"이고, \(\lambda\)는 한 스텝만 보고 추정할지(\(\lambda=0\), 분산 작고 편향 큼) 끝까지 보고 추정할지(\(\lambda=1\), 반대)를 정한다.</p>
 
     <h3>3.4 Mixture of Experts</h3>
-    <p class="why"><b>왜:</b> Crafter에서 하는 일은 나무 채집, 전투, 제작처럼 성격이 제각각이다. 입력에 따라 다른 전문가가 맡게 하면 같은 계산량으로 용량을 늘리거나, 전문가마다 다른 스킬을 맡게 될 수도 있다. 다만 전문가가 실제로 나뉘는지는 아직 재 보지 않았다.</p>
-    <p>게이트가 \(p = \operatorname{softmax}(W_g x + \xi)\)를 내면, 확률이 가장 큰 전문가 \(k=2\)개를 골라 가중치를 다시 정규화해서 섞는다. 균형 손실은 전문가가 골고루 쓰이게 한다.</p>
+    <p class="why"><b>왜:</b> Crafter에서 하는 일은 나무 채집, 전투, 제작처럼 성격이 제각각이다. 입력에 따라 다른 expert가 맡게 하면 같은 계산량으로 용량을 늘리거나, expert마다 다른 스킬을 맡게 될 수도 있다. 다만 expert가 실제로 나뉘는지는 아직 재 보지 않았다.</p>
+    <p>게이트가 \(p = \operatorname{softmax}(W_g x + \xi)\)를 내면, 확률이 가장 큰 expert \(k=2\)개를 골라 가중치를 다시 정규화해서 섞는다. load-balancing loss는 expert가 골고루 쓰이게 한다.</p>
     <div class="math-block">$$y = \sum_{i \in \text{top-}k(p)} \frac{p_i}{\sum_{j\in\text{top-}k} p_j} E_i(x),\qquad L_{\text{aux}} = E \sum_{i=1}^{E} f_i\, \bar{p}_i$$</div>
-    <p class="intuition"><b>직관:</b> \(f_i\)는 전문가 \(i\)로 1순위 라우팅된 입력의 비율, \(\bar{p}_i\)는 평균 게이트 확률이다. 모두 고르게 쓰이면 \(L_{\text{aux}} = 1\), 한 전문가에 몰리면 \(E\)다. 이 손실이 없으면 처음에 조금 앞서 나간 전문가만 계속 학습되고 나머지는 놀게 된다. 노이즈 \(\xi\)는 학습 초반에 다른 전문가도 한 번씩 써 보게 만든다.</p>
+    <p class="intuition"><b>직관:</b> \(f_i\)는 expert \(i\)로 1순위 라우팅된 입력의 비율, \(\bar{p}_i\)는 평균 게이트 확률이다. 모두 고르게 쓰이면 \(L_{\text{aux}} = 1\), 한 expert에 몰리면 \(E\)다. 이 손실이 없으면 처음에 조금 앞서 나간 expert만 계속 학습되고 나머지는 놀게 된다. 노이즈 \(\xi\)는 학습 초반에 다른 expert도 한 번씩 써 보게 만든다.</p>
     <figure>
-      <div class="card diagram lg" role="img" aria-label="MoE 라우팅: 게이트가 전문가 4개에 확률을 매기고 상위 2개(E1, E3)의 출력을 확률 비율로 섞는다"><svg viewBox="0 0 560 216" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-moe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box" x="10" y="80" width="100" height="56" rx="8"/><text class="t" x="60" y="104" text-anchor="middle">입력 특징 x</text><text class="s" x="60" y="122" text-anchor="middle">CNN 출력</text><rect class="box accent" x="130" y="80" width="110" height="56" rx="8"/><text class="t" x="185" y="104" text-anchor="middle">게이트</text><text class="s" x="185" y="122" text-anchor="middle">softmax+노이즈</text><path class="arrow" d="M110 108 H126" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="14" width="115" height="34" rx="8"/><text class="t" x="327.5" y="36" text-anchor="middle">E1 · p=0.45</text></g><path class="arrow" d="M240 108 L266 31" marker-end="url(#a-moe)"/><path class="arrow" d="M385 31 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="62" width="115" height="34" rx="8"/><text class="t" x="327.5" y="84" text-anchor="middle">E2 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 79" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="110" width="115" height="34" rx="8"/><text class="t" x="327.5" y="132" text-anchor="middle">E3 · p=0.35</text></g><path class="arrow" d="M240 108 L266 127" marker-end="url(#a-moe)"/><path class="arrow" d="M385 127 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="158" width="115" height="34" rx="8"/><text class="t" x="327.5" y="180" text-anchor="middle">E4 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 175" marker-end="url(#a-moe)"/><rect class="box" x="410" y="80" width="140" height="56" rx="8"/><text class="t" x="480" y="104" text-anchor="middle">가중 합 y</text><text class="s" x="480" y="122" text-anchor="middle">0.56·E1 + 0.44·E3</text><text class="s" x="327" y="208" text-anchor="middle">상위 2개만 선택 (점선은 버려짐)</text></svg></div>
-      <figcaption><span class="fig-num">그림 3.</span> 확률 예시. 상위 2개(0.45, 0.35)를 합이 1이 되게 다시 나누면 0.56과 0.44다. 지금 구현은 코드를 단순하게 두려고 전문가 4개를 다 계산한 뒤 상위 2개의 출력만 섞는다.</figcaption>
+      <div class="card diagram lg" role="img" aria-label="MoE 라우팅: 게이트가 expert 4개에 확률을 매기고 상위 2개(E1, E3)의 출력을 확률 비율로 섞는다"><svg viewBox="0 0 560 216" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-moe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect class="box" x="10" y="80" width="100" height="56" rx="8"/><text class="t" x="60" y="104" text-anchor="middle">입력 특징 x</text><text class="s" x="60" y="122" text-anchor="middle">CNN 출력</text><rect class="box accent" x="130" y="80" width="110" height="56" rx="8"/><text class="t" x="185" y="104" text-anchor="middle">게이트</text><text class="s" x="185" y="122" text-anchor="middle">softmax+노이즈</text><path class="arrow" d="M110 108 H126" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="14" width="115" height="34" rx="8"/><text class="t" x="327.5" y="36" text-anchor="middle">E1 · p=0.45</text></g><path class="arrow" d="M240 108 L266 31" marker-end="url(#a-moe)"/><path class="arrow" d="M385 31 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="62" width="115" height="34" rx="8"/><text class="t" x="327.5" y="84" text-anchor="middle">E2 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 79" marker-end="url(#a-moe)"/><g class=""><rect class="box accent" x="270" y="110" width="115" height="34" rx="8"/><text class="t" x="327.5" y="132" text-anchor="middle">E3 · p=0.35</text></g><path class="arrow" d="M240 108 L266 127" marker-end="url(#a-moe)"/><path class="arrow" d="M385 127 L406 108" marker-end="url(#a-moe)"/><g class="dim"><rect class="box" x="270" y="158" width="115" height="34" rx="8"/><text class="t" x="327.5" y="180" text-anchor="middle">E4 · p=0.10</text></g><path class="arrow dash" d="M240 108 L266 175" marker-end="url(#a-moe)"/><rect class="box" x="410" y="80" width="140" height="56" rx="8"/><text class="t" x="480" y="104" text-anchor="middle">가중 합 y</text><text class="s" x="480" y="122" text-anchor="middle">0.56·E1 + 0.44·E3</text><text class="s" x="327" y="208" text-anchor="middle">상위 2개만 선택 (점선은 버려짐)</text></svg></div>
+      <figcaption><span class="fig-num">그림 3.</span> 확률 예시. 상위 2개(0.45, 0.35)를 합이 1이 되게 다시 나누면 0.56과 0.44다. 지금 구현은 코드를 단순하게 두려고 expert 4개를 다 계산한 뒤 상위 2개의 출력만 섞는다.</figcaption>
     </figure>
 
     <h3>3.5 Diffusion 정책</h3>
-    <p class="why"><b>왜:</b> 같은 상황에서도 좋은 행동이 여럿일 수 있다. 장애물을 왼쪽으로 돌아가도 되고 오른쪽으로 돌아가도 된다. 정답들의 평균을 내는 회귀형 모방학습은 그 한가운데, 즉 장애물로 곧장 들이받는 행동을 낼 수 있다. Diffusion은 행동 분포 전체를 배워서 그중 하나를 고른다. 행동을 묶음으로 만들기 때문에 짧은 구간 동안 움직임도 흐트러지지 않는다.</p>
-    <p>길이 \(H = 8\)인 행동 묶음을 \([-1, 1]\)로 스케일한 원-핫 벡터로 나타낸다. 디노이저 \(f_\theta\)는 노이즈 섞인 묶음을 보고 깨끗한 묶음 \(x_0\)를 맞힌다.</p>
+    <p class="why"><b>왜:</b> 같은 상황에서도 좋은 행동이 여럿일 수 있다. 장애물을 왼쪽으로 돌아가도 되고 오른쪽으로 돌아가도 된다. 정답들의 평균을 내는 회귀형 모방학습은 그 한가운데, 즉 장애물로 곧장 들이받는 행동을 낼 수 있다. Diffusion은 행동 분포 전체를 배워서 그중 하나를 고른다. 행동을 chunk로 만들기 때문에 짧은 구간 동안 움직임도 흐트러지지 않는다.</p>
+    <p>길이 \(H = 8\)인 action chunk를 \([-1, 1]\)로 스케일한 원-핫 벡터로 나타낸다. 디노이저 \(f_\theta\)는 노이즈 섞인 chunk를 보고 clean chunk \(x_0\)를 맞힌다.</p>
     <div class="math-block">$$\mathcal{L} = \mathbb{E}_{t,\epsilon}\left\| f_\theta\!\left(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\ t,\ \phi(o)\right) - x_0 \right\|^2$$</div>
-    <p class="intuition"><b>직관:</b> 학습할 때는 정답 묶음에 노이즈를 섞어 놓고 원래 묶음을 맞히게 한다. 노이즈가 많을수록(\(\bar\alpha_t\)가 작을수록) 관측 \(\phi(o)\)를 안 보고는 맞힐 수 없다. 처음에 짠 노이즈 \(\epsilon\) 예측 방식은 실험에서 관측과 상관없는 묶음을 냈다. \(x_0\)를 바로 예측하게 바꾸자 행동 묶음이 40/40 맞았다. 노이즈는 관측 없이도 꽤 맞힐 수 있지만 정답 묶음은 그렇지 않아서 생긴 차이라고 본다.</p>
+    <p class="intuition"><b>직관:</b> 학습할 때는 정답 chunk에 노이즈를 섞어 놓고 원래 chunk를 맞히게 한다. 노이즈가 많을수록(\(\bar\alpha_t\)가 작을수록) 관측 \(\phi(o)\)를 안 보고는 맞힐 수 없다. 처음에 짠 노이즈 \(\epsilon\) 예측 방식은 실험에서 관측과 상관없는 chunk를 냈다. \(x_0\)를 바로 예측하게 바꾸자 action chunk가 40/40 맞았다. 노이즈는 관측 없이도 꽤 맞힐 수 있지만 정답 chunk는 그렇지 않아서 생긴 차이라고 본다.</p>
     <figure>
-      <div class="card diagram lg" role="img" aria-label="Diffusion 행동 묶음: 노이즈 8칸을 관측을 조건으로 10단계 디노이즈해 행동 8개를 만들고 앞 4개만 실행한다"><svg viewBox="0 0 560 196" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-diff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect x="100" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.55"/><rect class="box accent" x="100" y="112" width="40" height="40" rx="6"/><text class="t" x="120" y="137" text-anchor="middle">→</text><rect x="144" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.2"/><rect class="box accent" x="144" y="112" width="40" height="40" rx="6"/><text class="t" x="164" y="137" text-anchor="middle">→</text><rect x="188" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.7"/><rect class="box accent" x="188" y="112" width="40" height="40" rx="6"/><text class="t" x="208" y="137" text-anchor="middle">↑</text><rect x="232" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.35"/><rect class="box accent" x="232" y="112" width="40" height="40" rx="6"/><text class="t" x="252" y="137" text-anchor="middle">채집</text><rect x="276" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.15"/><rect class="box" x="276" y="112" width="40" height="40" rx="6"/><text class="t" x="296" y="137" text-anchor="middle">↑</text><rect x="320" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.6"/><rect class="box" x="320" y="112" width="40" height="40" rx="6"/><text class="t" x="340" y="137" text-anchor="middle">←</text><rect x="364" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.3"/><rect class="box" x="364" y="112" width="40" height="40" rx="6"/><text class="t" x="384" y="137" text-anchor="middle">채집</text><rect x="408" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.5"/><rect class="box" x="408" y="112" width="40" height="40" rx="6"/><text class="t" x="428" y="137" text-anchor="middle">→</text><text class="t" x="10" y="41">노이즈 x<tspan baseline-shift="sub" font-size="10">T</tspan></text><text class="t" x="10" y="137">행동 x<tspan baseline-shift="sub" font-size="10">0</tspan></text><text class="s" x="458" y="41">무작위 시작</text><text class="s" x="458" y="137">H = 8</text><path class="arrow" d="M274 62 V106" marker-end="url(#a-diff)"/><text class="s" x="286" y="80">f<tspan baseline-shift="sub" font-size="9">θ</tspan>로 10단계 디노이즈 (DDIM)</text><text class="s" x="286" y="96">조건: 현재 관측 φ(o)</text><path class="arrow" d="M100 166 H272"/><path class="arrow dash" d="M276 166 H448"/><text class="s" x="186" y="184" text-anchor="middle">앞 4개 실행</text><text class="s" x="362" y="184" text-anchor="middle">버리고 다시 샘플링</text></svg></div>
+      <div class="card diagram lg" role="img" aria-label="Diffusion action chunk: 노이즈 8칸을 관측을 조건으로 10단계 디노이즈해 행동 8개를 만들고 앞 4개만 실행한다"><svg viewBox="0 0 560 196" xmlns="http://www.w3.org/2000/svg"><defs><marker id="a-diff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs><rect x="100" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.55"/><rect class="box accent" x="100" y="112" width="40" height="40" rx="6"/><text class="t" x="120" y="137" text-anchor="middle">→</text><rect x="144" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.2"/><rect class="box accent" x="144" y="112" width="40" height="40" rx="6"/><text class="t" x="164" y="137" text-anchor="middle">→</text><rect x="188" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.7"/><rect class="box accent" x="188" y="112" width="40" height="40" rx="6"/><text class="t" x="208" y="137" text-anchor="middle">↑</text><rect x="232" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.35"/><rect class="box accent" x="232" y="112" width="40" height="40" rx="6"/><text class="t" x="252" y="137" text-anchor="middle">채집</text><rect x="276" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.15"/><rect class="box" x="276" y="112" width="40" height="40" rx="6"/><text class="t" x="296" y="137" text-anchor="middle">↑</text><rect x="320" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.6"/><rect class="box" x="320" y="112" width="40" height="40" rx="6"/><text class="t" x="340" y="137" text-anchor="middle">←</text><rect x="364" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.3"/><rect class="box" x="364" y="112" width="40" height="40" rx="6"/><text class="t" x="384" y="137" text-anchor="middle">채집</text><rect x="408" y="16" width="40" height="40" rx="6" fill="var(--ink-2)" fill-opacity="0.5"/><rect class="box" x="408" y="112" width="40" height="40" rx="6"/><text class="t" x="428" y="137" text-anchor="middle">→</text><text class="t" x="10" y="41">노이즈 x<tspan baseline-shift="sub" font-size="10">T</tspan></text><text class="t" x="10" y="137">행동 x<tspan baseline-shift="sub" font-size="10">0</tspan></text><text class="s" x="458" y="41">무작위 시작</text><text class="s" x="458" y="137">H = 8</text><path class="arrow" d="M274 62 V106" marker-end="url(#a-diff)"/><text class="s" x="286" y="80">f<tspan baseline-shift="sub" font-size="9">θ</tspan>로 10단계 디노이즈 (DDIM)</text><text class="s" x="286" y="96">조건: 현재 관측 φ(o)</text><path class="arrow" d="M100 166 H272"/><path class="arrow dash" d="M276 166 H448"/><text class="s" x="186" y="184" text-anchor="middle">앞 4개 실행</text><text class="s" x="362" y="184" text-anchor="middle">버리고 다시 샘플링</text></svg></div>
       <figcaption><span class="fig-num">그림 4.</span> 샘플링. DDIM 10단계로 노이즈에서 행동 8개를 만들고, 앞 4개만 실행한 다음 새 관측으로 다시 뽑는다(receding horizon).</figcaption>
     </figure>
 
     <h3>3.6 호기심 보너스 (ICM)</h3>
     <p class="why"><b>왜:</b> Crafter 보상은 업적을 처음 달성할 때만 나와서 드물다. 예측하기 어려운 상태로 갈 때 보너스를 주면 보상이 없는 구간에서도 계속 돌아다닌다.</p>
     <div class="math-block">$$r_t = r^{\text{ext}}_t + \beta\,\frac{e_t}{\overline{e}},\qquad \beta = 0.01$$</div>
-    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}\)는 그 누적 평균이다. 처음에는 표준편차로 나눴는데, 오차의 평균 성분이 그대로 남아서 보너스 평균이 12 안팎이 됐고 외부 보상을 덮어 버렸다. 누적 평균으로 나누면 \(e_t/\overline{e}\)의 평균이 늘 1 근처라 보너스 평균이 \(\beta\)에 묶인다. 그러면 보너스는 외부 보상을 거드는 정도에 그친다. 이 정규화가 정말 폭주를 막고 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
+    <p class="intuition"><b>직관:</b> \(e_t\)는 ICM이 다음 상태를 예측할 때의 오차이고 \(\overline{e}\)는 그 running mean이다. 처음에는 표준편차로 나눴는데, 오차의 평균 성분이 그대로 남아서 보너스 평균이 12 안팎이 됐고 extrinsic reward를 덮어 버렸다. running mean으로 나누면 \(e_t/\overline{e}\)의 평균이 늘 1 근처라 보너스 평균이 \(\beta\)에 묶인다. 그러면 보너스는 extrinsic reward를 거드는 정도에 그친다. 이 정규화가 정말 폭주를 막고 탐험을 늘리는지는 4장 끝의 실험으로 확인하려고 한다.</p>
 
     <h3>3.7 Crafter 점수</h3>
     <div class="math-block">$$S = \exp\Big(\frac{1}{N}\sum_{i=1}^{N} \ln(1+s_i)\Big) - 1$$</div>
@@ -189,7 +189,7 @@
     <ul>
       <li><b>플래너:</b> 태스크 0/6 → 6/6(나무 반블록 3스텝, 다이아몬드 34스텝). 행동 30%를 무작위로 실패시켜도 6/6.</li>
       <li><b>Crafter:</b> 점수 랜덤 1.56 → MoE PPO 4.63 → Diffusion 모방학습 3.56, 리턴 1.25 / 3.60 / 3.55. 랜덤 점수는 논문 수치(약 1.6%)와 맞는다.</li>
-      <li><b>Diffusion 조건 반영:</b> 깨끗한 샘플을 예측하게 바꾼 뒤 행동 묶음 40/40 일치. 노이즈 예측 방식은 관측과 상관없는 묶음을 냈다.</li>
+      <li><b>Diffusion 조건 반영:</b> clean sample을 예측하게 바꾼 뒤 action chunk 40/40 일치. 노이즈 예측 방식은 관측과 상관없는 chunk를 냈다.</li>
       <li><b>Craftax(CPU, 기본 설정):</b> PPO 리턴 655만 스텝 동안 1.49 → 6.66. 328만 스텝에서 PPO-RNN 5.15, PPO 5.47. 655만 스텝에서 COLLECT_WOOD 97%, PLACE_TABLE 90%, MAKE_WOOD_PICKAXE 50%.</li>
       <li><b>재현성:</b> 한 번에 끝낸 런과, 프로세스를 바꿔 가며 체크포인트 청크를 이어 붙인 런을 비교하면 기록된 값 390개 중 다른 값이 0개. 자동 테스트 68개 통과.</li>
     </ul>
@@ -213,15 +213,15 @@
       <figcaption>레퍼런스 런: COLLECT_DIAMOND 같은 드문 업적은 한참 뒤에야 오른다. 10억 스텝이나 돌리는 이유다.</figcaption>
     </figure>
     <h4>설계까지 마친 실험: 호기심 보너스 정규화</h4>
-    <p>3.6에서 보너스를 누적 평균으로 나눈 것은 레퍼런스 ICM 런이 무너진 것을 보고 내린 처방이었다. 그 처방이 실제로 통하는지는 아직 확인하지 않았다. 질문은 두 가지다.</p>
+    <p>3.6에서 보너스를 running mean으로 나눈 것은 레퍼런스 ICM 런이 무너진 것을 보고 내린 처방이었다. 그 처방이 실제로 통하는지는 아직 확인하지 않았다. 질문은 두 가지다.</p>
     <ul>
-      <li><b>H1.</b> 누적 평균으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
-      <li><b>H2.</b> 그렇게 정규화한 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 닿는가? 외부 보상은 깎이지 않는가?</li>
+      <li><b>H1.</b> running mean으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
+      <li><b>H2.</b> 그렇게 정규화한 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 닿는가? extrinsic reward는 깎이지 않는가?</li>
     </ul>
-    <p>Craftax PPO 기본 설정과 시드를 고정하고 다섯 조건을 돌린다. 호기심 없음(<code>ppo</code>), 원본 오차(<code>icm_none</code>), 표준편차로 나눔(<code>icm_std</code>), 누적 평균으로 나눔(<code>icm_mean</code>), 지수 이동평균으로 나눔(<code>icm_ema</code>)이다. ICM 조건끼리는 계수 \(\beta = 0.01\)도 같아서 정규화 방식 말고는 다른 게 없다.</p>
+    <p>Craftax PPO 기본 설정과 시드를 고정하고 다섯 조건을 돌린다. 호기심 없음(<code>ppo</code>), 원본 오차(<code>icm_none</code>), 표준편차로 나눔(<code>icm_std</code>), running mean으로 나눔(<code>icm_mean</code>), EMA로 나눔(<code>icm_ema</code>)이다. ICM 조건끼리는 계수 \(\beta = 0.01\)도 같아서 정규화 방식 말고는 다른 게 없다.</p>
     <div class="math-block">$$\text{share} = \frac{\sum |\beta\, e_t / \text{scale}|}{\sum |\beta\, e_t / \text{scale}| + \sum |r^{\text{ext}}_t|}$$</div>
-    <p>보너스가 폭주했는지는 보상 중 보너스가 차지하는 비율(share)로 본다. 학습 마지막 10%에서도 이 비율이 0.5를 넘거나, 스텝당 보너스가 처음보다 2배 넘게 커졌으면 폭주로 친다. 학습 초반은 판정에서 뺀다. 그때는 외부 보상이 거의 0이라 제대로 스케일된 보너스도 비율이 높게 나온다. 탐험은 한 번이라도 도달한 업적 종류 수와 Craftax 점수로, 태스크 성능은 보너스를 뺀 외부 보상 리턴으로 잰다.</p>
-    <p>판정은 같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. H1은 <code>icm_mean</code>이 어느 시드에서도 폭주하지 않고 <code>icm_none</code>이나 <code>icm_std</code>는 폭주해야 지지된다. H2는 시드 3개 이상에서 도달 업적 수나 점수가 모든 시드에서 <code>ppo</code>보다 높고, 외부 보상이 모든 시드에서 낮아지지는 않아야 지지된다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</p>
+    <p>보너스가 폭주했는지는 보상 중 보너스가 차지하는 비율(share)로 본다. 학습 마지막 10%에서도 이 비율이 0.5를 넘거나, 스텝당 보너스가 처음보다 2배 넘게 커졌으면 폭주로 친다. 학습 초반은 판정에서 뺀다. 그때는 extrinsic reward가 거의 0이라 제대로 스케일된 보너스도 비율이 높게 나온다. 탐험은 한 번이라도 도달한 업적 종류 수와 Craftax 점수로, 태스크 성능은 보너스를 뺀 extrinsic reward 리턴으로 잰다.</p>
+    <p>판정은 같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. H1은 <code>icm_mean</code>이 어느 시드에서도 폭주하지 않고 <code>icm_none</code>이나 <code>icm_std</code>는 폭주해야 지지된다. H2는 시드 3개 이상에서 도달 업적 수나 점수가 모든 시드에서 <code>ppo</code>보다 높고, extrinsic reward가 모든 시드에서 낮아지지는 않아야 지지된다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</p>
     <p>실험 코드(<a href="../code.html#f=run_icm_ablation.py"><code>run_icm_ablation.py</code></a>, <a href="../code.html#f=analyze_icm_ablation.py"><code>analyze_icm_ablation.py</code></a>)와 단위 테스트, CPU 디버그 실행까지는 끝났다. GPU에서 조건 5개 × 시드 3개 × 10억 스텝을 돌리려면 50시간쯤 걸리는데, 아직 돌리지 못해서 H1과 H2 모두 답이 없다.</p>
   </section>
 
@@ -239,7 +239,7 @@
       <li><b>레퍼런스 값:</b> 범위는 그래프 이미지에서 눈으로 읽은 근사치다. 레퍼런스 런의 실제 하이퍼파라미터를 못 구해서 Craftax baseline 기본값을 썼다.</li>
       <li><b>오라클 플래너:</b> 규칙 기반 플래너는 레시피를 전부 알고 있다. 그러니 6/6은 LLM의 성적이 아니라 상한이다. LLM 계획은 선행 재료 수집을 끄고 재야 한다.</li>
       <li><b>모듈 범위:</b> 궤적·IMU 인코더는 합성 동작으로만 검증했고, Diffusion 정책은 PyTorch 쪽에만 있다.</li>
-      <li><b>ICM 효과:</b> 누적 평균 정규화가 보너스를 일정한 크기로 묶는 것까지는 식으로 보장된다. 하지만 폭주를 정말 막는지, 탐험이 실제로 늘어나는지는 아직 대조 실험을 돌리지 않았다(4장 끝).</li>
+      <li><b>ICM 효과:</b> running mean 정규화가 보너스를 일정한 크기로 묶는 것까지는 식으로 보장된다. 하지만 폭주를 정말 막는지, 탐험이 실제로 늘어나는지는 아직 대조 실험을 돌리지 않았다(4장 끝).</li>
     </ul>
   </section>
 
@@ -255,7 +255,7 @@
         <tr><td>테크 트리 · Describe, Explain, Plan and Select</td><td>요리책을 보고 장보기 목록을 쓰고, 가게에 재료가 없으면 그 자리에서 목록을 고쳐 쓰는 것.</td></tr>
         <tr><td>PPO</td><td>운전 연수에서 매번 핸들을 조금만 더 꺾어 보는 것. 한 번에 크게 꺾으면 차가 도로를 벗어난다.</td></tr>
         <tr><td>GAE</td><td>시험 직후 채점(빠르지만 부정확)과 학기 말 성적(정확하지만 늦음) 사이에서 적당히 섞어 평가하는 것.</td></tr>
-        <tr><td>MoE</td><td>전문의 네 명 중 접수처(게이트)가 증상에 맞는 두 명에게 묻고, 더 확신하는 의사의 말에 무게를 더 두는 것. 균형 손실은 한 의사에게 환자가 몰리지 않게 하는 규칙이다.</td></tr>
+        <tr><td>MoE</td><td>전문의 네 명 중 접수처(게이트)가 증상에 맞는 두 명에게 묻고, 더 확신하는 의사의 말에 무게를 더 두는 것. load-balancing loss는 한 의사에게 환자가 몰리지 않게 하는 규칙이다.</td></tr>
         <tr><td>Diffusion 정책</td><td>흐릿한 낙서를 눈앞의 장면을 보면서 조금씩 또렷하게 고쳐 그리는 것. 완성된 8컷 중 앞 4컷만 실행하고 다시 그린다.</td></tr>
         <tr><td>ICM</td><td>처음 가 보는 골목일수록 궁금해지는 것. 단, 궁금함이 너무 크면 목적지를 잊으니 평균 크기에 묶어 둔다.</td></tr>
         <tr><td>Crafter 점수</td><td>과목별 점수를 곱해서 평균을 내는 성적표. 한 과목이 0점에 가까우면 전체가 크게 깎인다.</td></tr>
@@ -270,7 +270,7 @@
     <p><b>스텝 수로 보는 난이도 곡선:</b> 아이템까지 걸리는 스텝 수(예제 트리에서 나무 반블록 3, 다이아몬드 34)는 진행 속도를 그대로 보여 준다. 자동으로 뽑을 수 있으니 밸런스 패치 때마다 비교하기 좋다.</p>
     <p><b>하이브리드 NPC:</b> 목표는 플래너가 고르고 실행은 학습된 스킬이나 스크립트가 맡는다. 계획이 글로 남으니 NPC가 왜 그렇게 움직였는지 설명할 수 있고, 저수준 제어는 그대로 튼튼하다. 길이 막히거나 자원이 모자라면 재계획으로 돌아간다.</p>
     <p><b>대규모 자동 플레이테스트:</b> JAX 파이프라인은 GPU 1대로 초당 수만 게임 스텝을 돌린다. 런이 결정론적이고 끊겨도 이어지니, 에이전트로 돌리는 회귀 테스트를 빌드마다 똑같이 반복할 수 있다.</p>
-    <p><b>프레임 예산 안에서 모델 키우기:</b> 전문가 4개 중 2개를 고르는 MoE는 입력마다 전문가 2개만 섞는다. 고른 전문가만 계산하도록 바꾸면(지금 구현은 단순하게 두려고 전부 계산한다) 실시간 프레임 예산 안에서 더 큰 NPC 정책을 돌릴 수 있다.</p>
+    <p><b>프레임 예산 안에서 모델 키우기:</b> expert 4개 중 2개를 고르는 MoE는 입력마다 expert 2개만 섞는다. 고른 expert만 계산하도록 바꾸면(지금 구현은 단순하게 두려고 전부 계산한다) 실시간 프레임 예산 안에서 더 큰 NPC 정책을 돌릴 수 있다.</p>
     <p><a href="../">← 프로젝트 페이지로 돌아가기</a></p>
   </section>
   <section id="references">

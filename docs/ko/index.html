@@ -74,7 +74,7 @@
         <span class="chip">Algorithm</span>
         <h3>Crafter 픽셀 위의 MoE PPO</h3>
         <div class="k">측정 결과</div>
-        <p>CNN 인코더 뒤에 전문가 4개 중 2개를 고르는 MoE 몸통을 붙였다. CPU로 10만 스텝만 학습해도 Crafter 점수가 <b>1.56(랜덤)에서 4.63</b>으로 약 3배가 됐고, 리턴은 1.25에서 3.60으로 올랐다.</p>
+        <p>CNN 인코더 뒤에 expert 4개 중 2개를 고르는 MoE trunk를 붙였다. CPU로 10만 스텝만 학습해도 Crafter 점수가 <b>1.56(랜덤)에서 4.63</b>으로 약 3배가 됐고, 리턴은 1.25에서 3.60으로 올랐다.</p>
         <div class="k">배운 점</div>
         <p class="learned">랜덤 정책 점수가 논문 수치(약 1.6%)와 맞는지 먼저 보면, 학습 결과를 말하기 전에 지표 코드가 맞는지부터 확인할 수 있다.</p>
       </div>
@@ -82,9 +82,9 @@
         <span class="chip">Training method</span>
         <h3>Diffusion 모방학습</h3>
         <div class="k">측정 결과</div>
-        <p>PPO 시연으로 학습한 Diffusion 정책은 점수 <b>3.56</b>, 리턴 3.55를 냈다(교사는 3.60). 깨끗한 샘플을 직접 예측하게 바꾼 뒤로는 조건 테스트에서 행동 묶음이 <b>40/40</b> 모두 맞았다.</p>
+        <p>PPO demonstration으로 학습한 Diffusion 정책은 점수 <b>3.56</b>, 리턴 3.55를 냈다(teacher는 3.60). clean sample을 직접 예측하게 바꾼 뒤로는 조건 테스트에서 action chunk가 <b>40/40</b> 모두 맞았다.</p>
         <div class="k">배운 점</div>
-        <p class="learned">Diffusion 손실이 낮아도 조건을 안 볼 수 있다. 목표가 원-핫이면 노이즈 예측(epsilon) 방식은 노이즈가 큰 구간에서 깨끗한 샘플을 거의 붙잡지 못한다.</p>
+        <p class="learned">Diffusion 손실이 낮아도 조건을 안 볼 수 있다. 목표가 원-핫이면 노이즈 예측(epsilon) 방식은 노이즈가 큰 구간에서 clean sample을 거의 붙잡지 못한다.</p>
       </div>
       <div class="kr">
         <span class="chip">Infrastructure</span>
@@ -233,7 +233,7 @@
           <tr><td>에폭 × 미니배치</td><td class="num">4 × 8</td><td>PPO-RNN은 시퀀스를 자르지 않고 환경 단위로 미니배치를 나눔</td></tr>
           <tr><td>네트워크</td><td class="num">3 × 512 tanh</td><td>PPO-RNN: 512 임베딩 → GRU → 헤드</td></tr>
           <tr><td>Optimistic reset 비율</td><td class="num">16</td><td>환경 1024개에 스텝당 새 월드 64개</td></tr>
-          <tr><td>ICM 보너스 계수</td><td class="num">0.01</td><td>보너스를 먼저 누적 평균으로 나눔</td></tr>
+          <tr><td>ICM 보너스 계수</td><td class="num">0.01</td><td>보너스를 먼저 running mean으로 나눔</td></tr>
         </tbody>
       </table>
     </div>
@@ -268,8 +268,8 @@ r = r_extrinsic + 0.01 * forward_error / running_mean(forward_error)</code></pre
     new_inv[item] = new_inv.get(item, 0) + output_quantity(verb, item)
     return new_inv, True, ""</code></pre>
 
-    <h3>2. Mixture-of-Experts 몸통</h3>
-    <p>노이즈를 섞은 top-k 게이트가 관측 임베딩마다 MLP 전문가 4개 중 2개를 고른다. Switch Transformer식 균형 손실(완전히 고르면 1, 한 전문가에 몰리면 E)로 전문가가 골고루 쓰이게 하고, 층마다 전문가 사용률을 학습하면서 남긴다. <code>model.trunk=mlp</code>로 바꾸면 일반(dense) 몸통과 비교할 수 있다.</p>
+    <h3>2. Mixture-of-Experts trunk</h3>
+    <p>노이즈를 섞은 top-k 게이트가 관측 임베딩마다 MLP expert 4개 중 2개를 고른다. Switch Transformer식 load-balancing loss(완전히 고르면 1, 한 expert에 몰리면 E)로 expert가 골고루 쓰이게 하고, 층마다 expert 사용률을 학습하면서 남긴다. <code>model.trunk=mlp</code>로 바꾸면 일반(dense) trunk와 비교할 수 있다.</p>
     <div class="code-title">diffu_moe_vlm/nn/moe.py</div>
 <pre><code>probs = logits.softmax(dim=-1)                          # (B, E)
 top_vals, top_idx = probs.topk(self.top_k, dim=-1)       # (B, k)
@@ -281,8 +281,8 @@ y = (weights.unsqueeze(-1) * chosen).sum(dim=1)
 load = F.one_hot(top_idx[:, 0], self.num_experts).float().mean(0)
 aux_loss = self.num_experts * (load * probs.mean(0)).sum()</code></pre>
 
-    <h3>3. 행동 묶음 위의 Diffusion 정책</h3>
-    <p>8스텝 행동 묶음은 [-1, 1]로 스케일한 원-핫 (H × A) 텐서다. 디노이저는 FiLM으로 조건을 받아, 노이즈 섞인 묶음과 Diffusion 단계, 이미지 임베딩을 보고 깨끗한 묶음을 맞힌다. 실행할 때는 DDIM 10단계로 묶음을 뽑고, 앞의 4개 행동만 쓴 다음 다시 뽑는다.</p>
+    <h3>3. action chunk 위의 Diffusion 정책</h3>
+    <p>8스텝 action chunk는 [-1, 1]로 스케일한 원-핫 (H × A) 텐서다. 디노이저는 FiLM으로 조건을 받아, 노이즈 섞인 chunk와 Diffusion 단계, 이미지 임베딩을 보고 clean chunk를 맞힌다. 실행할 때는 DDIM 10단계로 chunk를 뽑고, 앞의 4개 행동만 쓴 다음 다시 뽑는다.</p>
     <div class="code-title">diffu_moe_vlm/nn/diffusion.py</div>
 <pre><code>x0 = self.encode_actions(actions)                     # one-hot * 2 - 1
 t = torch.randint(0, self.num_diffusion_steps, (x0.shape[0],))
@@ -323,11 +323,11 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
     <div class="problem">
       <h3>Problem 2: 관측을 무시한 Diffusion 정책</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>학습 손실은 내려갔다. 그런데 어두운 이미지와 밝은 이미지에서 서로 다른 행동 묶음이 나와야 하는데도 거의 같은 묶음이 나왔다.</p></div></div>
-      <div class="step"><div class="lbl">원인</div><div><p>노이즈 예측(epsilon) 방식에서는 노이즈가 큰 구간의 손실이 깨끗한 원-핫 묶음을 되살렸는지와 거의 상관이 없다. 그래서 결과를 사실상 정하는 샘플링 초반 단계가 조건을 거의 보지 않았다.</p></div></div>
-      <div class="step"><div class="lbl">목표</div><div><p>전체 DDPM으로 뽑든 DDIM으로 건너뛰며 뽑든, 관측이 바뀌면 행동 묶음도 바뀌어야 한다.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>깨끗한 샘플(x<sub>0</sub>)을 바로 예측하고, 샘플링할 때 노이즈는 거기서 거꾸로 계산한다. 노이즈 예측 방식은 옵션으로 남겨 두었다.</p></div></div>
-      <div class="step result"><div class="lbl">결과</div><div><p>조건 테스트에서 400스텝 학습 뒤 40/40 일치(100스텝째부터 정답). Crafter Diffusion 모방학습 점수 3.56(PPO 교사 4.63).</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>학습 손실은 내려갔다. 그런데 어두운 이미지와 밝은 이미지에서 서로 다른 action chunk가 나와야 하는데도 거의 같은 chunk가 나왔다.</p></div></div>
+      <div class="step"><div class="lbl">원인</div><div><p>노이즈 예측(epsilon) 방식에서는 노이즈가 큰 구간의 손실이 clean one-hot chunk를 되살렸는지와 거의 상관이 없다. 그래서 결과를 사실상 정하는 샘플링 초반 단계가 조건을 거의 보지 않았다.</p></div></div>
+      <div class="step"><div class="lbl">목표</div><div><p>전체 DDPM으로 뽑든 DDIM으로 건너뛰며 뽑든, 관측이 바뀌면 action chunk도 바뀌어야 한다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>clean sample(x<sub>0</sub>)을 바로 예측하고, 샘플링할 때 노이즈는 거기서 거꾸로 계산한다. 노이즈 예측 방식은 옵션으로 남겨 두었다.</p></div></div>
+      <div class="step result"><div class="lbl">결과</div><div><p>조건 테스트에서 400스텝 학습 뒤 40/40 일치(100스텝째부터 정답). Crafter Diffusion 모방학습 점수 3.56(PPO teacher 4.63).</p></div></div>
     </div>
 
     <div class="problem">
@@ -350,10 +350,10 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
     <div class="problem">
       <h3>Problem 5: 태스크를 압도한 호기심 보상</h3>
-      <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 내적 보상은 스텝당 7.5 안팎까지 올랐지만 외적 보상은 0 근처를 맴돌았다. PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
+      <div class="step"><div class="lbl">증상</div><div><p>레퍼런스 ICM 런에서 intrinsic reward는 스텝당 7.5 안팎까지 올랐지만 extrinsic reward는 0 근처를 맴돌았다. PLACE_TABLE마저 0%로 떨어졌다.</p></div></div>
       <div class="step"><div class="lbl">원인</div><div><p>스케일을 맞추지 않은 forward 모델 오차를 드문드문 나오는 태스크 보상에 그대로 더했다. 에이전트는 새로운 상태만 쫓았다.</p></div></div>
       <div class="step"><div class="lbl">목표</div><div><p>평균 크기가 일정하고 태스크 보상보다 작은 탐험 보너스.</p></div></div>
-      <div class="step"><div class="lbl">해결</div><div><p>보너스를 오차의 누적 평균으로 나눠 평균을 1로 맞추고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 제곱 오차는 거의 평균 성분이라 보너스 평균이 12 안팎에 머물렀다.</p></div></div>
+      <div class="step"><div class="lbl">해결</div><div><p>보너스를 오차의 running mean으로 나눠 평균을 1로 맞추고 0.01을 곱한다. 처음엔 표준편차로 나눴는데, 제곱 오차는 거의 평균 성분이라 보너스 평균이 12 안팎에 머물렀다.</p></div></div>
       <div class="step result"><div class="lbl">결과</div><div><p>정규화한 보너스는 스텝당 평균 0.01, 보통 길이의 에피소드로 치면 5 정도다. 수렴하면 20을 넘는 태스크 리턴보다 한참 작다. 다만 이 방식이 실제로 폭주를 막고 탐험을 늘리는지는 아직 대조 실험으로 확인하지 않았다(아래 <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
   </section>
@@ -442,10 +442,10 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
   <section id="experiment">
     <h2>Experiment Design</h2>
-    <p>Problem 5에서 호기심 보너스를 오차의 누적 평균으로 나눠 스케일을 맞췄다. 그런데 이 정규화가 보너스 폭주를 정말 막는지, 탐험을 정말 늘리는지는 대조 실험으로 확인한 적이 없다. 그래서 두 질문을 따로 세웠다.</p>
+    <p>Problem 5에서 호기심 보너스를 오차의 running mean으로 나눠 스케일을 맞췄다. 그런데 이 정규화가 보너스 폭주를 정말 막는지, 탐험을 정말 늘리는지는 대조 실험으로 확인한 적이 없다. 그래서 두 질문을 따로 세웠다.</p>
     <ul>
-      <li><b>H1. 폭주 억제:</b> 누적 평균으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
-      <li><b>H2. 탐험 개선:</b> 누적 평균 정규화를 쓴 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 도달하는가? 원래 보상(외부 보상)은 깎이지 않는가?</li>
+      <li><b>H1. 폭주 억제:</b> running mean으로 나눈 보너스는 학습 내내 일정한 크기에 머물고, 정규화하지 않거나 표준편차로 나눈 보너스는 보상을 덮어 버리는가?</li>
+      <li><b>H2. 탐험 개선:</b> running mean 정규화를 쓴 ICM이 호기심 없는 PPO보다 더 많은 업적 종류에 도달하는가? 원래 보상(extrinsic reward)은 깎이지 않는가?</li>
     </ul>
     <h3>조건</h3>
     <p>Craftax-Symbolic-v1 PPO 기본 설정과 시드는 모두 같다. ICM 조건끼리는 보너스 계수(0.01)도 같아서, 다른 점은 정규화 방식 하나뿐이다.</p>
@@ -464,15 +464,15 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <p class="muted small">e는 전이마다 계산한 ICM forward 모델 오차다.</p>
     <h3>측정하는 것</h3>
     <ul>
-      <li><b>폭주:</b> 전체 보상 크기 중 보너스가 차지하는 비율(<code>icm/bonus_share</code>)과 스텝당 보너스 평균. 학습 마지막 10% 구간에서도 비율이 절반을 넘거나, 보너스가 처음보다 2배 넘게 커지면 폭주로 본다. 초반 구간은 판정에서 뺀다. 그때는 외부 보상이 0에 가까워서 제대로 스케일된 보너스도 비율이 높게 나온다.</li>
+      <li><b>폭주:</b> 전체 보상 크기 중 보너스가 차지하는 비율(<code>icm/bonus_share</code>)과 스텝당 보너스 평균. 학습 마지막 10% 구간에서도 비율이 절반을 넘거나, 보너스가 처음보다 2배 넘게 커지면 폭주로 본다. 초반 구간은 판정에서 뺀다. 그때는 extrinsic reward가 0에 가까워서 제대로 스케일된 보너스도 비율이 높게 나온다.</li>
       <li><b>탐험:</b> 학습 중 한 번이라도 도달한 업적 종류 수, Craftax 점수(업적 성공률의 기하평균), 에피소드당 업적 수.</li>
-      <li><b>태스크 성능:</b> 외부 보상만으로 센 에피소드 리턴. 보너스가 섞이지 않은 값으로 비교한다.</li>
+      <li><b>태스크 성능:</b> extrinsic reward만으로 센 에피소드 리턴. 보너스가 섞이지 않은 값으로 비교한다.</li>
     </ul>
     <h3>판정 기준</h3>
     <ul>
       <li>같은 시드끼리 짝지어 <code>ppo</code>와 비교한다. 5천만 스텝보다 짧은 런은 판정하지 않는다.</li>
       <li><b>H1 지지:</b> <code>icm_mean</code>은 어느 시드에서도 폭주하지 않고, <code>icm_none</code>이나 <code>icm_std</code>는 폭주한다. 대조군도 폭주하지 않으면 판단을 보류한다.</li>
-      <li><b>H2 지지:</b> 시드 3개 이상에서, 도달한 업적 종류나 Craftax 점수가 모든 시드에서 <code>ppo</code>보다 높다. 동시에 외부 보상 리턴이 모든 시드에서 낮아지지는 않아야 한다.</li>
+      <li><b>H2 지지:</b> 시드 3개 이상에서, 도달한 업적 종류나 Craftax 점수가 모든 시드에서 <code>ppo</code>보다 높다. 동시에 extrinsic reward 리턴이 모든 시드에서 낮아지지는 않아야 한다.</li>
     </ul>
     <h3>실행</h3>
 <pre><code>python run_icm_ablation.py                      # GPU: 조건 5개 × 시드 3개 × 10억 스텝
@@ -485,7 +485,7 @@ python run_icm_ablation.py --preset cpu-debug   # CPU: 파이프라인 확인용
   <section id="trials">
     <h2>Miscellaneous Trials &amp; Errors</h2>
     <h4>1. 호기심 보상을 표준편차로 정규화한 시도</h4>
-    <p class="ink-2">처음 ICM을 고칠 때는 보너스를 누적 표준편차로 나눴다. 그래도 보너스는 스텝당 평균 12 안팎이었다. 제곱 예측 오차는 분산보다 평균 쪽이 훨씬 크기 때문이다. 누적 평균으로 나누고 나서야 스케일이 맞았다.</p>
+    <p class="ink-2">처음 ICM을 고칠 때는 보너스를 누적 표준편차로 나눴다. 그래도 보너스는 스텝당 평균 12 안팎이었다. 제곱 예측 오차는 분산보다 평균 쪽이 훨씬 크기 때문이다. running mean으로 나누고 나서야 스케일이 맞았다.</p>
     <h4>2. CPU 과다 할당</h4>
     <p class="ink-2">Crafter PPO를 학습시키는 동안 옆에서 테스트를 돌렸더니 학습 속도가 초당 80스텝 정도에서 15스텝으로 떨어졌다. 환경 프로세스 8개와 PyTorch 스레드 풀 2개가 코어 4개를 서로 차지하려 했다. 지금은 <code>torch_threads</code> 옵션으로 환경 워커가 쓸 코어를 비워 둔다.</p>
     <h4>3. 레퍼런스 그래프 읽기</h4>
@@ -497,11 +497,11 @@ python run_icm_ablation.py --preset cpu-debug   # CPU: 파이프라인 확인용
     <h4>전체 규모 재현</h4>
     <ul class="ink-2">
       <li>GPU에서 10억 스텝 PPO·PPO-RNN 비교(런당 3~4시간)를 시드 2~3개로 돌리고 <code>compare_craftax_run.py</code>로 맞춰 본다.</li>
-      <li>아래 ICM 정규화 실험을 GPU에서 돌려 두 질문에 답을 낸다.</li>
+      <li>위의 ICM 정규화 실험을 GPU에서 돌려 두 질문에 답을 낸다.</li>
     </ul>
     <h4>모델</h4>
     <ul class="ink-2">
-      <li>Diffusion 정책을 JAX 쪽으로 옮기고, 큰 규모에서 MoE와 일반(dense) 몸통을 비교한다.</li>
+      <li>Diffusion 정책을 JAX 쪽으로 옮기고, 큰 규모에서 MoE와 일반(dense) trunk를 비교한다.</li>
       <li>학습된 정책을 Describe, Explain, Plan and Select 플래너 밑에 하위 스킬로 붙인다.</li>
       <li>실제 IMU 기록을 궤적 형식으로 바꿔 넣는다.</li>
     </ul>

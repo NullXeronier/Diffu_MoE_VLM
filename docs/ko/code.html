@@ -55,12 +55,12 @@ pytest -q                                               # test suite</code></pre
         <tr><td><a href="#f=diffu_moe_vlm/controller.py"><code>diffu_moe_vlm/controller.py</code></a></td><td>목표 조건부 컨트롤러, 매크로 행동 생성</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/evaluator.py"><code>diffu_moe_vlm/evaluator.py</code></a></td><td>Describe, Explain, Plan and Select 평가 루프</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/crafter_env.py"><code>diffu_moe_vlm/crafter_env.py</code></a></td><td>Crafter 래퍼, 업적 성공률과 Crafter 점수</td></tr>
-        <tr><td><a href="#f=diffu_moe_vlm/nn/moe.py"><code>diffu_moe_vlm/nn/moe.py</code></a></td><td>Top-k 노이즈 게이트 MoE와 균형 손실</td></tr>
-        <tr><td><a href="#f=diffu_moe_vlm/nn/diffusion.py"><code>diffu_moe_vlm/nn/diffusion.py</code></a></td><td>행동 묶음 Diffusion 정책 (x0 예측, DDIM)</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/moe.py"><code>diffu_moe_vlm/nn/moe.py</code></a></td><td>Top-k 노이즈 게이트 MoE와 load-balancing loss</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/nn/diffusion.py"><code>diffu_moe_vlm/nn/diffusion.py</code></a></td><td>action chunk Diffusion 정책 (x0 예측, DDIM)</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/nn/encoders.py"><code>diffu_moe_vlm/nn/encoders.py</code></a></td><td>시각 인코더: CNN, ViT, 사전학습 CLIP/SigLIP</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/imu.py"><code>diffu_moe_vlm/imu.py</code></a></td><td>3D 궤적·IMU 데이터 형식과 합성 데이터 생성기</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/rl/ppo.py"><code>diffu_moe_vlm/rl/ppo.py</code></a></td><td>GAE, MoE 보조 손실, ICM이 들어간 PPO (PyTorch)</td></tr>
-        <tr><td><a href="#f=diffu_moe_vlm/rl/diffusion_bc.py"><code>diffu_moe_vlm/rl/diffusion_bc.py</code></a></td><td>PPO 시연으로 하는 Diffusion 모방학습</td></tr>
+        <tr><td><a href="#f=diffu_moe_vlm/rl/diffusion_bc.py"><code>diffu_moe_vlm/rl/diffusion_bc.py</code></a></td><td>PPO demonstration으로 하는 Diffusion 모방학습</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/jax_rl/ppo.py"><code>diffu_moe_vlm/jax_rl/ppo.py</code></a></td><td>jax.jit 하나로 도는 PPO·PPO-RNN, 체크포인트와 재개</td></tr>
         <tr><td><a href="#f=diffu_moe_vlm/jax_rl/wrappers.py"><code>diffu_moe_vlm/jax_rl/wrappers.py</code></a></td><td>배치 Craftax, optimistic reset, 에피소드 로깅</td></tr>
         <tr><td><a href="#f=train_ppo.py"><code>train_ppo.py</code></a></td><td>Crafter에서 PPO + MoE 학습</td></tr>

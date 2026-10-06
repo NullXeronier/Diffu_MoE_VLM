@@ -46,7 +46,7 @@
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>This project started from a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds, but whose environment returned random pixels and ignored every action. It became three tested pipelines: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
+    <p>The starting point was a repository that described a diffusion, mixture-of-experts, vision-language agent for Minecraft-like worlds. Its environment returned random pixels and ignored every action. I rebuilt it as three pipelines, each with tests: an <b>LLM planner in the Describe, Explain, Plan and Select style</b> on a symbolic tech tree, <b>MoE and diffusion policies</b> on Crafter pixels in PyTorch, and a <b>pure-JAX Craftax trainer</b> built to reproduce 1B-step reference runs.</p>
     <p>What this page claims is modest. On a 4-core CPU all three pipelines learn, give the same result for the same seed, and pick up bit-for-bit after an interruption. Matching the reference end-of-training numbers takes a GPU run, which is one command here.</p>
     <p>The audit, environments, agents, training infrastructure, 68 automated tests and this page all live in one repository.</p>
   </section>
@@ -58,17 +58,17 @@
         <span class="chip">Environment</span>
         <h3>Symbolic tech-tree world</h3>
         <div class="k">Measured result</div>
-        <p>Replaced the random-pixel environment with a Gymnasium tech tree in which tools, tables, furnaces and fuel are enforced. The default tasks went from <b>0/6 to 6/6</b> (wooden slab in 3 steps, diamond in 34), and stayed at <b>6/6 with 30% random action failures</b> through replanning.</p>
+        <p>I replaced the random-pixel environment with a Gymnasium tech tree that actually checks tools, tables, furnaces and fuel. The default tasks went from <b>0/6 to 6/6</b> (wooden slab in 3 steps, diamond in 34), and stayed at <b>6/6 with 30% random action failures</b> through replanning.</p>
         <div class="k">What I learned</div>
-        <p class="learned">An agent cannot be evaluated until the world responds to its actions. The first test of any setup is whether a scripted policy can solve it.</p>
+        <p class="learned">You can't evaluate an agent in a world that ignores its actions. I now start every setup by checking that a scripted policy can solve it.</p>
       </div>
       <div class="kr">
         <span class="chip">Planning</span>
         <h3>Quantity-aware Describe, Explain, Plan and Select loop</h3>
         <div class="k">Measured result</div>
-        <p>A plan that skips steps fails after the <b>5-replan budget</b> when the controller only executes the chosen sub-goal, and succeeds when the controller gathers prerequisites. This ablation separates plan quality from control quality.</p>
+        <p>Give the controller a plan that skips steps. If it only executes the chosen sub-goal, it uses up the <b>5-replan budget</b> and fails; if it gathers prerequisites itself, the same plan succeeds. Comparing the two separates plan quality from control quality.</p>
         <div class="k">What I learned</div>
-        <p class="learned">"Have planks" is not "have three planks". Sub-goals have to complete when an item is obtained, not when it happens to be present.</p>
+        <p class="learned">"Have planks" and "have three planks" are different states. A sub-goal should complete when the item is obtained, not when some of it is already in the inventory.</p>
       </div>
       <div class="kr">
         <span class="chip">Algorithm</span>
@@ -76,7 +76,7 @@
         <div class="k">Measured result</div>
         <p>A CNN encoder with a 4-expert, top-2 MoE trunk raised the Crafter score from <b>1.56 (random) to 4.63</b> after 100k CPU steps (about 3×); return went from 1.25 to 3.60.</p>
         <div class="k">What I learned</div>
-        <p class="learned">A random baseline that matches the published ~1.6% validates the metric code before any learning claim is made.</p>
+        <p class="learned">Checking that a random policy scores the published ~1.6% tests the metric code before any learning result depends on it.</p>
       </div>
       <div class="kr">
         <span class="chip">Training method</span>
@@ -84,7 +84,7 @@
         <div class="k">Measured result</div>
         <p>A diffusion policy cloned from PPO demonstrations reached a score of <b>3.56</b> and return 3.55 (teacher 3.60). Switching to clean-sample prediction gave <b>40/40</b> exact action-chunk matches on the conditioning test.</p>
         <div class="k">What I learned</div>
-        <p class="learned">A low diffusion loss does not mean the model uses its condition. For one-hot targets, epsilon-prediction barely constrains the clean sample at high noise.</p>
+        <p class="learned">A low diffusion loss doesn't tell you the model uses its condition. With one-hot targets, epsilon-prediction barely pins down the clean sample at high noise.</p>
       </div>
       <div class="kr">
         <span class="chip">Infrastructure</span>
@@ -92,7 +92,7 @@
         <div class="k">Measured result</div>
         <p>Environment and PPO are jitted together with optimistic resets: about <b>1,200 steps/s</b> on 4 CPU cores (reference GPU runs: 50k–95k). PPO return rose from 1.49 to <b>6.66</b> in 6.55M steps with the baseline config.</p>
         <div class="k">What I learned</div>
-        <p class="learned">World generation dominates the cost of a Craftax step, so resets have to be pooled rather than paid by every environment.</p>
+        <p class="learned">Most of a Craftax step is spent generating worlds, so finished environments should share a small pool of new worlds instead of each building its own.</p>
       </div>
       <div class="kr">
         <span class="chip">Empirical analysis</span>
@@ -100,7 +100,7 @@
         <div class="k">Measured result</div>
         <p>One uninterrupted run vs. 5-update checkpointed chunks resumed across processes: <b>0 of 390</b> logged values differ. Same-seed reruns are bit-identical for PPO and PPO-RNN.</p>
         <div class="k">What I learned</div>
-        <p class="learned">Resumable runs turn "the run died" into "re-run the command"; 8 of the 10 reference runs ended in a failed state.</p>
+        <p class="learned">If a run can resume, a crash only costs a re-run of the same command. 8 of the 10 reference runs ended in a failed state.</p>
       </div>
     </div>
   </section>
@@ -185,7 +185,7 @@
         <path class="arrow" d="M586 407 H612" marker-end="url(#arr)"/>
       </svg>
     </div>
-    <p class="muted" style="font-size:0.9rem;margin-top:8px"><span class="fig-num">Fig 2.</span> Three tracks sharing one repository and one evaluation vocabulary (tasks, achievements, success rates).</p>
+    <p class="muted" style="font-size:0.9rem;margin-top:8px"><span class="fig-num">Fig 2.</span> The three tracks share one repository and report the same things: tasks, achievements, success rates.</p>
 
     <h3>Tech Stack</h3>
     <div class="table-wrap">
@@ -207,7 +207,7 @@
 
   <section id="environment">
     <h2>Training Environment</h2>
-    <p>The same agent stack is measured on three environments of increasing difficulty. Each reports success per task or per achievement, so results stay comparable across them.</p>
+    <p>The same agent stack runs on three environments of increasing difficulty. All three report success per task or per achievement, so they can be compared.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Environment</th><th>Observation</th><th>Actions</th><th>Success signal</th></tr></thead>
@@ -314,16 +314,16 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
 
     <div class="problem">
       <h3>Problem 1: An agent that could never succeed</h3>
-      <div class="step"><div class="lbl">Symptom</div><div><p>Every benchmark task ended at step 999 with <code>success: false</code>, and the full benchmark crashed after the first task.</p></div></div>
+      <div class="step"><div class="lbl">Symptom</div><div><p>Every benchmark task ended at step 999 with <code>success: false</code>, and the benchmark crashed after the first task.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The environment returned <code>np.random.randint</code> pixels and its action handler was a <code>pass</code>, so the inventory never changed. On top of that, the fallback planner matched <code>wooden_slab</code> inside its own prompt template and returned the slab plan for every task, plan text was split on a literal backslash-n, and the logger called an attribute that did not exist.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>A world in which success is possible and measurable before any learning is added.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>Before adding any learning, a world where success is possible and can be measured.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><ul><li>Symbolic tech-tree environment with Gymnasium API, enforced tools and ingredients.</li><li>Quantity-aware rule-based planner; event-based sub-goal completion; replanning with inventory and error context.</li><li>Fixes to config keys, parsing, logging and data loading; package layout and tests.</li></ul></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>0/6 → 6/6 default tasks; 6/6 with 30% random action failures; 34 unit tests on the planner path.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 2: The diffusion policy ignored its observation</h3>
-      <div class="step"><div class="lbl">Symptom</div><div><p>Training loss fell, but the sampled action chunk was nearly identical for a dark and a bright image that should map to different chunks.</p></div></div>
+      <div class="step"><div class="lbl">Symptom</div><div><p>Training loss went down, yet a dark image and a bright image that should lead to different action chunks produced almost the same chunk.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>With epsilon-prediction, the loss at high noise levels barely depends on recovering the clean one-hot chunk, so the sampler's early, decisive steps were barely conditioned.</p></div></div>
       <div class="step"><div class="lbl">Goal</div><div><p>Observation-dependent action chunks for both full DDPM and strided DDIM sampling.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Predict the clean sample (x<sub>0</sub>) and derive the noise from it during sampling; keep epsilon-prediction as an option.</p></div></div>
@@ -334,16 +334,16 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <h3>Problem 3: Results far below the reference charts</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>The Crafter PPO run had 0% EAT_PLANT and no iron tools, while the reference charts showed iron swords and diamonds.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The reference runs are Craftax-Symbolic (symbolic observations, ~65 achievements) at 1e9 steps and 50k–95k steps/s on a GPU, and their x-axis counts PPO updates: 1e9 / (1024 × 64) ≈ 15,258. The local run was Crafter pixels at 1e5 steps, a different environment with 10,000× less data.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>A pipeline that runs the reference setup as-is and can be checked against it.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>Run the reference setup as it is and compare the results with it directly.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Pure-JAX PPO / PPO-RNN on Craftax with the baseline configuration, plus <code>compare_craftax_run.py</code> and a reference file with 70 end-of-training ranges read off the charts.</p></div></div>
-      <div class="step result"><div class="lbl">Result</div><div><p>On CPU the early learning order matches the reference (basic achievements saturate first, then the wood and stone tools); the 1e9-step comparison is one GPU command away.</p></div></div>
+      <div class="step result"><div class="lbl">Result</div><div><p>On CPU the early learning order matches the reference (basic achievements saturate first, then the wood and stone tools); the 1e9-step comparison needs one command on a GPU.</p></div></div>
     </div>
 
     <div class="problem">
       <h3>Problem 4: Runs dying mid-training</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>A 100-update CPU run was stopped by a session time limit at update ~32; 8 of the 10 reference runs also ended in a failed state.</p></div></div>
       <div class="step"><div class="lbl">Cause</div><div><p>The whole training loop ran as one jitted scan with no state saved until the end.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>Interrupted runs continue with exactly the same results as uninterrupted ones.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>An interrupted run, once resumed, gives exactly the same results as one that was never interrupted.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Split training into jitted chunks of N updates and save the complete runner state after each one; re-running the same command restores it. <code>max_updates_per_run</code> stops deliberately for time-limited jobs.</p></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>0 of 390 logged values differ between one uninterrupted scan and 5-update chunks resumed across processes; a unit test checks parameters are bit-identical.</p></div></div>
     </div>
@@ -351,8 +351,8 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
     <div class="problem">
       <h3>Problem 5: Curiosity reward swamped the task</h3>
       <div class="step"><div class="lbl">Symptom</div><div><p>In the reference ICM run, the intrinsic reward climbed to ~7.5 per step while the extrinsic reward stayed near 0, and even PLACE_TABLE dropped to 0%.</p></div></div>
-      <div class="step"><div class="lbl">Cause</div><div><p>An unscaled forward-model error was added to a sparse task reward, so the agent optimised novelty only.</p></div></div>
-      <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus whose average contribution is fixed and small relative to task rewards.</p></div></div>
+      <div class="step"><div class="lbl">Cause</div><div><p>The raw forward-model error was added straight onto a sparse task reward, and the agent ended up chasing novelty alone.</p></div></div>
+      <div class="step"><div class="lbl">Goal</div><div><p>An exploration bonus with a fixed average size, small next to the task reward.</p></div></div>
       <div class="step"><div class="lbl">Solution</div><div><p>Divide the bonus by its running mean (so it averages 1) and scale it by 0.01. Dividing by the standard deviation was tried first and left a mean of ~12, because a squared error is mostly mean.</p></div></div>
       <div class="step result"><div class="lbl">Result</div><div><p>The normalized bonus averages 0.01 per step, about 5 per typical episode against a task return above 20 at convergence. Whether this actually prevents runaway and helps exploration has not been tested with a controlled run yet (see <a href="#experiment">Experiment Design</a>).</p></div></div>
     </div>
@@ -387,11 +387,11 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       </table>
     </div>
     <h4>Interpretation scope</h4>
-    <p class="ink-2">These are single-seed runs covering 0.3–0.7% of the reference budget. They show that both models learn the expected early achievements in the expected order; the reference PPO-RNN advantage builds over hundreds of millions of steps and is not visible yet.</p>
+    <p class="ink-2">These are single-seed runs at 0.3–0.7% of the reference budget. All they show is that both models learn the expected early achievements in the expected order. In the reference runs PPO-RNN pulls ahead over hundreds of millions of steps, so that gap can't show up here yet.</p>
     <div class="grid-2">
       <figure>
         <img src="images/achievements_collect_diamond.png" alt="COLLECT_DIAMOND success rate over 15k updates in the reference runs" width="619" height="421">
-        <figcaption><span class="fig-num">Fig 3.</span> COLLECT_DIAMOND in the reference runs: rare, late and noisy.</figcaption>
+        <figcaption><span class="fig-num">Fig 3.</span> COLLECT_DIAMOND in the reference runs. It is rare, appears late and jumps around a lot.</figcaption>
       </figure>
       <figure>
         <img src="images/paper_achievements_heatmap.png" alt="Heatmap of achievement success rates from the original multi-agent paper" width="1684" height="735">
@@ -418,10 +418,10 @@ state = jax.tree.map(select, state_re, state_st)</code></pre>
       <table>
         <thead><tr><th>Metric</th><th>Value</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and Describe, Explain, Plan and Select loop are functional end to end</td></tr>
+          <tr><td><b>Planner tasks</b></td><td>0/6 → 6/6</td><td>The environment and the Describe, Explain, Plan and Select loop work end to end</td></tr>
           <tr><td><b>Crafter score</b></td><td>1.56 → 4.63</td><td>MoE PPO learns from pixels within 100k steps</td></tr>
           <tr><td><b>Craftax return (PPO)</b></td><td>1.49 → 6.66</td><td>Baseline config learns on CPU in 6.55M steps</td></tr>
-          <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Runs can be interrupted without changing results</td></tr>
+          <tr><td><b>Resume equivalence</b></td><td>0 / 390 differ</td><td>Interrupting a run does not change its results</td></tr>
           <tr><td><b>Automated tests</b></td><td>68 pass</td><td>Core, Crafter (PyTorch) and Craftax (JAX) paths</td></tr>
         </tbody>
       </table>
@@ -487,9 +487,9 @@ python run_icm_ablation.py --preset cpu-debug   # CPU: pipeline check only</code
     <h4>1. Normalising curiosity by its standard deviation</h4>
     <p class="ink-2">The first ICM fix divided the bonus by its running standard deviation. The bonus still averaged ~12 per step, because a squared prediction error is mostly mean, not variance. Dividing by the running mean fixed the scale.</p>
     <h4>2. CPU oversubscription</h4>
-    <p class="ink-2">Running the test suite next to a Crafter PPO run dropped training from ~80 to 15 steps/s: eight environment processes and two PyTorch thread pools competed for four cores. A <code>torch_threads</code> option now leaves cores for environment workers.</p>
+    <p class="ink-2">Running the test suite next to a Crafter PPO run dropped training from ~80 to 15 steps/s. Eight environment processes and two PyTorch thread pools were fighting over four cores. A <code>torch_threads</code> option now leaves cores for environment workers.</p>
     <h4>3. Reading the reference charts</h4>
-    <p class="ink-2">The first comparison read the W&amp;B "Step" axis as environment steps. It counts PPO updates; matching 15k updates to 1e9 steps is what identified the batch size of the reference runs.</p>
+    <p class="ink-2">The first comparison read the W&amp;B "Step" axis as environment steps. It actually counts PPO updates. Working out what batch size turns 15k updates into 1e9 steps gave me the reference runs' batch size.</p>
   </section>
 
   <section id="future">
@@ -497,7 +497,7 @@ python run_icm_ablation.py --preset cpu-debug   # CPU: pipeline check only</code
     <h4>Full-scale reproduction</h4>
     <ul class="ink-2">
       <li>Run the 1e9-step PPO and PPO-RNN comparison on a GPU (3–4 hours per run) over 2–3 seeds and check it with <code>compare_craftax_run.py</code>.</li>
-      <li>Run the ICM normalization experiment below on a GPU to answer its two questions.</li>
+      <li>Run the ICM normalization experiment above on a GPU to answer its two questions.</li>
     </ul>
     <h4>Models</h4>
     <ul class="ink-2">
