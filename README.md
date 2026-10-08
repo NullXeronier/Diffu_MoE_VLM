@@ -1,6 +1,8 @@
 # MC-Planner Describe, Explain, Plan and Select Simulator
 
-Project page, code browser, reproducibility report and research note (English / 한국어): [`docs/index.html`](docs/index.html), [`docs/code.html`](docs/code.html), [`docs/reproducibility.html`](docs/reproducibility.html), [`docs/ko/index.html`](docs/ko/index.html) (GitHub Pages, served from `docs/`; rebuild the code snapshot with `python tools/build_code_snapshot.py`).
+**Site (GitHub Pages):** [Project page](https://nullxeronier.github.io/Diffu_MoE_VLM/) · [Research note / blog](https://nullxeronier.github.io/Diffu_MoE_VLM/blog/building-diffu-moe-vlm.html) · [Code browser](https://nullxeronier.github.io/Diffu_MoE_VLM/code.html) · [Reproducibility report](https://nullxeronier.github.io/Diffu_MoE_VLM/reproducibility.html) · 한국어: [프로젝트](https://nullxeronier.github.io/Diffu_MoE_VLM/ko/) · [연구 노트](https://nullxeronier.github.io/Diffu_MoE_VLM/ko/blog/building-diffu-moe-vlm.html)
+
+The site sources live in `docs/` (served from branch `portfolio/blog_init`, folder `/docs`). Opening `docs/*.html` on github.com shows the HTML source, not the page; use the links above. Rebuild the code snapshot with `python tools/build_code_snapshot.py`.
 
 This project Simulates Open Ended Env
 ## Updated: Exceed consume metric(EAT_PLANT, MAKE...) in PPO Actor with IMU data 
